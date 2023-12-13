@@ -7,19 +7,19 @@ end
 
 function QR(block::Vector{T}, a, b, c, d) where T
     block[a] += block[b]
-    block[d] ^= block[a]
+    block[d] ⊻= block[a]
     block[d] = ROTL(block[d], 16)
 
     block[c] += block[d];
-    block[b] ^= block[c];
+    block[b] ⊻= block[c];
     block[b] = ROTL(block[b], 12);
 
     block[a] += block[b];
-    block[d] ^= block[a];
+    block[d] ⊻= block[a];
     block[d] = ROTL(block[d], 8);
 
     block[c] += block[d];
-    block[b] ^= block[c];
+    block[b] ⊻= block[c];
     block[b] = ROTL(block[b], 7);
 end
 
