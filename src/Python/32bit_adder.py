@@ -101,14 +101,15 @@ def add_base_probabilities(number_of_bits_per_cluster: int, variables: Dict[str,
     factors["f_carry_0"].add_neighbour(variables["carry_0"])
     distributions["f_carry_0"] = LabeledArray(p_carry_in_array, ["carry_0"])
 
-    # Put in a distribution for input A, just setting the first, second and fourth to 1
+    # Put in a distribution for input A, just setting the first, second and fourth to 1 with 0.9, and 2 at 0.1
     for i in range(number_of_clusters):
         factors[f"f_input_a_{i}"] = Factor(f"f_input_a_{i}")
         variables[f"input_a_{i}"].add_neighbour(factors[f"f_input_a_{i}"])
         factors[f"f_input_a_{i}"].add_neighbour(variables[f"input_a_{i}"])
         p_input_array = np.zeros((1 << number_of_bits_per_cluster, 1))
-        if i in [0,1,3]:
-            p_input_array[1] = 1.
+        if i in [0]:
+            p_input_array[1] = .9
+            p_input_array[2] = .1
         else:
             p_input_array[0] = 1.
         distributions[f"f_input_a_{i}"] = LabeledArray(p_input_array, [f"input_a_{i}"])
@@ -119,11 +120,26 @@ def add_base_probabilities(number_of_bits_per_cluster: int, variables: Dict[str,
         variables[f"input_b_{i}"].add_neighbour(factors[f"f_input_b_{i}"])
         factors[f"f_input_b_{i}"].add_neighbour(variables[f"input_b_{i}"])
         p_input_array = np.zeros((1 << number_of_bits_per_cluster, 1))
-        if i in []:
-            p_input_array[1] = 1.
+        if i in [0]:
+            p_input_array[1] = .9
+            p_input_array[0] = .1
         else:
             p_input_array[0] = 1.
         distributions[f"f_input_b_{i}"] = LabeledArray(p_input_array, [f"input_b_{i}"])
+
+    # Put in distribution for the output
+    for i in range(number_of_clusters):
+        factors[f"f_output_{i}"] = Factor(f"f_output_{i}")
+        variables[f"output_{i}"].add_neighbour(factors[f"f_output_{i}"])
+        factors[f"f_output_{i}"].add_neighbour(variables[f"output_{i}"])
+        p_input_array = np.zeros((1 << number_of_bits_per_cluster, 1))
+        if i in [0]:
+            p_input_array[2] = .9
+            p_input_array[3] = .1
+        else:
+            p_input_array[0] = 1.
+        distributions[f"f_output_{i}"] = LabeledArray(p_input_array, [f"output_{i}"])
+
 
 NUMBER_OF_BITS = 2
 
