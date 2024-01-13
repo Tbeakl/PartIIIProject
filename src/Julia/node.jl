@@ -1,15 +1,17 @@
 struct Variable
     name::String
     neighbours::Array{Factor}
+    incoming_messages
 end
 
 struct Factor
     name::String
-    neighbours::Array{Factor}
+    neighbours::Array{Variable}
     data
+    incoming_messages
 end
 
 struct LabelledArray
     array
-    axes_names
+    axes_labels
 end
