@@ -1,8 +1,12 @@
 include("node.jl")
 
-messages = Dict()
-
 function tile_to_shape_along_axis(arr, target_shape, target_axis)
+    # println("arr")
+    # println(arr)
+    # println("target_shape")
+    # println(target_shape)
+    # println("target_axis")
+    # println(target_axis)
     if length(size(arr)) == 0
         return(repeat([arr], outer=target_shape))
     elseif length(size(arr)) == 1 && size(arr)[1] == target_shape[target_axis]
@@ -18,6 +22,10 @@ function tile_to_shape_along_axis(arr, target_shape, target_axis)
 end
 
 function tile_to_other_dist_along_axis_name(tiling_labeled_array::LabelledArray, target_array::LabelledArray)
+    # println("tiling_labeled_array")
+    # println(tiling_labeled_array)
+    # println("target_array")
+    # println(target_array)
     target_axis_label = tiling_labeled_array.axes_labels[1]
     target_axis_index = findfirst(==(target_axis_label), target_array.axes_labels)
     return LabelledArray(
@@ -34,14 +42,21 @@ end
 #      ["v1", "h1"]
 # )
 
+function other_axes_from_labeled_axes(labelled_array::LabelledArray, axis_label::String)
+    return Tuple([i for i in 1:length(labelled_array.axes_labels) if labelled_array.axes_labels[i] != axis_label])
+end
 
 function variable_to_factor_messages(variable::Variable)
     # This needs to update the messsages in the factors from this variable
     for i in 1:length(variable.neighbours)
         # The i message needs to be excluded from the calculation
-        new_message = prod(variable.incoming_messages[begin:end .!=i], axes=1)
-        index_in_factor = findfirst(==(variable), variable.neighbours[i].neighbours)
-        variable.neighbours[i].incoming_messages[index_in_factor] = new_message
+        new_message = ones(size(variable.incoming_messages[variable.neighbours[i].name]))
+        for (key, incoming_message) in variable.incoming_messages
+            if key != variable.neighbours[i].name
+                new_message = new_message .* incoming_message
+            end
+        end
+        variable.neighbours[i].incoming_messages[variable.name] = new_message
     end
 end
 
@@ -49,16 +64,29 @@ function factor_to_variable_messages(factor::Factor)
     # This needs to update all the incoming messages of the connected variables
     for i in 1:length(factor.neighbours)
         factor_dist = copy(factor.data.array)
-        incoming_messages = factor.incoming_messages[begin:end .!=i]
-        neighbour_variable_names = factor.neighbours[begin:end .!=i].name
-        tiled_results = tile_to_other_dist_along_axis_name.(LabelledArray.(incoming_messages, neighbour_variable_names), factor.data).array
-        # Need to have the product of the above
-        for tiled_res in tiled_results
-            factor_dist = factor_dist .* tiled_res
+        incoming_messages = [j for (key, j) in factor.incoming_messages if key != factor.neighbours[i].name]
+        neighbour_variable_names = [var.name for var in factor.neighbours if var.name != factor.neighbours[i].name]
+        for j in 1:length(incoming_messages)
+            tiled_result = tile_to_other_dist_along_axis_name(LabelledArray(incoming_messages[j], [neighbour_variable_names[j]]), factor.data).array
+            factor_dist = factor_dist .* tiled_result
         end
         other_axes = other_axes_from_labeled_axes(factor.data, factor.neighbours[i].name)
-        value_to_squeeze = sum(factor_dist, axes=other_axes)
-        index_in_variable = findfirst(==(factor), factor.neighbours[i].neighbours)
-        factor.neighbours[i].incoming_messages[index_in_variable] = dropdims(value_to_squeeze; dims=Tuple(findall(size(value_to_squeeze) .== 1)))
+        value_to_squeeze = factor_dist
+        for axis in other_axes
+            value_to_squeeze = sum(value_to_squeeze, dims=axis)
+        end
+        factor.neighbours[i].incoming_messages[factor.name] = dropdims(value_to_squeeze; dims=Tuple(findall(size(value_to_squeeze) .== 1)))
     end
+end
+
+function marginal(variable::Variable)
+    unnorm_p = :nothing
+    for (key, val) in variable.incoming_messages
+        if unnorm_p == :nothing
+            unnorm_p = val
+        else
+            unnorm_p = unnorm_p .* val
+        end
+    end
+    return unnorm_p ./ sum(unnorm_p)
 end
