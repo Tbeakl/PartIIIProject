@@ -1,3 +1,7 @@
+struct LabelledArray
+    array
+    axes_labels
+end
 mutable struct Variable
     name::String
     neighbours::Array{Factor}
@@ -16,9 +20,4 @@ mutable struct Factor
     function Factor(name::String, data::LabelledArray)
         return new(name, Array{Variable}[], data, Dict())
     end
-end
-
-struct LabelledArray
-    array
-    axes_labels
 end

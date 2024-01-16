@@ -64,9 +64,11 @@ function factor_to_variable_messages(factor::Factor)
     # This needs to update all the incoming messages of the connected variables
     for i in 1:length(factor.neighbours)
         factor_dist = copy(factor.data.array)
-        incoming_messages = [j for (key, j) in factor.incoming_messages if key != factor.neighbours[i].name]
         neighbour_variable_names = [var.name for var in factor.neighbours if var.name != factor.neighbours[i].name]
+        incoming_messages = [factor.incoming_messages[neighbour_name] for neighbour_name in neighbour_variable_names]
         for j in 1:length(incoming_messages)
+            # println(j)
+            # println(incoming_messages[j])
             tiled_result = tile_to_other_dist_along_axis_name(LabelledArray(incoming_messages[j], [neighbour_variable_names[j]]), factor.data).array
             factor_dist = factor_dist .* tiled_result
         end
@@ -89,4 +91,11 @@ function marginal(variable::Variable)
         end
     end
     return unnorm_p ./ sum(unnorm_p)
+end
+
+function add_edge_between(variable::Variable, factor::Factor)
+    push!(variable.neighbours, factor)
+    push!(factor.neighbours, variable)
+    factor.incoming_messages[variable.name] = 1.
+    variable.incoming_messages[factor.name] = 1.
 end

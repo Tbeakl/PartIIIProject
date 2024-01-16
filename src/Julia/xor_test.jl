@@ -1,12 +1,5 @@
 include("messages.jl")
 
-function add_edge_between(variable::Variable, factor::Factor)
-    push!(variable.neighbours, factor)
-    push!(factor.neighbours, variable)
-    factor.incoming_messages[variable.name] = 1.
-    variable.incoming_messages[factor.name] = 1.
-end
-
 p_a = LabelledArray(
     [.8
      .2], ["a"]
