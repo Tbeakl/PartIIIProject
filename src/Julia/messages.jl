@@ -66,6 +66,8 @@ function factor_to_variable_messages(factor::Factor)
         factor_dist = copy(factor.data.array)
         neighbour_variable_names = [var.name for var in factor.neighbours if var.name != factor.neighbours[i].name]
         incoming_messages = [factor.incoming_messages[neighbour_name] for neighbour_name in neighbour_variable_names]
+        # println(neighbour_variable_names)
+        # println(length(incoming_messages))
         for j in 1:length(incoming_messages)
             # println(j)
             # println(incoming_messages[j])

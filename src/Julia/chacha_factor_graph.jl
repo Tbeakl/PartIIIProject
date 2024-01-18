@@ -67,13 +67,13 @@ function take_bottom_bits_prob_array(num_of_bits::Int64)
     return output
 end
 
-function bit_rotation_factor_graph!(variables,
-    factors,
-    input,
-    bits_to_rotate_by,
-    number_of_bits_per_cluster,
-    location_execution_counts,
-    number_of_operations,
+function bit_rotation_factor_graph!(variables::Dict{String, Variable},
+    factors::Dict{String, Factor},
+    input::Int64,
+    bits_to_rotate_by::Int64,
+    number_of_bits_per_cluster::Int64,
+    location_execution_counts::Vector{Int64},
+    number_of_operations::Dict{String, Int64},
     precalculated_prob_tables
 )
     if bits_to_rotate_by == 0
@@ -104,15 +104,15 @@ function bit_rotation_factor_graph!(variables,
     location_execution_counts[input] += 1
 end
 
-function xor_with_cluster_shift_factor_graph!(variables,
-    factors,
-    input_a,
-    input_b,
-    output,
-    number_of_clusters_shifted,
-    number_of_bits_per_cluster,
-    location_execution_counts,
-    number_of_operations,
+function xor_with_cluster_shift_factor_graph!(variables::Dict{String, Variable},
+    factors::Dict{String, Factor},
+    input_a::Int64,
+    input_b::Int64,
+    output::Int64,
+    number_of_clusters_shifted::Int64,
+    number_of_bits_per_cluster::Int64,
+    location_execution_counts::Vector{Int64},
+    number_of_operations::Dict{String, Int64},
     precalculated_prob_tables)
 
     xor_cluster_prob_table = precalculated_prob_tables["xor_cluster"]
@@ -135,16 +135,16 @@ function xor_with_cluster_shift_factor_graph!(variables,
     location_execution_counts[output] += 1
 end
 
-function add_factor_graph!(variables,
-    factors,
-    input_a,
-    input_a_version,
-    input_b,
-    input_b_version,
-    output,
-    number_of_bits_per_cluster,
-    location_execution_counts,
-    number_of_operations,
+function add_factor_graph!(variables::Dict{String, Variable},
+    factors::Dict{String, Factor},
+    input_a::Int64,
+    input_a_version::Int64,
+    input_b::Int64,
+    input_b_version::Int64,
+    output::Int64,
+    number_of_bits_per_cluster::Int64,
+    location_execution_counts::Vector{Int64},
+    number_of_operations::Dict{String, Int64},
     precalculated_prob_tables)
 
     number_of_clusters = Int64(ceil(32 / number_of_bits_per_cluster))
@@ -179,7 +179,7 @@ function add_factor_graph!(variables,
         variables[output_name] = Variable(output_name)
         variables[full_add_output_name] = Variable(full_add_output_name)
 
-        factors[full_add_factor_name] = Factor(full_add_factor_name, LabelledArray(full_add_dist, [carry_in_variable_name, input_a_name, input_b_name, output_name]))
+        factors[full_add_factor_name] = Factor(full_add_factor_name, LabelledArray(full_add_dist, [carry_in_variable_name, input_a_name, input_b_name, full_add_output_name]))
         factors[add_carry_out_factor_name] = Factor(add_carry_out_factor_name, LabelledArray(add_full_to_carry, [full_add_output_name, carry_out_variable_name]))
         factors[add_output_factor_name] = Factor(add_output_factor_name, LabelledArray(add_full_to_output, [full_add_output_name, output_name]))
 
@@ -199,15 +199,15 @@ function add_factor_graph!(variables,
     location_execution_counts[output] += 1
 end
 
-function chacha_quarter_round_factor_graph!(variables,
-    factors,
-    a,
-    b,
-    c,
-    d,
-    number_of_bits_per_cluster,
-    location_execution_counts,
-    number_of_operations,
+function chacha_quarter_round_factor_graph!(variables::Dict{String, Variable},
+    factors::Dict{String, Factor},
+    a::Int64,
+    b::Int64,
+    c::Int64,
+    d::Int64,
+    number_of_bits_per_cluster::Int64,
+    location_execution_counts::Vector{Int64},
+    number_of_operations::Dict{String, Int64},
     precalculated_prob_tables)
     
     first_number_cluster_shifts = Int64(floor(16 / number_of_bits_per_cluster))
@@ -255,9 +255,9 @@ function chacha_quarter_round_factor_graph!(variables,
     # block[b] = ROTL(block[b], 7)
 end
 
-function chacha_factor_graph!(variables,
-    factors,
-    number_of_bits_per_cluster)
+function chacha_factor_graph!(variables::Dict{String, Variable},
+    factors::Dict{String, Factor},
+    number_of_bits_per_cluster::Int64)
     number_of_clusters = Int64(ceil(32 / number_of_bits_per_cluster))
     
     # Initially add the opening variables
@@ -303,13 +303,41 @@ function chacha_factor_graph!(variables,
     # set in the standard
 end
 
+function set_variable_to_value(variables::Dict{String, Variable},
+    factors::Dict{String, Factor},
+    variable_name_with_version::String,
+    value::UInt32,
+    number_of_bits_per_cluster::Int64
+    )
+    number_of_clusters = Int64(ceil(32 / number_of_bits_per_cluster))
+    for i in 1:number_of_clusters
+        cur_var_name = string(variable_name_with_version, "_", i)
+        cur_dist_name = string("f_", cur_var_name, "_dist")
+        dist_table = zeros(1 << number_of_bits_per_cluster)
+        # Calculate what value these bits should have
+        cur_cluster_value = (value & (((1 << number_of_bits_per_cluster) - 1)) << (number_of_bits_per_cluster * (i - 1))) >> (number_of_bits_per_cluster * (i - 1))
+        dist_table[cur_cluster_value + 1] = 1.
+        factors[cur_dist_name] = Factor(cur_dist_name, LabelledArray(dist_table, [cur_var_name]))
+        add_edge_between(variables[cur_var_name], factors[cur_dist_name])
+    end
+end
+
+function add_starting_constant_values(variables::Dict{String, Variable},
+    factors::Dict{String, Factor},
+    number_of_bits_per_cluster::Int64)
+    set_variable_to_value(variables, factors, "1_0", 0x61707865, number_of_bits_per_cluster)
+    set_variable_to_value(variables, factors, "2_0", 0x3320646e, number_of_bits_per_cluster)
+    set_variable_to_value(variables, factors, "3_0", 0x79622d32, number_of_bits_per_cluster)
+    set_variable_to_value(variables, factors, "4_0", 0x6b206574, number_of_bits_per_cluster)
+end
+
 number_of_bits = 2
-variables = Dict()
-factors = Dict()
+variables = Dict{String, Variable}()
+factors = Dict{String, Factor}()
 chacha_factor_graph!(variables, factors, number_of_bits)
+add_starting_constant_values(variables, factors, number_of_bits)
 
 for (i,j) in factors
-    println(i)
     factor_to_variable_messages(j)
 end
 
