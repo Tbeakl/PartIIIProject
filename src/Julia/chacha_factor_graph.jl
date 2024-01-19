@@ -50,11 +50,7 @@ end
 function take_top_bit_prob_array(num_of_bits::Int64)
     output = zeros(1 << num_of_bits, 2)
     for val_in in 1:(1 << num_of_bits)
-        for output_val in 1:2
-            if (output_val == 2 && val_in > 1 << (num_of_bits - 1)) || (output_val == 1 && val_in <= 1 << (num_of_bits - 1))
-                output[val_in, output_val] = 1.
-            end
-        end
+        output[val_in, (val_in > 1 << (num_of_bits - 1)) + 1] = 1.
     end
     return output
 end

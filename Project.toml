@@ -1,0 +1,3 @@
+[deps]
+CryptoSideChannel = "5125bf15-d1e5-4048-9f9a-1009b1b43be4"
+Jlsca = "dcc1f4ae-7dba-11e8-3b6a-0976b94e0e7a"

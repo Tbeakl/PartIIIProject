@@ -1,20 +1,22 @@
 include("node.jl")
 
-function tile_to_shape_along_axis(arr, target_shape, target_axis)
+function tile_to_shape_along_axis(arr::Float64, target_shape::Tuple, target_axis::Int64)
+    return fill(arr, target_shape)
+end
+
+function tile_to_shape_along_axis(arr::Vector{Float64}, target_shape::Tuple, target_axis::Int64)
     # println("arr")
     # println(arr)
     # println("target_shape")
     # println(target_shape)
     # println("target_axis")
     # println(target_axis)
-    if length(size(arr)) == 0
-        return(repeat([arr], outer=target_shape))
-    elseif length(size(arr)) == 1 && size(arr)[1] == target_shape[target_axis]
+    if length(arr) == target_shape[target_axis]
         repeating_shape = [i for i in target_shape]
         repeating_shape[target_axis] = 1
         arr_shape = ones(Int64, length(target_shape))
         arr_shape[target_axis] = length(arr)
-        # Think I need to reshape arr to eb a matrix with 1 in all directions except the target exis
+        # Think I need to reshape arr to be a matrix with 1 in all directions except the target eaxis
         return repeat(reshape(arr, Tuple(arr_shape)), outer=repeating_shape)
     else
         println("Not implemented")
@@ -33,14 +35,6 @@ function tile_to_other_dist_along_axis_name(tiling_labeled_array::LabelledArray,
         target_array.axes_labels
     )
 end
-
-# p_h1 = LabelledArray([0.6,0.3,0.1], ["h1"])
-
-# p_v1_given_h1 = LabelledArray(
-#     [0.4 0.8 0.9
-#      0.6 0.2 0.1],
-#      ["v1", "h1"]
-# )
 
 function other_axes_from_labeled_axes(labelled_array::LabelledArray, axis_label::String)
     return Tuple([i for i in 1:length(labelled_array.axes_labels) if labelled_array.axes_labels[i] != axis_label])

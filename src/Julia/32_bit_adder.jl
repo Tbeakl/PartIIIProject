@@ -5,11 +5,7 @@ function make_add_including_carry_prob_array(num_of_bits::Int64)
     for carry_in in 1:2
         for input_a in 1:(1 << num_of_bits)
             for input_b in 1:(1 << num_of_bits)
-                for output_val in 1:(1 << (num_of_bits + 1))
-                    output[carry_in, input_a, input_b, output_val] = (
-                        input_a + input_b + carry_in - 2
-                    ) == output_val
-                end
+                output[carry_in, input_a, input_b, input_a + input_b + carry_in - 2] = 1.
             end
         end
     end
@@ -19,11 +15,7 @@ end
 function take_top_bit_prob_array(num_of_bits::Int64)
     output = zeros(1 << num_of_bits, 2)
     for val_in in 1:(1 << num_of_bits)
-        for output_val in 1:2
-            if (output_val == 2 && val_in > 1 << (num_of_bits - 1)) || (output_val == 1 && val_in <= 1 << (num_of_bits - 1))
-                output[val_in, output_val] = 1.
-            end
-        end
+        output[val_in, (val_in > 1 << (num_of_bits - 1)) + 1] = 1.
     end
     return output
 end
@@ -31,9 +23,7 @@ end
 function take_bottom_bits_prob_array(num_of_bits::Int64)
     output = zeros(1 << num_of_bits, 1 << (num_of_bits - 1))
     for val_in in 1:1 << num_of_bits
-        for output_val in 1:(1 << (num_of_bits - 1))
-            output[val_in, output_val] = ((val_in - 1) % ((1 << (num_of_bits - 1)))) == (output_val - 1)
-        end
+        output[val_in, ((val_in - 1) % ((1 << (num_of_bits - 1)))) + 1] = 1.
     end
     return output
 end
@@ -117,7 +107,7 @@ end
 variables = Dict()
 factors = Dict()
 
-number_of_bits = 4
+number_of_bits = 2
 
 make_32_bit_adder(number_of_bits, variables, factors)
 add_base_probabilities(number_of_bits, variables, factors)
