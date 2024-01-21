@@ -62,7 +62,7 @@ function factor_to_variable_messages(factor::Factor)
         incoming_messages = [factor.incoming_messages[neighbour_name] for neighbour_name in neighbour_variable_names]
         # println(neighbour_variable_names)
         # println(length(incoming_messages))
-        for j in 1:length(incoming_messages)
+        for j in 1:length(neighbour_variable_names)
             # println(j)
             # println(incoming_messages[j])
             tiled_result = tile_to_other_dist_along_axis_name(LabelledArray(incoming_messages[j], [neighbour_variable_names[j]]), factor.data).array
@@ -73,7 +73,17 @@ function factor_to_variable_messages(factor::Factor)
         for axis in other_axes
             value_to_squeeze = sum(value_to_squeeze, dims=axis)
         end
-        factor.neighbours[i].incoming_messages[factor.name] = dropdims(value_to_squeeze; dims=Tuple(findall(size(value_to_squeeze) .== 1)))
+        # Normalise the message, this should hopefully stop values spinning off to infinity but I am not entirely sure if it is valid
+        # Haven't done this on the variable to factor messages but this should hopefully be enough to keep it first_number_cluster_shifts
+        # it might also be better to have it work by dividing by a power of 2 near the value so that the division does not really need to be done
+        # because that would allow it to stay still contained
+        message_out = dropdims(value_to_squeeze; dims=Tuple(findall(size(value_to_squeeze) .== 1)))
+        message_out_sum = sum(message_out)
+        message_out = message_out_sum > 0 ? message_out ./ message_out_sum : message_out
+        if message_out_sum <= 0
+            println(factor.name)
+        end
+        factor.neighbours[i].incoming_messages[factor.name] = message_out
     end
 end
 
@@ -86,7 +96,8 @@ function marginal(variable::Variable)
             unnorm_p = unnorm_p .* val
         end
     end
-    return unnorm_p ./ sum(unnorm_p)
+    total_unorm_p = sum(unnorm_p)
+    return total_unorm_p > 0 ? unnorm_p ./ total_unorm_p : 0.
 end
 
 function add_edge_between(variable::Variable, factor::Factor)
@@ -94,4 +105,39 @@ function add_edge_between(variable::Variable, factor::Factor)
     push!(factor.neighbours, variable)
     factor.incoming_messages[variable.name] = 1.
     variable.incoming_messages[factor.name] = 1.
+end
+
+
+function set_variable_to_value(variables::Dict{String, Variable},
+    factors::Dict{String, Factor},
+    variable_name_with_version::String,
+    value::UInt32,
+    number_of_bits_per_cluster::Int64
+    )
+    number_of_clusters = Int64(ceil(32 / number_of_bits_per_cluster))
+    for i in 1:number_of_clusters
+        cur_var_name = string(variable_name_with_version, "_", i)
+        cur_dist_name = string("f_", cur_var_name, "_dist")
+        dist_table = zeros(1 << number_of_bits_per_cluster)
+        # Calculate what value these bits should have
+        cur_cluster_value = (value & (((1 << number_of_bits_per_cluster) - 1)) << (number_of_bits_per_cluster * (i - 1))) >> (number_of_bits_per_cluster * (i - 1))
+        dist_table[cur_cluster_value + 1] = 1.
+        factors[cur_dist_name] = Factor(cur_dist_name, LabelledArray(dist_table, [cur_var_name]))
+        add_edge_between(variables[cur_var_name], factors[cur_dist_name])
+    end
+end
+
+function read_most_likely_value_from_variable(variables::Dict{String, Variable},
+    variable_name_with_version::String,
+    number_of_bits_per_cluster::Int64)
+
+    number_of_clusters = Int64(ceil(32 / number_of_bits_per_cluster))
+    value::UInt32 = 0
+    for i in 1:number_of_clusters
+        cur_var_name = string(variable_name_with_version, "_", i)
+        dist = marginal(variables[cur_var_name])
+        # println(cur_var_name,": ", dist)
+        value += (findmax(dist)[2] - 1) << (number_of_bits_per_cluster * (i - 1))
+    end
+    return value
 end

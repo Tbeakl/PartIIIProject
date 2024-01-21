@@ -18,7 +18,8 @@ function make_rotation_prob_table(number_of_bits_in_cluster::Int64, number_of_bi
     number_of_bits_from_left = number_of_bits_in_cluster - number_of_bits_from_right
     for input_left in 1:(1 << number_of_bits_in_cluster)
         for input_right in 1:(1 << number_of_bits_in_cluster)
-            output[input_left, input_right, ((((input_left - 1) & ((1 << number_of_bits_from_left) - 1)) << number_of_bits_from_right)|((((input_right >> number_of_bits_from_left) - 1) & ((1 << number_of_bits_from_right) - 1)))) + 1] = 1.
+            output[input_left, input_right, ((((input_left - 1) & ((1 << number_of_bits_from_left) - 1)) << number_of_bits_from_right)|
+                ((((input_right - 1) >> number_of_bits_from_left) & ((1 << number_of_bits_from_right) - 1)))) + 1] = 1.
         end
     end
     return output
@@ -299,25 +300,6 @@ function chacha_factor_graph!(variables::Dict{String, Variable},
     # set in the standard
 end
 
-function set_variable_to_value(variables::Dict{String, Variable},
-    factors::Dict{String, Factor},
-    variable_name_with_version::String,
-    value::UInt32,
-    number_of_bits_per_cluster::Int64
-    )
-    number_of_clusters = Int64(ceil(32 / number_of_bits_per_cluster))
-    for i in 1:number_of_clusters
-        cur_var_name = string(variable_name_with_version, "_", i)
-        cur_dist_name = string("f_", cur_var_name, "_dist")
-        dist_table = zeros(1 << number_of_bits_per_cluster)
-        # Calculate what value these bits should have
-        cur_cluster_value = (value & (((1 << number_of_bits_per_cluster) - 1)) << (number_of_bits_per_cluster * (i - 1))) >> (number_of_bits_per_cluster * (i - 1))
-        dist_table[cur_cluster_value + 1] = 1.
-        factors[cur_dist_name] = Factor(cur_dist_name, LabelledArray(dist_table, [cur_var_name]))
-        add_edge_between(variables[cur_var_name], factors[cur_dist_name])
-    end
-end
-
 function add_starting_constant_values(variables::Dict{String, Variable},
     factors::Dict{String, Factor},
     number_of_bits_per_cluster::Int64)
@@ -327,16 +309,16 @@ function add_starting_constant_values(variables::Dict{String, Variable},
     set_variable_to_value(variables, factors, "4_0", 0x6b206574, number_of_bits_per_cluster)
 end
 
-number_of_bits = 2
-variables = Dict{String, Variable}()
-factors = Dict{String, Factor}()
-chacha_factor_graph!(variables, factors, number_of_bits)
-add_starting_constant_values(variables, factors, number_of_bits)
+# number_of_bits = 2
+# variables = Dict{String, Variable}()
+# factors = Dict{String, Factor}()
+# chacha_factor_graph!(variables, factors, number_of_bits)
+# add_starting_constant_values(variables, factors, number_of_bits)
 
-for (i,j) in factors
-    factor_to_variable_messages(j)
-end
+# for (i,j) in factors
+#     factor_to_variable_messages(j)
+# end
 
-for (i,j) in variables
-    variable_to_factor_messages(j)
-end
+# for (i,j) in variables
+#     variable_to_factor_messages(j)
+# end
