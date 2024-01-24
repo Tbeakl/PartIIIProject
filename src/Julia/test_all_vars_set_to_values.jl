@@ -11,7 +11,10 @@ function all_zeros_single_bit_clusters()
     number_of_bits = 1
     variables = Dict{String, Variable}()
     factors = Dict{String, Factor}()
-    chacha_factor_graph!(variables, factors, number_of_bits)
+    variables_by_round::Vector{Set{String}} = []
+    factors_by_round::Vector{Set{String}} = []
+    adds_by_round::Vector{Vector{Int64}} = []
+    chacha_factor_graph!(variables, factors, number_of_bits, variables_by_round, factors_by_round, adds_by_round)
     add_starting_constant_values(variables, factors, number_of_bits)
     add_distribution_of_initial_values(variables, factors, number_of_bits, key, nonce, counter)
     add_trace_to_factor_graph(encryption_trace, variables, factors, number_of_bits)
@@ -52,7 +55,10 @@ function all_zeros_2_bit_clusters()
     number_of_bits = 2
     variables = Dict{String, Variable}()
     factors = Dict{String, Factor}()
-    chacha_factor_graph!(variables, factors, number_of_bits)
+    variables_by_round::Vector{Set{String}} = []
+    factors_by_round::Vector{Set{String}} = []    
+    adds_by_round::Vector{Vector{Int64}} = []
+    chacha_factor_graph!(variables, factors, number_of_bits, variables_by_round, factors_by_round, adds_by_round)
     add_starting_constant_values(variables, factors, number_of_bits)
     add_distribution_of_initial_values(variables, factors, number_of_bits, key, nonce, counter)
     add_trace_to_factor_graph(encryption_trace, variables, factors, number_of_bits)
@@ -93,7 +99,10 @@ function all_zeros_4_bit_clusters()
     number_of_bits = 4
     variables = Dict{String, Variable}()
     factors = Dict{String, Factor}()
-    chacha_factor_graph!(variables, factors, number_of_bits)
+    variables_by_round::Vector{Set{String}} = []
+    factors_by_round::Vector{Set{String}} = []
+    adds_by_round::Vector{Vector{Int64}} = []
+    chacha_factor_graph!(variables, factors, number_of_bits, variables_by_round, factors_by_round, adds_by_round)
     add_starting_constant_values(variables, factors, number_of_bits)
     add_distribution_of_initial_values(variables, factors, number_of_bits, key, nonce, counter)
     add_trace_to_factor_graph(encryption_trace, variables, factors, number_of_bits)

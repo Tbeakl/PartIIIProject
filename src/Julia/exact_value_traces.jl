@@ -1,6 +1,7 @@
 using CryptoSideChannel
 include("chacha.jl")
 include("messages.jl")
+include("chacha_factor_graph.jl")
 
 function encrypt_collect_trace_full_values(key::Vector{UInt32}, nonce::Vector{UInt32}, counter::UInt32)
     global trace
@@ -14,19 +15,6 @@ function encrypt_collect_trace_full_values(key::Vector{UInt32}, nonce::Vector{UI
     encrypt(key_logging, nonce_logging, counter_logging)
 
     return copy(trace)
-end
-
-function add_distribution_of_initial_values(variables::Dict{String, Variable},
-    factors::Dict{String, Factor},
-    number_of_bits_per_cluster::Int64,
-    key::Vector{UInt32}, nonce::Vector{UInt32}, counter::UInt32)
-    for i in 1:8
-        set_variable_to_value(variables, factors, string(i + 4, "_0"), key[i], number_of_bits_per_cluster)
-    end
-    set_variable_to_value(variables, factors, "13_0", counter, number_of_bits_per_cluster)
-    for i in 1:3
-        set_variable_to_value(variables, factors, string(i + 13, "_0"), nonce[i], number_of_bits_per_cluster)
-    end
 end
 
 function add_value_from_position_in_trace(trace::Vector{Any},

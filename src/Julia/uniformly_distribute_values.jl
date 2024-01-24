@@ -1,4 +1,5 @@
 include("messages.jl")
+include("chacha_factor_graph.jl")
 
 function add_uniform_dist_of_vars(variables::Dict{String, Variable},
     factors::Dict{String, Factor},
@@ -27,7 +28,10 @@ end
 bits_per_cluster = 2
 variables = Dict{String, Variable}()
 factors = Dict{String, Factor}()
-chacha_factor_graph!(variables, factors, bits_per_cluster)
+variables_by_round::Vector{Set{String}} = []
+factors_by_round::Vector{Set{String}} = []
+adds_by_round::Vector{Vector{Int64}} = []
+chacha_factor_graph!(variables, factors, bits_per_cluster, variables_by_round, factors_by_round, adds_by_round)
 add_uniform_dist_of_vars(variables, factors, bits_per_cluster)
 
 for (i,j) in factors
