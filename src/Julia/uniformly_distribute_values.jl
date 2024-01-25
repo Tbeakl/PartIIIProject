@@ -31,19 +31,20 @@ factors = Dict{String, Factor}()
 variables_by_round::Vector{Set{String}} = []
 factors_by_round::Vector{Set{String}} = []
 adds_by_round::Vector{Vector{Int64}} = []
-chacha_factor_graph!(variables, factors, bits_per_cluster, variables_by_round, factors_by_round, adds_by_round)
+location_execution_counts = zeros(Int64, 16)
+chacha_factor_graph!(variables, factors, bits_per_cluster, variables_by_round, factors_by_round, adds_by_round, location_execution_counts)
 add_uniform_dist_of_vars(variables, factors, bits_per_cluster)
 
 for (i,j) in factors
     factor_to_variable_messages(j)
 end
-
-for exec_count in 1:32
-    println(exec_count)
+println("Initial entropy ", total_entropy_of_graph(variables))
+for exec_count in 1:30
     for (i,j) in variables
         variable_to_factor_messages(j)
     end
     for (i,j) in factors
         factor_to_variable_messages(j)
     end
+    println("Entropy after ", exec_count, " passes ", total_entropy_of_graph(variables))
 end

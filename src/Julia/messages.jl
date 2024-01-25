@@ -1,3 +1,4 @@
+using NaNMath
 include("node.jl")
 
 function tile_to_shape_along_axis(arr::Float64, target_shape::Tuple, target_axis::Int64)
@@ -140,4 +141,13 @@ function read_most_likely_value_from_variable(variables::Dict{String, Variable},
         value += (findmax(dist)[2] - 1) << (number_of_bits_per_cluster * (i - 1))
     end
     return value
+end
+
+function total_entropy_of_graph(variables::Dict{String, Variable})
+    tot_ent = 0.
+    for (i,j) in variables
+        prob_dist = marginal(j)
+        tot_ent -= NaNMath.sum(prob_dist .* log2.(prob_dist))
+    end
+    return tot_ent
 end

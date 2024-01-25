@@ -2,3 +2,4 @@
 CryptoSideChannel = "5125bf15-d1e5-4048-9f9a-1009b1b43be4"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 Jlsca = "dcc1f4ae-7dba-11e8-3b6a-0976b94e0e7a"
+NaNMath = "77ba4419-2d1f-58cd-9bb1-8ffee604a2e3"
