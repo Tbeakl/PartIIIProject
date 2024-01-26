@@ -98,7 +98,7 @@ function marginal(variable::Variable)
         end
     end
     total_unorm_p = sum(unnorm_p)
-    return total_unorm_p > 0 ? unnorm_p ./ total_unorm_p : 0.
+    return total_unorm_p > 0 ? unnorm_p ./ total_unorm_p : unnorm_p
 end
 
 function add_edge_between(variable::Variable, factor::Factor)

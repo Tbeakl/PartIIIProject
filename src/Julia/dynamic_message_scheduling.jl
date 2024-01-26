@@ -18,8 +18,8 @@ end
 
 function update_variable_priority(variable::Variable,
     priority_queue::PriorityQueue{String, Float64})
-
-    new_entropy = calculate_entropy(marginal(variable)) 
+    prob_dist = marginal(variable)
+    new_entropy = calculate_entropy(prob_dist) 
     if isnan(variable.previous_entropy) && isnan(new_entropy)
         priority_queue[variable.name] = 0.
     elseif isnan(new_entropy)
