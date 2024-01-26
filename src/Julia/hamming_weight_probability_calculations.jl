@@ -46,7 +46,7 @@ end
 function make_prob_distribution_from_hamming_likelihoods(likelihoods_of_hamming_values::Vector{Float64}, table_of_hamming_values::Matrix{Bool}, number_of_bits::Int64)
     prob_distribution = zeros(1 << number_of_bits)
     for i in 1:(number_of_bits + 1)
-        prob_distribution[table_for_hamming_values[i, :]] = likelihoods_of_hamming_values[i]
+        prob_distribution[table_of_hamming_values[i, :]] .= likelihoods_of_hamming_values[i]
     end
     return prob_distribution ./ sum(prob_distribution)
 end

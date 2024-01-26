@@ -41,33 +41,38 @@ function other_axes_from_labeled_axes(labelled_array::LabelledArray, axis_label:
     return Tuple([i for i in 1:length(labelled_array.axes_labels) if labelled_array.axes_labels[i] != axis_label])
 end
 
+damping_factor = 1.
+
 function variable_to_factor_messages(variable::Variable)
     # This needs to update the messsages in the factors from this variable
     for i in 1:length(variable.neighbours)
-        # The i message needs to be excluded from the calculation
-        new_message = ones(size(variable.incoming_messages[variable.neighbours[i].name]))
-        for (key, incoming_message) in variable.incoming_messages
-            if key != variable.neighbours[i].name
-                new_message = new_message .* incoming_message
+        if !occursin("dist", variable.neighbours[i].name)
+            # The i message needs to be excluded from the calculation
+            new_message = ones(size(variable.incoming_messages[variable.neighbours[i].name]))
+            for (key, incoming_message) in variable.incoming_messages
+                if key != variable.neighbours[i].name
+                    new_message = new_message .* incoming_message
+                end
             end
+            variable.neighbours[i].incoming_messages[variable.name] = new_message#damping_factor * new_message .+ (1 - damping_factor) * variable.neighbours[i].incoming_messages[variable.name]
         end
-        variable.neighbours[i].incoming_messages[variable.name] = new_message
     end
 end
 
 function factor_to_variable_messages(factor::Factor)
     # This needs to update all the incoming messages of the connected variables
+    neighbour_variable_names = [var.name for var in factor.neighbours]
+    incoming_messages = [factor.incoming_messages[neighbour_name] for neighbour_name in neighbour_variable_names]
+    tiled_incoming_messages = [tile_to_other_dist_along_axis_name(LabelledArray(incoming_messages[i], [neighbour_variable_names[i]]), factor.data).array for i in 1:length(factor.neighbours)]
+    
     for i in 1:length(factor.neighbours)
         factor_dist = copy(factor.data.array)
-        neighbour_variable_names = [var.name for var in factor.neighbours if var.name != factor.neighbours[i].name]
-        incoming_messages = [factor.incoming_messages[neighbour_name] for neighbour_name in neighbour_variable_names]
         # println(neighbour_variable_names)
         # println(length(incoming_messages))
         for j in 1:length(neighbour_variable_names)
-            # println(j)
-            # println(incoming_messages[j])
-            tiled_result = tile_to_other_dist_along_axis_name(LabelledArray(incoming_messages[j], [neighbour_variable_names[j]]), factor.data).array
-            factor_dist = factor_dist .* tiled_result
+            if i != j
+                factor_dist = factor_dist .* tiled_incoming_messages[j]
+            end
         end
         other_axes = other_axes_from_labeled_axes(factor.data, factor.neighbours[i].name)
         value_to_squeeze = factor_dist
@@ -84,7 +89,11 @@ function factor_to_variable_messages(factor::Factor)
         if message_out_sum <= 0
             println(factor.name)
         end
-        factor.neighbours[i].incoming_messages[factor.name] = message_out
+        if length(factor.neighbours[i].incoming_messages[factor.name]) != length(message_out)
+            factor.neighbours[i].incoming_messages[factor.name] = message_out
+        else
+            factor.neighbours[i].incoming_messages[factor.name] = message_out# damping_factor * message_out .+ (1 - damping_factor) * factor.neighbours[i].incoming_messages[factor.name]
+        end
     end
 end
 

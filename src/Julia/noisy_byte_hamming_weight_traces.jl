@@ -40,6 +40,28 @@ function encrypt_collect_trace(key::Vector{UInt32}, nonce::Vector{UInt32}, count
     return copy(trace)
 end
 
+function add_dist_to_variable(values,
+    variables::Dict{String, Variable},
+    factors::Dict{String, Factor},
+    bits_per_cluster::Int64,
+    variable_and_count::String,
+    hamming_position_table::Matrix{Bool},
+    standard_deviation::Float64
+    )
+    
+    clusters_per_leakage_weight = Int64(ceil(8 / bits_per_cluster))
+    for i in 1:length(trace[position_in_trace])
+        hamming_value_likelihoods = likelihoods_of_hamming_values(standard_deviation, 8, bits_per_cluster, values[i])
+        prob_dist_for_cluster = make_prob_distribution_from_hamming_likelihoods(hamming_value_likelihoods, hamming_position_table, bits_per_cluster)
+        for j in 1:clusters_per_leakage_weight
+            cur_var_name = string(variable_and_count, "_", (i - 1) * clusters_per_leakage_weight + j)
+            cur_dist_name = string("f_", cur_var_name, "_dist")
+            factors[cur_dist_name] = Factor(cur_dist_name, LabelledArray(prob_dist_for_cluster, [cur_var_name]))
+            add_edge_between(variables[cur_var_name], factors[cur_dist_name])
+        end
+    end
+end
+
 # Currently need the clusters to fall exactly along with the leakages
 function add_distribution_from_position_in_trace(trace::Vector{Any},
     variables::Dict{String, Variable},
@@ -52,18 +74,7 @@ function add_distribution_from_position_in_trace(trace::Vector{Any},
     )
     global position_in_trace
     
-    clusters_per_leakage_weight = Int64(ceil(8 / bits_per_cluster))
-    for i in 1:length(trace[position_in_trace])
-        hamming_value_likelihoods = likelihoods_of_hamming_values(standard_deviation, 8, bits_per_cluster, trace[position_in_trace][i])
-        prob_dist_for_cluster = make_prob_distribution_from_hamming_likelihoods(hamming_value_likelihoods, hamming_position_table, bits_per_cluster)
-        for j in 1:clusters_per_leakage_weight
-            cur_var_name = string(variable, "_", location_execution_counts[variable], "_", (i - 1) * clusters_per_leakage_weight + j)
-            cur_dist_name = string("f_", cur_var_name, "_dist")
-            factors[cur_dist_name] = Factor(cur_dist_name, LabelledArray(prob_dist_for_cluster, [cur_var_name]))
-            add_edge_between(variables[cur_var_name], factors[cur_dist_name])
-        end
-    end
-    
+    add_dist_to_variable(trace[position_in_trace], variables, factors, bits_per_cluster, string(variable, "_", location_execution_counts[variable]), hamming_position_table, standard_deviation)
     # Need to pay attention to how to deal with rotations
     position_in_trace += 1
     location_execution_counts[variable] += 1
@@ -139,6 +150,18 @@ function add_trace_to_factor_graph(trace::Vector{Any},
     end
     # Need to have another part for setting the values to be exactly what they were in the output of the function because
     # we assume that we have access to those actual values compared to just their leakage values
+end
+
+function add_initial_key_dist(variables::Dict{String, Variable},
+    factors::Dict{String, Factor},
+    bits_per_cluster::Int64,
+    key::Vector{UInt32},
+    standard_deviation::Float64)
+    noise_around_means = rand(noise_distribution(1), 8)
+    hamming_position_table = table_for_hamming_values(bits_per_cluster)
+    for i in 1:8
+        add_dist_to_variable(noise_around_means[:, i] .+ mean_vector_for_value(key[i]), variables, factors, bits_per_cluster, string(i + 4, "_", 0), hamming_position_table, standard_deviation)
+    end
 end
 
 # How the full trace (1616) is broken down

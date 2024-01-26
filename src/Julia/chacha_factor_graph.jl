@@ -369,6 +369,16 @@ function add_distribution_of_initial_values(variables::Dict{String, Variable},
     end
 end
 
+function add_values_of_initial_nonce_and_counter(variables::Dict{String, Variable},
+    factors::Dict{String, Factor},
+    number_of_bits_per_cluster::Int64,
+    nonce::Vector{UInt32}, counter::UInt32)
+    set_variable_to_value(variables, factors, "13_0", counter, number_of_bits_per_cluster)
+    for i in 1:3
+        set_variable_to_value(variables, factors, string(i + 13, "_0"), nonce[i], number_of_bits_per_cluster)
+    end
+end
+
 function belief_propagate_through_add(variables::Dict{String, Variable},
     factors::Dict{String, Factor},
     bits_per_cluster::Int64,
