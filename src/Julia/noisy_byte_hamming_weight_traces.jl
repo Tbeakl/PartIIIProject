@@ -4,8 +4,6 @@ include("chacha.jl")
 include("node.jl")
 include("hamming_weight_probability_calculations.jl")
 
-σ = 0.1
-
 function mean_vector_for_value(value)
     output = zeros(Float64, 4)
     output[1] = Base.count_ones(value & 0xFF)
@@ -16,24 +14,25 @@ function mean_vector_for_value(value)
 end
 
 
-function noise_distribution(x)
+function noise_distribution(x, standard_deviation)
+    variance = standard_deviation * standard_deviation
     mean = [0.0, 0.0, 0.0, 0.0]
-    C = [σ 0.0 0.0 0.0;
-        0.0 σ 0.0 0.0;
-        0.0 0.0 σ 0.0;
-        0.0 0.0 0.0 σ]
+    C = [variance 0.0 0.0 0.0;
+        0.0 variance 0.0 0.0;
+        0.0 0.0 variance 0.0;
+        0.0 0.0 0.0 variance]
 
     return MvNormal(mean, C)
 end
 
-function encrypt_collect_trace(key::Vector{UInt32}, nonce::Vector{UInt32}, counter::UInt32)
+function encrypt_collect_trace(key::Vector{UInt32}, nonce::Vector{UInt32}, counter::UInt32, standard_deviation::Float64)
     global trace
     trace = []
     closure = () -> trace
-
-    key_logging = map(x -> Logging.StochasticLog(x, closure, mean_vector_for_value, noise_distribution), key)
-    nonce_logging = map(x -> Logging.StochasticLog(x, closure, mean_vector_for_value, noise_distribution), nonce)
-    counter_logging = Logging.StochasticLog(counter, closure, mean_vector_for_value, noise_distribution)
+    noise_function(x) = noise_distribution(x, standard_deviation)
+    key_logging = map(x -> Logging.StochasticLog(x, closure, mean_vector_for_value, noise_function), key)
+    nonce_logging = map(x -> Logging.StochasticLog(x, closure, mean_vector_for_value, noise_function), nonce)
+    counter_logging = Logging.StochasticLog(counter, closure, mean_vector_for_value, noise_function)
 
     encrypt(key_logging, nonce_logging, counter_logging)
 
@@ -50,7 +49,7 @@ function add_dist_to_variable(values,
     )
     
     clusters_per_leakage_weight = Int64(ceil(8 / bits_per_cluster))
-    for i in 1:length(trace[position_in_trace])
+    for i in 1:length(values)
         hamming_value_likelihoods = likelihoods_of_hamming_values(standard_deviation, 8, bits_per_cluster, values[i])
         prob_dist_for_cluster = make_prob_distribution_from_hamming_likelihoods(hamming_value_likelihoods, hamming_position_table, bits_per_cluster)
         for j in 1:clusters_per_leakage_weight

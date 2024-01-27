@@ -54,7 +54,7 @@ function variable_to_factor_messages(variable::Variable)
                     new_message = new_message .* incoming_message
                 end
             end
-            variable.neighbours[i].incoming_messages[variable.name] = new_message#damping_factor * new_message .+ (1 - damping_factor) * variable.neighbours[i].incoming_messages[variable.name]
+            variable.neighbours[i].incoming_messages[variable.name] = damping_factor * new_message .+ (1 - damping_factor) * variable.neighbours[i].incoming_messages[variable.name]
         end
     end
 end
@@ -92,7 +92,7 @@ function factor_to_variable_messages(factor::Factor)
         if length(factor.neighbours[i].incoming_messages[factor.name]) != length(message_out)
             factor.neighbours[i].incoming_messages[factor.name] = message_out
         else
-            factor.neighbours[i].incoming_messages[factor.name] = message_out# damping_factor * message_out .+ (1 - damping_factor) * factor.neighbours[i].incoming_messages[factor.name]
+            factor.neighbours[i].incoming_messages[factor.name] = damping_factor * message_out .+ (1 - damping_factor) * factor.neighbours[i].incoming_messages[factor.name]
         end
     end
 end

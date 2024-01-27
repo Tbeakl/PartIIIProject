@@ -35,9 +35,8 @@ function variable_to_factor_messages_dynamic_scheduling(variables::Dict{String, 
     variables[variable_name_to_update].previous_entropy = calculate_entropy(marginal(variables[variable_name_to_update]))
     
     variable_to_factor_messages(variables[variable_name_to_update])
-    for factor in variables[variable_name_to_update].neighbours
-        factor_to_variable_messages(factor)
-    end
+    
+    factor_to_variable_messages.(variables[variable_name_to_update].neighbours)
     # Update all the priorities to be the current amount of change in entropy since the last update
     for var_name_to_update_change in variables[variable_name_to_update].variables_two_away
         update_variable_priority(variables[var_name_to_update_change], priority_queue)
