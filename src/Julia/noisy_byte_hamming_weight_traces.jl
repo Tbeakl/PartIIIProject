@@ -57,6 +57,7 @@ function add_dist_to_variable(values,
             cur_dist_name = string("f_", cur_var_name, "_dist")
             factors[cur_dist_name] = Factor(cur_dist_name, LabelledArray(prob_dist_for_cluster, [cur_var_name]))
             add_edge_between(variables[cur_var_name], factors[cur_dist_name])
+            variables[cur_var_name].neighbour_index_to_avoid = length(variables[cur_var_name].neighbours)
         end
     end
 end
@@ -156,7 +157,7 @@ function add_initial_key_dist(variables::Dict{String, Variable},
     bits_per_cluster::Int64,
     key::Vector{UInt32},
     standard_deviation::Float64)
-    noise_around_means = rand(noise_distribution(1), 8)
+    noise_around_means = rand(noise_distribution(1, standard_deviation), 8)
     hamming_position_table = table_for_hamming_values(bits_per_cluster)
     for i in 1:8
         add_dist_to_variable(noise_around_means[:, i] .+ mean_vector_for_value(key[i]), variables, factors, bits_per_cluster, string(i + 4, "_", 0), hamming_position_table, standard_deviation)

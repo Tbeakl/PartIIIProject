@@ -95,7 +95,7 @@ function bit_rotation_factor_graph!(variables::Dict{String, Variable},
         push!(round_variables, output_variable_name)
         push!(round_factors, factor_name)
         
-        variables[output_variable_name] = Variable(output_variable_name)
+        variables[output_variable_name] = Variable(output_variable_name, number_of_bits_per_cluster)
         factors[factor_name] = Factor(factor_name, LabelledArray(rotation_cluster_prob_table, [further_left_variable_name, further_right_variable_name, output_variable_name]))
         add_edge_between(variables[further_left_variable_name], factors[factor_name])
         add_edge_between(variables[further_right_variable_name], factors[factor_name])
@@ -133,7 +133,7 @@ function xor_with_cluster_shift_factor_graph!(variables::Dict{String, Variable},
         
         factors[cur_factor_name] = Factor(cur_factor_name, LabelledArray(xor_cluster_prob_table,
         [input_a_name, input_b_name, output_name]))
-        variables[output_name] = Variable(output_name)
+        variables[output_name] = Variable(output_name, number_of_bits_per_cluster)
 
         # Add the connections between the variables and the factor
         add_edge_between(variables[input_a_name], factors[cur_factor_name])
@@ -166,7 +166,7 @@ function add_factor_graph!(variables::Dict{String, Variable},
     # Could technically make this shared across all the adds but initially for simplicity
     # each will have a seperate one
     initial_carry_var_name = string("add_", number_of_operations["add"], "_carry_0")
-    variables[initial_carry_var_name] = Variable(initial_carry_var_name)
+    variables[initial_carry_var_name] = Variable(initial_carry_var_name, 1)
     factors["f_" * initial_carry_var_name * "_dist"] = Factor("f_" * initial_carry_var_name * "_dist",
         LabelledArray([
             1.
@@ -196,9 +196,9 @@ function add_factor_graph!(variables::Dict{String, Variable},
         push!(round_factors, add_carry_out_factor_name)
         push!(round_factors, add_output_factor_name)
 
-        variables[carry_out_variable_name] = Variable(carry_out_variable_name)
-        variables[output_name] = Variable(output_name)
-        variables[full_add_output_name] = Variable(full_add_output_name)
+        variables[carry_out_variable_name] = Variable(carry_out_variable_name, 1)
+        variables[output_name] = Variable(output_name, number_of_bits_per_cluster)
+        variables[full_add_output_name] = Variable(full_add_output_name, number_of_bits_per_cluster + 1)
 
         factors[full_add_factor_name] = Factor(full_add_factor_name, LabelledArray(full_add_dist, [carry_in_variable_name, input_a_name, input_b_name, full_add_output_name]))
         factors[add_carry_out_factor_name] = Factor(add_carry_out_factor_name, LabelledArray(add_full_to_carry, [full_add_output_name, carry_out_variable_name]))
@@ -291,7 +291,7 @@ function chacha_factor_graph!(variables::Dict{String, Variable},
     # Initially add the opening variables
     for i in 1:16
         for j in 1:number_of_clusters
-            variables[string(i, "_0_", j)] = Variable(string(i, "_0_", j))
+            variables[string(i, "_0_", j)] = Variable(string(i, "_0_", j), number_of_bits_per_cluster)
         end
     end
 
@@ -386,9 +386,8 @@ function belief_propagate_through_add(variables::Dict{String, Variable},
     
     number_of_clusters = Int64(ceil(32 / bits_per_cluster))
     does_not_contain_add(x::String) = !occursin("add", x)
-    
-    inputs = filter(does_not_contain_add, keys(factors[string("f_add_", add_number, "_1")].incoming_messages))
-    output = filter(does_not_contain_add, keys(factors[string("f_add_output_", add_number, "_1")].incoming_messages))
+    inputs = filter(does_not_contain_add, [variable.name for variable in factors[string("f_add_", add_number, "_1")].neighbours])
+    output = filter(does_not_contain_add, [variable.name for variable in factors[string("f_add_output_", add_number, "_1")].neighbours])
     # Initially pass messages from all of the inputs
     for i in 1:number_of_clusters
         for cur_input in inputs

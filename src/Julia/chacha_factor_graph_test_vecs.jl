@@ -1,4 +1,6 @@
 using Test
+include("node.jl")
+include("messages.jl")
 include("chacha_factor_graph.jl")
 
 function belief_propogate_through_graph(variables::Dict{String, Variable},
@@ -47,7 +49,7 @@ function test_quarter_round()
     factors = Dict{String, Factor}()
     for i in 1:16
         for j in 1:number_of_clusters
-            variables[string(i, "_0_", j)] = Variable(string(i, "_0_", j))
+            variables[string(i, "_0_", j)] = Variable(string(i, "_0_", j), bits_per_cluster)
         end
         set_variable_to_value(variables, factors, string(i, "_0"), initial_state[i], bits_per_cluster)
     end
@@ -59,17 +61,19 @@ function test_quarter_round()
     "add_full_to_carry_cluster" => take_top_bit_prob_array(bits_per_cluster + 1)
     )
 
+    
     for j in [16, 12, 8, 7]
         if j % bits_per_cluster != 0
             precalculated_prob_tables[string("rotation_cluster_", j % bits_per_cluster)] = make_rotation_prob_table(bits_per_cluster, j % bits_per_cluster)
         end
     end
-
+    
     round_variables = Set{String}()
     round_factors = Set{String}()
     chacha_quarter_round_factor_graph!(variables, factors, 3, 8, 9, 14, bits_per_cluster, location_execution_counts, number_of_operations, precalculated_prob_tables,
     round_variables, round_factors)
-
+    
+    println("Total number of nodes for one quarter round ", length(variables) + length(factors))
     # Iterate the message passing lots of times to pass data through the graph to hopefully have coverged to the correct values
     for iteration in 1:40
         println(iteration)

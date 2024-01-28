@@ -54,7 +54,11 @@ end
 for (fact_name, factor) in factors
     factor_to_variable_messages(factor)
 end
-println(total_entropy_of_graph(variables))
+
+tot_entropy_over_time::Vector{Float64} = []
+push!(tot_entropy_over_time, total_entropy_of_graph(variables))
+println(tot_entropy_over_time[end])
+
 for i in 1:200
     println(i)
     for var in internal_variables
@@ -63,14 +67,18 @@ for i in 1:200
     for fact in internal_factors
         factor_to_variable_messages(factors[fact])
     end
-    println(total_entropy_of_graph(variables))
+    push!(tot_entropy_over_time, total_entropy_of_graph(variables))
+    println(tot_entropy_over_time[end])
+    if tot_entropy_over_time[end] < 1e-3
+        break
+    end
 end
 
 for i in 1:8
     println(string(read_most_likely_value_from_variable(variables, string(i + 4, "_0"), number_of_bits), base=16))
 end
 
-
+plot(tot_entropy_over_time)
 # I think there is a mistake in the way that the key is put into the factor graph because with reduced noise levels it all goes to zeros
 # therefore will look at implementing a simple none noisy version of the calculations and adding of information because that should definitely
 # not go too all zeros, because it could be some problem with the way the noise is incorporated into the calculations

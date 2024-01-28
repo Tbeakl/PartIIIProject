@@ -12,7 +12,7 @@ function test_quarter_round()
     factors = Dict{String, Factor}()
     for i in 1:16
         for j in 1:number_of_clusters
-            variables[string(i, "_0_", j)] = Variable(string(i, "_0_", j))
+            variables[string(i, "_0_", j)] = Variable(string(i, "_0_", j), bits_per_cluster)
         end
         set_variable_to_value(variables, factors, string(i, "_0"), initial_state[i], bits_per_cluster)
     end

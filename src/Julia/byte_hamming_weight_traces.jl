@@ -45,6 +45,7 @@ function add_dist_to_variable(values,
             cur_dist_name = string("f_", cur_var_name, "_dist")
             factors[cur_dist_name] = Factor(cur_dist_name, LabelledArray(prob_dist_for_cluster, [cur_var_name]))
             add_edge_between(variables[cur_var_name], factors[cur_dist_name])
+            variables[cur_var_name].neighbour_index_to_avoid = length(variables[cur_var_name].neighbours)
         end
     end
 end

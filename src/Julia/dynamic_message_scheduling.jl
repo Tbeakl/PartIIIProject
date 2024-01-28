@@ -10,7 +10,7 @@ function populate_with_variables_two_away(variables::Dict{String, Variable})
     for (var_name, variable) in variables
         all_vars_two_away = Set{String}()
         for factor in variable.neighbours
-            union!(all_vars_two_away, keys(factor.incoming_messages))
+            union!(all_vars_two_away, [var.name for var in factor.neighbours])
         end
         variable.variables_two_away = all_vars_two_away
     end

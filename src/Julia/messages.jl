@@ -12,7 +12,9 @@ function tile_to_shape_along_axis(arr::Vector{Float64}, target_shape::Tuple, tar
     # println(target_shape)
     # println("target_axis")
     # println(target_axis)
-    if length(arr) == target_shape[target_axis]
+    if length(arr) == 1
+        return fill(arr[1], target_shape)
+    elseif length(arr) == target_shape[target_axis]
         repeating_shape = [i for i in target_shape]
         repeating_shape[target_axis] = 1
         arr_shape = ones(Int64, length(target_shape))
@@ -38,74 +40,51 @@ function tile_to_other_dist_along_axis_name(tiling_labeled_array::LabelledArray,
 end
 
 function other_axes_from_labeled_axes(labelled_array::LabelledArray, axis_label::String)
-    return Tuple([i for i in 1:length(labelled_array.axes_labels) if labelled_array.axes_labels[i] != axis_label])
+    return [i for i in 1:length(labelled_array.axes_labels) if labelled_array.axes_labels[i] != axis_label]
 end
 
 damping_factor = 1.
 
 function variable_to_factor_messages(variable::Variable)
     # This needs to update the messsages in the factors from this variable
-    for i in 1:length(variable.neighbours)
-        if !occursin("dist", variable.neighbours[i].name)
+    neighbours_to_include = ones(Bool, size(variable.incoming_messages)[1])
+    for (i, neighbour) in enumerate(variable.neighbours)
+        if i != variable.neighbour_index_to_avoid
             # The i message needs to be excluded from the calculation
-            new_message = ones(size(variable.incoming_messages[variable.neighbours[i].name]))
-            for (key, incoming_message) in variable.incoming_messages
-                if key != variable.neighbours[i].name
-                    new_message = new_message .* incoming_message
-                end
-            end
-            variable.neighbours[i].incoming_messages[variable.name] = damping_factor * new_message .+ (1 - damping_factor) * variable.neighbours[i].incoming_messages[variable.name]
+            neighbours_to_include[i] = false
+            new_message = prod(variable.incoming_messages[neighbours_to_include, :], dims=1)[1, :]
+            # Here normalise the output to be a prob dist.
+            new_message ./= sum(new_message)
+            neighbour.incoming_messages[variable.index_in_neighbours_neighbour[i]] = new_message #damping_factor * new_message .+ (1 - damping_factor) * neighbour.incoming_messages[variable.index_in_neighbours_neighbour[i]]
+            neighbours_to_include[i] = true
         end
     end
 end
 
 function factor_to_variable_messages(factor::Factor)
     # This needs to update all the incoming messages of the connected variables
-    neighbour_variable_names = [var.name for var in factor.neighbours]
-    incoming_messages = [factor.incoming_messages[neighbour_name] for neighbour_name in neighbour_variable_names]
-    tiled_incoming_messages = [tile_to_other_dist_along_axis_name(LabelledArray(incoming_messages[i], [neighbour_variable_names[i]]), factor.data).array for i in 1:length(factor.neighbours)]
-    
-    for i in 1:length(factor.neighbours)
+    tiled_incoming_messages = [tile_to_other_dist_along_axis_name(LabelledArray(factor.incoming_messages[i], [neighbour.name]), factor.data).array for (i, neighbour) in enumerate(factor.neighbours)]
+    for (i, neighbour) in enumerate(factor.neighbours)
         factor_dist = copy(factor.data.array)
-        # println(neighbour_variable_names)
-        # println(length(incoming_messages))
-        for j in 1:length(neighbour_variable_names)
+        for (j, tiled_incoming_message) in enumerate(tiled_incoming_messages)
             if i != j
-                factor_dist = factor_dist .* tiled_incoming_messages[j]
+                factor_dist .*= tiled_incoming_messages[j]
             end
         end
         other_axes = other_axes_from_labeled_axes(factor.data, factor.neighbours[i].name)
-        value_to_squeeze = factor_dist
-        for axis in other_axes
-            value_to_squeeze = sum(value_to_squeeze, dims=axis)
-        end
-        # Normalise the message, this should hopefully stop values spinning off to infinity but I am not entirely sure if it is valid
-        # Haven't done this on the variable to factor messages but this should hopefully be enough to keep it first_number_cluster_shifts
-        # it might also be better to have it work by dividing by a power of 2 near the value so that the division does not really need to be done
-        # because that would allow it to stay still contained
-        message_out = dropdims(value_to_squeeze; dims=Tuple(findall(size(value_to_squeeze) .== 1)))
-        message_out_sum = sum(message_out)
-        message_out = message_out_sum > 0 ? message_out ./ message_out_sum : message_out
-        if message_out_sum <= 0
-            println(factor.name)
-        end
-        if length(factor.neighbours[i].incoming_messages[factor.name]) != length(message_out)
-            factor.neighbours[i].incoming_messages[factor.name] = message_out
-        else
-            factor.neighbours[i].incoming_messages[factor.name] = damping_factor * message_out .+ (1 - damping_factor) * factor.neighbours[i].incoming_messages[factor.name]
-        end
+        value_to_squeeze = sum(factor_dist; dims=other_axes)
+        message_out = dropdims(value_to_squeeze; dims=Tuple(other_axes))
+        neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] = message_out
+        # if length(neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i]]) != length(message_out)
+        #     neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i]] = message_out
+        # else
+        #     neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i]] = damping_factor * message_out .+ (1 - damping_factor) * neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i]]
+        # end
     end
 end
 
 function marginal(variable::Variable)
-    unnorm_p = :nothing
-    for (key, val) in variable.incoming_messages
-        if unnorm_p == :nothing
-            unnorm_p = val
-        else
-            unnorm_p = unnorm_p .* val
-        end
-    end
+    unnorm_p = prod(variable.incoming_messages, dims=1)[1,:]
     total_unorm_p = sum(unnorm_p)
     return total_unorm_p > 0 ? unnorm_p ./ total_unorm_p : unnorm_p
 end
@@ -113,8 +92,13 @@ end
 function add_edge_between(variable::Variable, factor::Factor)
     push!(variable.neighbours, factor)
     push!(factor.neighbours, variable)
-    factor.incoming_messages[variable.name] = 1.
-    variable.incoming_messages[factor.name] = 1.
+    
+    push!(factor.incoming_messages, [1.])
+    variable.incoming_messages = ones(size(variable.incoming_messages)[1] + 1, 1 << variable.number_of_bits) ./ 1 << variable.number_of_bits
+    # push!(variable.incoming_messages, [1.])
+    
+    push!(factor.index_in_neighbours_neighbour, length(variable.neighbours))
+    push!(variable.index_in_neighbours_neighbour, length(factor.neighbours))
 end
 
 
@@ -134,6 +118,7 @@ function set_variable_to_value(variables::Dict{String, Variable},
         dist_table[cur_cluster_value + 1] = 1.
         factors[cur_dist_name] = Factor(cur_dist_name, LabelledArray(dist_table, [cur_var_name]))
         add_edge_between(variables[cur_var_name], factors[cur_dist_name])
+        variables[cur_var_name].neighbour_index_to_avoid = length(variables[cur_var_name].neighbours)
     end
 end
 
