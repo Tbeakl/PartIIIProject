@@ -6,7 +6,7 @@ include("chacha.jl")
 include("chacha_factor_graph.jl")
 include("template_attack_traces.jl")
 include("add_leakage_to_graph.jl")
-
+include("leakage_functions.jl")
 
 # key = zeros(UInt32, 8)
 # nonce = zeros(UInt32, 3)
@@ -16,10 +16,10 @@ key = [0x03020100, 0x07060504, 0x0b0a0908, 0x0f0e0d0c, 0x13121110, 0x17161514, 0
 nonce = [0x09000000, 0x4a000000, 0x00000000]
 counter::UInt32 = 1
 
-number_of_bits = 4
+number_of_bits = 2
 dimensions = 4
-signal_to_noise_ratio = 2
-encryption_trace = encrypt_collect_trace_byte_values(key, nonce, counter)
+signal_to_noise_ratio = 10
+encryption_trace = encrypt_collect_trace(key, nonce, counter, byte_values_for_input)
 encryption_output = encrypt(key, nonce, counter)
 
 noise = noise_distribution(dimensions)
@@ -35,7 +35,7 @@ location_execution_counts = zeros(Int64, 16)
 chacha_factor_graph!(variables, factors, number_of_bits, variables_by_round, factors_by_round, adds_by_round, location_execution_counts)
 add_starting_constant_values(variables, factors, number_of_bits)
 add_values_of_initial_nonce_and_counter(variables, factors, number_of_bits, nonce, counter)
-add_key_dist_byte_templates(variables, factors, number_of_bits, key, add_byte_template_to_variable)
+add_initial_key_dist(variables, factors, number_of_bits, byte_values_for_input.(key), add_byte_template_to_variable)
 # Need to add some noisy distributions to the initial values for the counters to see how that does
 
 for i in 1:16

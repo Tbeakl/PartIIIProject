@@ -84,3 +84,13 @@ function add_trace_to_factor_graph(trace::Vector{Any},
     # Need to have another part for setting the values to be exactly what they were in the output of the function because
     # we assume that we have access to those actual values compared to just their leakage values
 end
+
+function add_initial_key_dist(variables::Dict{String, Variable},
+    factors::Dict{String, Factor},
+    bits_per_cluster::Int64,
+    key_leakage::Vector,
+    add_dist_to_variable)
+    for i in 1:8
+        add_dist_to_variable(key_leakage[i], variables, factors, bits_per_cluster, string(i + 4, "_", 0))
+    end
+end

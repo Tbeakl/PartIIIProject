@@ -3,6 +3,8 @@ using Plots
 include("node.jl")
 include("messages.jl")
 include("dynamic_message_scheduling.jl")
+include("add_leakage_to_graph.jl")
+include("leakage_functions.jl")
 include("chacha.jl")
 include("chacha_factor_graph.jl")
 include("byte_hamming_weight_traces.jl")
@@ -15,9 +17,11 @@ key = [0x03020100, 0x07060504, 0x0b0a0908, 0x0f0e0d0c, 0x13121110, 0x17161514, 0
 nonce = [0x09000000, 0x4a000000, 0x00000000]
 counter::UInt32 = 1
 
-encryption_trace = encrypt_collect_trace(key, nonce, counter)
+encryption_trace = encrypt_collect_trace(key, nonce, counter, byte_hamming_weight_for_value)
 encryption_output = encrypt(key, nonce, counter)
 number_of_bits = 2
+hamming_position_table = table_for_hamming_values(number_of_bits)
+add_byte_hamming_weight_to_variable = byte_hamming_weight_value_to_function(hamming_position_table )
 variables = Dict{String, Variable}()
 factors = Dict{String, Factor}()
 variables_by_round::Vector{Set{String}} = []
@@ -27,14 +31,15 @@ location_execution_counts = zeros(Int64, 16)
 chacha_factor_graph!(variables, factors, number_of_bits, variables_by_round, factors_by_round, adds_by_round, location_execution_counts)
 add_starting_constant_values(variables, factors, number_of_bits)
 add_values_of_initial_nonce_and_counter(variables, factors, number_of_bits, nonce, counter)
-add_initial_key_dist(variables, factors, number_of_bits, key)
+
+add_initial_key_dist(variables, factors, number_of_bits, byte_hamming_weight_for_value.(key), add_byte_hamming_weight_to_variable)
 # Need to add some noisy distributions to the initial values for the counters to see how that does
 
 for i in 1:16
     set_variable_to_value(variables, factors, string(i, "_", location_execution_counts[i]), encryption_output[i], number_of_bits)
 end
 println("Starting to add the factors for the trace")
-add_trace_to_factor_graph(encryption_trace, variables, factors, number_of_bits)
+add_trace_to_factor_graph(encryption_trace, variables, factors, number_of_bits, add_byte_hamming_weight_to_variable)
 println("Added the factors for the trace")
 
 # # Perform the dynamic message passing around the graph to push information through the entire graph

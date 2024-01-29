@@ -3,40 +3,6 @@ using Random
 using Distributions
 include("chacha.jl")
 
-function byte_values_for_input(value)
-    output = zeros(Int64, 4)
-    output[1] = value & 0xFF
-    output[2] = (value >> 8) & 0xFF
-    output[3] = (value >> 16) & 0xFF
-    output[4] = (value >> 24) & 0xFF
-    return output
-end
-
-function encrypt_collect_trace_byte_values(key::Vector{UInt32}, nonce::Vector{UInt32}, counter::UInt32)
-    global trace
-    trace = []
-    closure = () -> trace
-
-    key_logging = map(x -> Logging.SingleFunctionLog(x, closure, byte_values_for_input), key)
-    nonce_logging = map(x -> Logging.SingleFunctionLog(x, closure, byte_values_for_input), nonce)
-    counter_logging = Logging.SingleFunctionLog(counter, closure, byte_values_for_input)
-
-    encrypt(key_logging, nonce_logging, counter_logging)
-
-    return copy(trace)
-end
-
-# Think I should probably add on some other factor for determining how the noise should be shaped
-# but it might not matter because of the fact that we set the signal to noise ratio when generating the
-# mean vectors
-function noise_distribution(dimensions::Int64)
-    rng = MersenneTwister()
-    # This is making the noise independent in all directions could experiment
-    # with correlating it
-    cov = rand(rng, dimensions)
-    return MvNormal(cov)
-end
-
 function generate_mean_vectors(noise::Distribution, signal_to_noise_ratio::Real, max_value::Int64)
     return signal_to_noise_ratio .* rand(noise, max_value + 1)
 end
