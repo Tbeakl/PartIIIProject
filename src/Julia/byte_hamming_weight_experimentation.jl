@@ -7,35 +7,6 @@ include("chacha.jl")
 include("chacha_factor_graph.jl")
 include("byte_hamming_weight_traces.jl")
 
-function belief_propagate_forwards_and_back_through_graph(variables::Dict{String, Variable},
-    factors::Dict{String, Factor},
-    variables_by_round::Vector{Set{String}},
-    factors_by_round::Vector{Set{String}},
-    times_per_round::Int64)
-    # GO forward first
-    for (i, vars_for_round) in enumerate(variables_by_round)
-        for j in 1:times_per_round
-            for var_name in vars_for_round
-                variable_to_factor_messages(variables[var_name])
-            end
-            for fact_name in factors_by_round[i]
-                factor_to_variable_messages(factors[fact_name])
-            end
-        end
-    end
-    # Then go backwards
-    for i in length(variables_by_round):-1:1
-        for j in 1:times_per_round
-            for var_name in variables_by_round[i]
-                variable_to_factor_messages(variables[var_name])
-            end
-            for fact_name in factors_by_round[i]
-                factor_to_variable_messages(factors[fact_name])
-            end
-        end
-    end
-end
-
 # key = zeros(UInt32, 8)
 # nonce = zeros(UInt32, 3)
 # counter::UInt32 = 0
@@ -46,7 +17,7 @@ counter::UInt32 = 1
 
 encryption_trace = encrypt_collect_trace(key, nonce, counter)
 encryption_output = encrypt(key, nonce, counter)
-number_of_bits = 4
+number_of_bits = 2
 variables = Dict{String, Variable}()
 factors = Dict{String, Factor}()
 variables_by_round::Vector{Set{String}} = []
@@ -95,25 +66,13 @@ end
 entropy_in_graph::Vector{Float64} = Vector{Float64}()
 # With 4 bits per cluster approximately 9/10 per minute (after optimisations about 17 rounds a minute)
 # With 2 bits per cluster approximately 28.6 iterations per minute (after some optimisations around 75 a minute maybe slightly more because time taken to make graph included in that)
-for i in 1:150
+for i in 1:80
     println(i)
-    for var in internal_variables
-        variable_to_factor_messages(variables[var])
-    end
-    for fact in internal_factors
-        factor_to_variable_messages(factors[fact])
-    end
-    # for j in length(internal_variables):-1:1
-    #     variable_to_factor_messages(variables[internal_variables[j]])
-    # end
-    # for j in length(internal_factors):-1:1
-    #     factor_to_variable_messages(factors[internal_factors[j]])
-    # end
-    # belief_propagate_forwards_and_back_through_graph(variables, factors, variables_by_round, factors_by_round, 1)
-    # for i in all_adds
-    #     belief_propagate_through_add(variables, factors, number_of_bits, i)
-    # end Don't really think this is worth it because it just takes so much longer to go through
-    # compared with just doing more iterations of the graph
+    # I think it is slightly better to go forwards and backwards through the graph
+    # compared to just doing at random but it does not seem to be a big help
+    # and it does not appear that helping to speed up going through adds is massicvely useful
+    belief_propagate_forwards_and_back_through_graph(variables, factors, variables_by_round, factors_by_round, 1)
+    
     push!(entropy_in_graph, total_entropy_of_graph(variables))
     println(entropy_in_graph[end])
 end

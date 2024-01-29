@@ -145,3 +145,32 @@ function total_entropy_of_graph(variables::Dict{String, Variable})
     end
     return tot_ent
 end
+
+function belief_propagate_forwards_and_back_through_graph(variables::Dict{String, Variable},
+    factors::Dict{String, Factor},
+    variables_by_round::Vector{Set{String}},
+    factors_by_round::Vector{Set{String}},
+    times_per_round::Int64)
+    # GO forward first
+    for (i, vars_for_round) in enumerate(variables_by_round)
+        for j in 1:times_per_round
+            for var_name in vars_for_round
+                variable_to_factor_messages(variables[var_name])
+            end
+            for fact_name in factors_by_round[i]
+                factor_to_variable_messages(factors[fact_name])
+            end
+        end
+    end
+    # Then go backwards
+    for i in length(variables_by_round):-1:1
+        for j in 1:times_per_round
+            for var_name in variables_by_round[i]
+                variable_to_factor_messages(variables[var_name])
+            end
+            for fact_name in factors_by_round[i]
+                factor_to_variable_messages(factors[fact_name])
+            end
+        end
+    end
+end
