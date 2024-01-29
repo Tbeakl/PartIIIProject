@@ -6,12 +6,6 @@ function tile_to_shape_along_axis(arr::Float64, target_shape::Tuple, target_axis
 end
 
 function tile_to_shape_along_axis(arr::Vector{Float64}, target_shape::Tuple, target_axis::Int64)
-    # println("arr")
-    # println(arr)
-    # println("target_shape")
-    # println(target_shape)
-    # println("target_axis")
-    # println(target_axis)
     if length(arr) == 1
         return fill(arr[1], target_shape)
     elseif length(arr) == target_shape[target_axis]
@@ -27,10 +21,6 @@ function tile_to_shape_along_axis(arr::Vector{Float64}, target_shape::Tuple, tar
 end
 
 function tile_to_other_dist_along_axis_name(tiling_labeled_array::LabelledArray, target_array::LabelledArray)
-    # println("tiling_labeled_array")
-    # println(tiling_labeled_array)
-    # println("target_array")
-    # println(target_array)
     target_axis_label = tiling_labeled_array.axes_labels[1]
     target_axis_index = findfirst(==(target_axis_label), target_array.axes_labels)
     return LabelledArray(
@@ -45,7 +35,7 @@ end
 
 damping_factor = 1.
 
-function variable_to_factor_messages(variable::Variable)
+function variable_to_factor_messages(variable::Variable{Factor})
     # This needs to update the messsages in the factors from this variable
     neighbours_to_include = ones(Bool, size(variable.incoming_messages)[1])
     for (i, neighbour) in enumerate(variable.neighbours)
@@ -61,7 +51,7 @@ function variable_to_factor_messages(variable::Variable)
     end
 end
 
-function factor_to_variable_messages(factor::Factor)
+function factor_to_variable_messages(factor::Factor{Variable})
     # This needs to update all the incoming messages of the connected variables
     tiled_incoming_messages = [tile_to_other_dist_along_axis_name(LabelledArray(factor.incoming_messages[i], [neighbour.name]), factor.data).array for (i, neighbour) in enumerate(factor.neighbours)]
     for (i, neighbour) in enumerate(factor.neighbours)
@@ -74,6 +64,7 @@ function factor_to_variable_messages(factor::Factor)
         other_axes = other_axes_from_labeled_axes(factor.data, factor.neighbours[i].name)
         value_to_squeeze = sum(factor_dist; dims=other_axes)
         message_out = dropdims(value_to_squeeze; dims=Tuple(other_axes))
+        message_out ./= sum(message_out)
         neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] = message_out
         # if length(neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i]]) != length(message_out)
         #     neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i]] = message_out
@@ -83,13 +74,16 @@ function factor_to_variable_messages(factor::Factor)
     end
 end
 
-function marginal(variable::Variable)
+function marginal(variable::Variable{Factor})
     unnorm_p = prod(variable.incoming_messages, dims=1)[1,:]
-    total_unorm_p = sum(unnorm_p)
+    total_unorm_p = NaNMath.sum(unnorm_p)
+    if isnan(total_unorm_p)
+        return zeros(length(unnorm_p))
+    end
     return total_unorm_p > 0 ? unnorm_p ./ total_unorm_p : unnorm_p
 end
 
-function add_edge_between(variable::Variable, factor::Factor)
+function add_edge_between(variable::Variable{Factor}, factor::Factor{Variable})
     push!(variable.neighbours, factor)
     push!(factor.neighbours, variable)
     
@@ -102,8 +96,8 @@ function add_edge_between(variable::Variable, factor::Factor)
 end
 
 
-function set_variable_to_value(variables::Dict{String, Variable},
-    factors::Dict{String, Factor},
+function set_variable_to_value(variables::Dict{String, Variable{Factor}},
+    factors::Dict{String, Factor{Variable}},
     variable_name_with_version::String,
     value::UInt32,
     number_of_bits_per_cluster::Int64
@@ -116,13 +110,13 @@ function set_variable_to_value(variables::Dict{String, Variable},
         # Calculate what value these bits should have
         cur_cluster_value = (value & (((1 << number_of_bits_per_cluster) - 1)) << (number_of_bits_per_cluster * (i - 1))) >> (number_of_bits_per_cluster * (i - 1))
         dist_table[cur_cluster_value + 1] = 1.
-        factors[cur_dist_name] = Factor(cur_dist_name, LabelledArray(dist_table, [cur_var_name]))
+        factors[cur_dist_name] = Factor{Variable}(cur_dist_name, LabelledArray(dist_table, [cur_var_name]))
         add_edge_between(variables[cur_var_name], factors[cur_dist_name])
         variables[cur_var_name].neighbour_index_to_avoid = length(variables[cur_var_name].neighbours)
     end
 end
 
-function read_most_likely_value_from_variable(variables::Dict{String, Variable},
+function read_most_likely_value_from_variable(variables::Dict{String, Variable{Factor}},
     variable_name_with_version::String,
     number_of_bits_per_cluster::Int64)
 
@@ -137,7 +131,7 @@ function read_most_likely_value_from_variable(variables::Dict{String, Variable},
     return value
 end
 
-function total_entropy_of_graph(variables::Dict{String, Variable})
+function total_entropy_of_graph(variables::Dict{String, Variable{Factor}})
     tot_ent = 0.
     for (i,j) in variables
         prob_dist = marginal(j)
@@ -146,8 +140,8 @@ function total_entropy_of_graph(variables::Dict{String, Variable})
     return tot_ent
 end
 
-function belief_propagate_forwards_and_back_through_graph(variables::Dict{String, Variable},
-    factors::Dict{String, Factor},
+function belief_propagate_forwards_and_back_through_graph(variables::Dict{String, Variable{Factor}},
+    factors::Dict{String, Factor{Variable}},
     variables_by_round::Vector{Set{String}},
     factors_by_round::Vector{Set{String}},
     times_per_round::Int64)

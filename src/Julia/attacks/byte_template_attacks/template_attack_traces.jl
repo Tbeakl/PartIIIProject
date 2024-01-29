@@ -1,7 +1,5 @@
-using CryptoSideChannel
-using Random
 using Distributions
-include("chacha.jl")
+include("../../belief_propagation/node.jl")
 
 function generate_mean_vectors(noise::Distribution, signal_to_noise_ratio::Real, max_value::Int64)
     return signal_to_noise_ratio .* rand(noise, max_value + 1)
@@ -27,8 +25,8 @@ end
 
 function byte_template_value_to_function(mean_vectors::Matrix{Float64}, noise::Distribution)
     return function add_byte_template_to_variable(value,
-        variables::Dict{String, Variable},
-        factors::Dict{String, Factor},
+        variables::Dict{String, Variable{Factor}},
+        factors::Dict{String, Factor{Variable}},
         bits_per_cluster::Int64,
         variable_and_count::String)
         
@@ -40,7 +38,7 @@ function byte_template_value_to_function(mean_vectors::Matrix{Float64}, noise::D
                 cur_dist_name = string("f_", cur_var_name, "_dist")
                 # Marginalise out the prob dist for this particular cluster, where cluster 1 is the LSB
                 marginalised_dist = marginalise_prob_dist(prob_dist_for_byte, (j - 1) * bits_per_cluster, bits_per_cluster)
-                factors[cur_dist_name] = Factor(cur_dist_name, LabelledArray(marginalised_dist, [cur_var_name]))
+                factors[cur_dist_name] = Factor{Variable}(cur_dist_name, LabelledArray(marginalised_dist, [cur_var_name]))
                 add_edge_between(variables[cur_var_name], factors[cur_dist_name])
                 variables[cur_var_name].neighbour_index_to_avoid = length(variables[cur_var_name].neighbours)
             end
@@ -48,8 +46,8 @@ function byte_template_value_to_function(mean_vectors::Matrix{Float64}, noise::D
     end
 end
 
-function add_key_dist_byte_templates(variables::Dict{String, Variable},
-    factors::Dict{String, Factor},
+function add_key_dist_byte_templates(variables::Dict{String, Variable{Factor}},
+    factors::Dict{String, Factor{Variable}},
     bits_per_cluster::Int64,
     key::Vector{UInt32},
     add_byte_template_to_variable)

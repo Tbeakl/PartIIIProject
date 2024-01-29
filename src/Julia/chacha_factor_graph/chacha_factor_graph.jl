@@ -1,4 +1,5 @@
-include("messages.jl")
+include("../belief_propagation/node.jl")
+include("../belief_propagation/messages.jl")
 
 # This creates an entire factor graph for the ChaCha algorithm
 
@@ -63,8 +64,8 @@ function take_bottom_bits_prob_array(num_of_bits::Int64)
     return output
 end
 
-function bit_rotation_factor_graph!(variables::Dict{String, Variable},
-    factors::Dict{String, Factor},
+function bit_rotation_factor_graph!(variables::Dict{String, Variable{Factor}},
+    factors::Dict{String, Factor{Variable}},
     input::Int64,
     bits_to_rotate_by::Int64,
     number_of_bits_per_cluster::Int64,
@@ -72,8 +73,7 @@ function bit_rotation_factor_graph!(variables::Dict{String, Variable},
     number_of_operations::Dict{String, Int64},
     precalculated_prob_tables::Dict{String, Array{Float64}},
     round_variables::Set{String},
-    round_factors::Set{String}
-)
+    round_factors::Set{String})
     if bits_to_rotate_by == 0
         return
     end
@@ -95,8 +95,8 @@ function bit_rotation_factor_graph!(variables::Dict{String, Variable},
         push!(round_variables, output_variable_name)
         push!(round_factors, factor_name)
         
-        variables[output_variable_name] = Variable(output_variable_name, number_of_bits_per_cluster)
-        factors[factor_name] = Factor(factor_name, LabelledArray(rotation_cluster_prob_table, [further_left_variable_name, further_right_variable_name, output_variable_name]))
+        variables[output_variable_name] = Variable{Factor}(output_variable_name, number_of_bits_per_cluster)
+        factors[factor_name] = Factor{Variable}(factor_name, LabelledArray(rotation_cluster_prob_table, [further_left_variable_name, further_right_variable_name, output_variable_name]))
         add_edge_between(variables[further_left_variable_name], factors[factor_name])
         add_edge_between(variables[further_right_variable_name], factors[factor_name])
         add_edge_between(variables[output_variable_name], factors[factor_name])
@@ -106,8 +106,8 @@ function bit_rotation_factor_graph!(variables::Dict{String, Variable},
     location_execution_counts[input] += 1
 end
 
-function xor_with_cluster_shift_factor_graph!(variables::Dict{String, Variable},
-    factors::Dict{String, Factor},
+function xor_with_cluster_shift_factor_graph!(variables::Dict{String, Variable{Factor}},
+    factors::Dict{String, Factor{Variable}},
     input_a::Int64,
     input_b::Int64,
     output::Int64,
@@ -131,9 +131,9 @@ function xor_with_cluster_shift_factor_graph!(variables::Dict{String, Variable},
         push!(round_variables, output_name)
         push!(round_factors, cur_factor_name)
         
-        factors[cur_factor_name] = Factor(cur_factor_name, LabelledArray(xor_cluster_prob_table,
+        factors[cur_factor_name] = Factor{Variable}(cur_factor_name, LabelledArray(xor_cluster_prob_table,
         [input_a_name, input_b_name, output_name]))
-        variables[output_name] = Variable(output_name, number_of_bits_per_cluster)
+        variables[output_name] = Variable{Factor}(output_name, number_of_bits_per_cluster)
 
         # Add the connections between the variables and the factor
         add_edge_between(variables[input_a_name], factors[cur_factor_name])
@@ -144,8 +144,8 @@ function xor_with_cluster_shift_factor_graph!(variables::Dict{String, Variable},
     location_execution_counts[output] += 1
 end
 
-function add_factor_graph!(variables::Dict{String, Variable},
-    factors::Dict{String, Factor},
+function add_factor_graph!(variables::Dict{String, Variable{Factor}},
+    factors::Dict{String, Factor{Variable}},
     input_a::Int64,
     input_a_version::Int64,
     input_b::Int64,
@@ -166,8 +166,8 @@ function add_factor_graph!(variables::Dict{String, Variable},
     # Could technically make this shared across all the adds but initially for simplicity
     # each will have a seperate one
     initial_carry_var_name = string("add_", number_of_operations["add"], "_carry_0")
-    variables[initial_carry_var_name] = Variable(initial_carry_var_name, 1)
-    factors["f_" * initial_carry_var_name * "_dist"] = Factor("f_" * initial_carry_var_name * "_dist",
+    variables[initial_carry_var_name] = Variable{Factor}(initial_carry_var_name, 1)
+    factors["f_" * initial_carry_var_name * "_dist"] = Factor{Variable}("f_" * initial_carry_var_name * "_dist",
         LabelledArray([
             1.
             0.
@@ -196,13 +196,13 @@ function add_factor_graph!(variables::Dict{String, Variable},
         push!(round_factors, add_carry_out_factor_name)
         push!(round_factors, add_output_factor_name)
 
-        variables[carry_out_variable_name] = Variable(carry_out_variable_name, 1)
-        variables[output_name] = Variable(output_name, number_of_bits_per_cluster)
-        variables[full_add_output_name] = Variable(full_add_output_name, number_of_bits_per_cluster + 1)
+        variables[carry_out_variable_name] = Variable{Factor}(carry_out_variable_name, 1)
+        variables[output_name] = Variable{Factor}(output_name, number_of_bits_per_cluster)
+        variables[full_add_output_name] = Variable{Factor}(full_add_output_name, number_of_bits_per_cluster + 1)
 
-        factors[full_add_factor_name] = Factor(full_add_factor_name, LabelledArray(full_add_dist, [carry_in_variable_name, input_a_name, input_b_name, full_add_output_name]))
-        factors[add_carry_out_factor_name] = Factor(add_carry_out_factor_name, LabelledArray(add_full_to_carry, [full_add_output_name, carry_out_variable_name]))
-        factors[add_output_factor_name] = Factor(add_output_factor_name, LabelledArray(add_full_to_output, [full_add_output_name, output_name]))
+        factors[full_add_factor_name] = Factor{Variable}(full_add_factor_name, LabelledArray(full_add_dist, [carry_in_variable_name, input_a_name, input_b_name, full_add_output_name]))
+        factors[add_carry_out_factor_name] = Factor{Variable}(add_carry_out_factor_name, LabelledArray(add_full_to_carry, [full_add_output_name, carry_out_variable_name]))
+        factors[add_output_factor_name] = Factor{Variable}(add_output_factor_name, LabelledArray(add_full_to_output, [full_add_output_name, output_name]))
 
         add_edge_between(variables[carry_in_variable_name], factors[full_add_factor_name])
         add_edge_between(variables[input_a_name], factors[full_add_factor_name])
@@ -220,8 +220,8 @@ function add_factor_graph!(variables::Dict{String, Variable},
     location_execution_counts[output] += 1
 end
 
-function chacha_quarter_round_factor_graph!(variables::Dict{String, Variable},
-    factors::Dict{String, Factor},
+function chacha_quarter_round_factor_graph!(variables::Dict{String, Variable{Factor}},
+    factors::Dict{String, Factor{Variable}},
     a::Int64,
     b::Int64,
     c::Int64,
@@ -278,8 +278,8 @@ function chacha_quarter_round_factor_graph!(variables::Dict{String, Variable},
     # block[b] = ROTL(block[b], 7)
 end
 
-function chacha_factor_graph!(variables::Dict{String, Variable},
-    factors::Dict{String, Factor},
+function chacha_factor_graph!(variables::Dict{String, Variable{Factor}},
+    factors::Dict{String, Factor{Variable}},
     number_of_bits_per_cluster::Int64,
     variables_by_round::Vector{Set{String}},
     factors_by_round::Vector{Set{String}},
@@ -291,7 +291,7 @@ function chacha_factor_graph!(variables::Dict{String, Variable},
     # Initially add the opening variables
     for i in 1:16
         for j in 1:number_of_clusters
-            variables[string(i, "_0_", j)] = Variable(string(i, "_0_", j), number_of_bits_per_cluster)
+            variables[string(i, "_0_", j)] = Variable{Factor}(string(i, "_0_", j), number_of_bits_per_cluster)
         end
     end
 
@@ -346,8 +346,8 @@ function chacha_factor_graph!(variables::Dict{String, Variable},
     # set in the standard
 end
 
-function add_starting_constant_values(variables::Dict{String, Variable},
-    factors::Dict{String, Factor},
+function add_starting_constant_values(variables::Dict{String, Variable{Factor}},
+    factors::Dict{String, Factor{Variable}},
     number_of_bits_per_cluster::Int64)
     set_variable_to_value(variables, factors, "1_0", 0x61707865, number_of_bits_per_cluster)
     set_variable_to_value(variables, factors, "2_0", 0x3320646e, number_of_bits_per_cluster)
@@ -355,9 +355,8 @@ function add_starting_constant_values(variables::Dict{String, Variable},
     set_variable_to_value(variables, factors, "4_0", 0x6b206574, number_of_bits_per_cluster)
 end
 
-
-function add_distribution_of_initial_values(variables::Dict{String, Variable},
-    factors::Dict{String, Factor},
+function add_distribution_of_initial_values(variables::Dict{String, Variable{Factor}},
+    factors::Dict{String, Factor{Variable}},
     number_of_bits_per_cluster::Int64,
     key::Vector{UInt32}, nonce::Vector{UInt32}, counter::UInt32)
     for i in 1:8
@@ -369,8 +368,8 @@ function add_distribution_of_initial_values(variables::Dict{String, Variable},
     end
 end
 
-function add_values_of_initial_nonce_and_counter(variables::Dict{String, Variable},
-    factors::Dict{String, Factor},
+function add_values_of_initial_nonce_and_counter(variables::Dict{String, Variable{Factor}},
+    factors::Dict{String, Factor{Variable}},
     number_of_bits_per_cluster::Int64,
     nonce::Vector{UInt32}, counter::UInt32)
     set_variable_to_value(variables, factors, "13_0", counter, number_of_bits_per_cluster)
@@ -379,8 +378,8 @@ function add_values_of_initial_nonce_and_counter(variables::Dict{String, Variabl
     end
 end
 
-function belief_propagate_through_add(variables::Dict{String, Variable},
-    factors::Dict{String, Factor},
+function belief_propagate_through_add(variables::Dict{String, Variable{Factor}},
+    factors::Dict{String, Factor{Variable}},
     bits_per_cluster::Int64,
     add_number::Int64)
     
@@ -451,14 +450,3 @@ function belief_propagate_through_add(variables::Dict{String, Variable},
         end
     end
 end
-
-# bits_per_cluster = 2
-# variables = Dict{String, Variable}()
-# factors = Dict{String, Factor}()
-# variables_by_round::Vector{Set{String}} = []
-# factors_by_round::Vector{Set{String}} = []
-# adds_by_round::Vector{Vector{Int64}} = []
-
-# chacha_factor_graph!(variables, factors, bits_per_cluster, variables_by_round, factors_by_round, adds_by_round)
-
-# add_starting_constant_values(variables, factors, bits_per_cluster)

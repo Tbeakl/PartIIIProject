@@ -1,33 +1,34 @@
-include("messages.jl")
-include("chacha_factor_graph.jl")
+include("../../belief_propagation/node.jl")
+include("../../belief_propagation/messages.jl")
+include("../../chacha_factor_graph/chacha_factor_graph.jl")
 
-function add_uniform_dist_of_vars(variables::Dict{String, Variable},
-    factors::Dict{String, Factor},
+function add_uniform_dist_of_vars(variables::Dict{String, Variable{Factor}},
+    factors::Dict{String, Factor{Variable}},
     bits_per_cluster::Int64
     )
     for (i,j) in variables
         if occursin("carry", i)
             factor_name = string("f_", i, "_dist_uniform")
-            factors[factor_name] = Factor(factor_name, LabelledArray([
+            factors[factor_name] = Factor{Variable}(factor_name, LabelledArray([
                 .5
                 .5
             ], [i]))
             add_edge_between(j, factors[factor_name])
         elseif occursin("add", i)
             factor_name = string("f_", i, "_dist_uniform")
-            factors[factor_name] = Factor(factor_name, LabelledArray(ones(1 << (bits_per_cluster + 1)) ./ (1 << (bits_per_cluster + 1)), [i]))
+            factors[factor_name] = Factor{Variable}(factor_name, LabelledArray(ones(1 << (bits_per_cluster + 1)) ./ (1 << (bits_per_cluster + 1)), [i]))
             add_edge_between(j, factors[factor_name])
         else
             factor_name = string("f_", i, "_dist_uniform")
-            factors[factor_name] = Factor(factor_name, LabelledArray(ones(1 << bits_per_cluster) ./ (1 << bits_per_cluster), [i]))
+            factors[factor_name] = Factor{Variable}(factor_name, LabelledArray(ones(1 << bits_per_cluster) ./ (1 << bits_per_cluster), [i]))
             add_edge_between(j, factors[factor_name])
         end
     end
 end
 
 bits_per_cluster = 2
-variables = Dict{String, Variable}()
-factors = Dict{String, Factor}()
+variables = Dict{String, Variable{Factor}}()
+factors = Dict{String, Factor{Variable}}()
 variables_by_round::Vector{Set{String}} = []
 factors_by_round::Vector{Set{String}} = []
 adds_by_round::Vector{Vector{Int64}} = []

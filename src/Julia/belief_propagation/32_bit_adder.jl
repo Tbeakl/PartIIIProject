@@ -1,3 +1,4 @@
+include("node.jl")
 include("messages.jl")
 
 function make_add_including_carry_prob_array(num_of_bits::Int64)
@@ -34,17 +35,17 @@ function make_32_bit_adder(number_of_bits_per_cluster::Int64, variables, factors
     full_add_to_output_dist = take_bottom_bits_prob_array(number_of_bits_per_cluster + 1)
     full_add_carry_dist = take_top_bit_prob_array(number_of_bits_per_cluster + 1)
 
-    variables["carry_0"] = Variable("carry_0")
+    variables["carry_0"] = Variable{Factor}("carry_0", 1)
     for i in 1:number_of_clusters
-        variables[string("carry_", i)] = Variable(string("carry_", i))
-        variables[string("input_a_", i)] = Variable(string("input_a_", i))
-        variables[string("input_b_", i)] = Variable(string("input_b_", i))
-        variables[string("output_temp_", i)] = Variable(string("output_temp_", i))
-        variables[string("output_", i)] = Variable(string("output_", i))
+        variables[string("carry_", i)] = Variable{Factor}(string("carry_", i), 1)
+        variables[string("input_a_", i)] = Variable{Factor}(string("input_a_", i), number_of_bits_per_cluster)
+        variables[string("input_b_", i)] = Variable{Factor}(string("input_b_", i), number_of_bits_per_cluster)
+        variables[string("output_temp_", i)] = Variable{Factor}(string("output_temp_", i), number_of_bits_per_cluster + 1)
+        variables[string("output_", i)] = Variable{Factor}(string("output_", i), number_of_bits_per_cluster)
 
-        factors[string("f_add_", i)] = Factor(string("f_add_", i), LabelledArray(full_add_dist, [string("carry_", i-1), string("input_a_", i), string("input_b_", i), string("output_temp_", i)]))
-        factors[string("f_add_output_", i)] = Factor(string("f_add_output_", i), LabelledArray(full_add_to_output_dist, [string("output_temp_", i), string("output_", i)]))
-        factors[string("f_add_carry_", i)] = Factor(string("f_add_carry_", i), LabelledArray(full_add_carry_dist, [string("output_temp_", i), string("carry_", i)]))
+        factors[string("f_add_", i)] = Factor{Variable}(string("f_add_", i), LabelledArray(full_add_dist, [string("carry_", i-1), string("input_a_", i), string("input_b_", i), string("output_temp_", i)]))
+        factors[string("f_add_output_", i)] = Factor{Variable}(string("f_add_output_", i), LabelledArray(full_add_to_output_dist, [string("output_temp_", i), string("output_", i)]))
+        factors[string("f_add_carry_", i)] = Factor{Variable}(string("f_add_carry_", i), LabelledArray(full_add_carry_dist, [string("output_temp_", i), string("carry_", i)]))
     end
 
     for i in 1:number_of_clusters
@@ -63,7 +64,7 @@ end
 
 function add_base_probabilities(number_of_bits_per_cluster, variables, factors)
     number_of_clusters = Int64(ceil(32 / number_of_bits_per_cluster))
-    factors["f_carry_0"] = Factor("f_carry_0", LabelledArray(
+    factors["f_carry_0"] = Factor{Variable}("f_carry_0", LabelledArray(
         [
             1.
             0.
@@ -79,7 +80,7 @@ function add_base_probabilities(number_of_bits_per_cluster, variables, factors)
         else
             p_input_array[1] = 1.
         end
-        factors[string("f_input_a_", i)] = Factor(string("f_input_a_", i), LabelledArray(p_input_array, [string("input_a_", i)]))
+        factors[string("f_input_a_", i)] = Factor{Variable}(string("f_input_a_", i), LabelledArray(p_input_array, [string("input_a_", i)]))
         add_edge_between(variables[string("input_a_", i)], factors[string("f_input_a_", i)])
 
         p_input_array = zeros(1 << number_of_bits_per_cluster)
@@ -89,7 +90,7 @@ function add_base_probabilities(number_of_bits_per_cluster, variables, factors)
         else
             p_input_array[1] = 1.
         end
-        factors[string("f_input_b_", i)] = Factor(string("f_input_b_", i), LabelledArray(p_input_array, [string("input_b_", i)]))
+        factors[string("f_input_b_", i)] = Factor{Variable}(string("f_input_b_", i), LabelledArray(p_input_array, [string("input_b_", i)]))
         add_edge_between(variables[string("input_b_", i)], factors[string("f_input_b_", i)])
 
         p_input_array = zeros(1 << number_of_bits_per_cluster)
@@ -99,7 +100,7 @@ function add_base_probabilities(number_of_bits_per_cluster, variables, factors)
         else
             p_input_array[1] = 1.
         end
-        factors[string("f_output_", i)] = Factor(string("f_output_", i), LabelledArray(p_input_array, [string("output_", i)]))
+        factors[string("f_output_", i)] = Factor{Variable}(string("f_output_", i), LabelledArray(p_input_array, [string("output_", i)]))
         add_edge_between(variables[string("output_", i)], factors[string("f_output_", i)])
     end
 end

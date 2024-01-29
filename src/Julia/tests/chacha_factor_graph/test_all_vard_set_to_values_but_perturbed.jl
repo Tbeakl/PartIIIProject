@@ -1,7 +1,9 @@
 using Test
-include("chacha_factor_graph.jl")
+include("../../belief_propagation/node.jl")
+include("../../belief_propagation/messages.jl")
+include("../../belief_propagation/dynamic_message_scheduling.jl")
+include("../../chacha_factor_graph/chacha_factor_graph.jl")
 include("exact_value_traces.jl")
-include("dynamic_message_scheduling.jl")
 
 function all_zeros_single_bit_clusters_perturbed_output()
     key = zeros(UInt32, 8)
@@ -10,8 +12,8 @@ function all_zeros_single_bit_clusters_perturbed_output()
     encryption_trace = encrypt_collect_trace_full_values(key, nonce, counter)
     
     number_of_bits = 1
-    variables = Dict{String, Variable}()
-    factors = Dict{String, Factor}()
+    variables = Dict{String, Variable{Factor}}()
+    factors = Dict{String, Factor{Variable}}()
     variables_by_round::Vector{Set{String}} = []
     factors_by_round::Vector{Set{String}} = []    
     adds_by_round::Vector{Vector{Int64}} = []
@@ -44,8 +46,8 @@ function all_zeros_2_bit_clusters_perturbed_output()
     encryption_trace = encrypt_collect_trace_full_values(key, nonce, counter)
     
     number_of_bits = 2
-    variables = Dict{String, Variable}()
-    factors = Dict{String, Factor}()
+    variables = Dict{String, Variable{Factor}}()
+    factors = Dict{String, Factor{Variable}}()
     variables_by_round::Vector{Set{String}} = []
     factors_by_round::Vector{Set{String}} = []    
     adds_by_round::Vector{Vector{Int64}} = []
@@ -78,8 +80,8 @@ function all_zeros_4_bit_clusters_perturbed_output()
     encryption_trace = encrypt_collect_trace_full_values(key, nonce, counter)
     
     number_of_bits = 4
-    variables = Dict{String, Variable}()
-    factors = Dict{String, Factor}()
+    variables = Dict{String, Variable{Factor}}()
+    factors = Dict{String, Factor{Variable}}()
     variables_by_round::Vector{Set{String}} = []
     factors_by_round::Vector{Set{String}} = []    
     adds_by_round::Vector{Vector{Int64}} = []

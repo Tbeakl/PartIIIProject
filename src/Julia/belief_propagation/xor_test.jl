@@ -1,3 +1,4 @@
+include("node.jl")
 include("messages.jl")
 
 p_a = LabelledArray(
@@ -28,16 +29,16 @@ xor_table[2, :, :] = [0. 1.
 p_xor = LabelledArray(xor_table, ["a", "b", "c"])
 
 variables = Dict(
-    "a" => Variable("a"),
-    "b" => Variable("b"),
-    "c" => Variable("c")
+    "a" => Variable{Factor}("a", 1),
+    "b" => Variable{Factor}("b", 1),
+    "c" => Variable{Factor}("c", 1)
 )
 
 factors = Dict(
-    "f1" => Factor("f1", p_a),
-    "f2" => Factor("f2", p_b),
-    "f3" => Factor("f3", p_c),
-    "f_xor" => Factor("f_xor", p_xor)
+    "f1" => Factor{Variable}("f1", p_a),
+    "f2" => Factor{Variable}("f2", p_b),
+    "f3" => Factor{Variable}("f3", p_c),
+    "f_xor" => Factor{Variable}("f_xor", p_xor)
 )
 
 add_edge_between(variables["a"], factors["f1"])

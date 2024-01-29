@@ -1,5 +1,5 @@
 using Test
-include("chacha.jl")
+include("../../encryption/chacha.jl")
 
 # The test vectors have been taken from RFC 8439 (https://datatracker.ietf.org/doc/html/rfc8439)
 

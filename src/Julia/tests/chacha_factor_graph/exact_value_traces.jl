@@ -1,7 +1,8 @@
 using CryptoSideChannel
-include("chacha.jl")
-include("messages.jl")
-include("chacha_factor_graph.jl")
+include("../../belief_propagation/node.jl")
+include("../../belief_propagation/messages.jl")
+include("../../chacha_factor_graph/chacha_factor_graph.jl")
+include("../../encryption/chacha.jl")
 
 function encrypt_collect_trace_full_values(key::Vector{UInt32}, nonce::Vector{UInt32}, counter::UInt32)
     global trace
@@ -18,8 +19,8 @@ function encrypt_collect_trace_full_values(key::Vector{UInt32}, nonce::Vector{UI
 end
 
 function add_value_from_position_in_trace(trace::Vector{Any},
-    variables::Dict{String, Variable},
-    factors::Dict{String, Factor},
+    variables::Dict{String, Variable{Factor}},
+    factors::Dict{String, Factor{Variable}},
     bits_per_cluster::Int64,
     location_execution_counts::Vector{Int64},
     variable::Int64,
@@ -32,8 +33,8 @@ function add_value_from_position_in_trace(trace::Vector{Any},
 end
 
 function add_qr_trace(trace::Vector{Any},
-    variables::Dict{String, Variable},
-    factors::Dict{String, Factor},
+    variables::Dict{String, Variable{Factor}},
+    factors::Dict{String, Factor{Variable}},
     bits_per_cluster::Int64,
     a::Int64,
     b::Int64,
@@ -86,8 +87,8 @@ function add_qr_trace(trace::Vector{Any},
 end
 
 function add_trace_to_factor_graph(trace::Vector{Any},
-    variables::Dict{String, Variable},
-    factors::Dict{String, Factor},
+    variables::Dict{String, Variable{Factor}},
+    factors::Dict{String, Factor{Variable}},
     bits_per_cluster::Int64
     )
     global position_in_trace

@@ -1,13 +1,10 @@
-using CryptoSideChannel
 using Distributions
-include("chacha.jl")
-include("node.jl")
-include("hamming_weight_probability_calculations.jl")
+include("../../belief_propagation/node.jl")
 
 function noisy_byte_hamming_weight_value_to_function(hamming_position_table::Matrix{Bool}, noise_distribution::Distribution)
     return function add_noisy_byte_hamming_weight_to_variable(value,
-        variables::Dict{String,Variable},
-        factors::Dict{String,Factor},
+        variables::Dict{String,Variable{Factor}},
+        factors::Dict{String,Factor{Variable}},
         bits_per_cluster::Int64,
         variable_and_count::String)
 
@@ -18,7 +15,7 @@ function noisy_byte_hamming_weight_value_to_function(hamming_position_table::Mat
             for j in 1:clusters_per_leakage_weight
                 cur_var_name = string(variable_and_count, "_", (i - 1) * clusters_per_leakage_weight + j)
                 cur_dist_name = string("f_", cur_var_name, "_dist")
-                factors[cur_dist_name] = Factor(cur_dist_name, LabelledArray(prob_dist_for_cluster, [cur_var_name]))
+                factors[cur_dist_name] = Factor{Variable}(cur_dist_name, LabelledArray(prob_dist_for_cluster, [cur_var_name]))
                 add_edge_between(variables[cur_var_name], factors[cur_dist_name])
                 variables[cur_var_name].neighbour_index_to_avoid = length(variables[cur_var_name].neighbours)
             end

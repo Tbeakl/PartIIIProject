@@ -1,12 +1,11 @@
 using Plots
 
-include("node.jl")
-include("messages.jl")
-include("dynamic_message_scheduling.jl")
-include("add_leakage_to_graph.jl")
-include("leakage_functions.jl")
-include("chacha.jl")
-include("chacha_factor_graph.jl")
+include("../../belief_propagation/node.jl")
+include("../../belief_propagation/messages.jl")
+include("../../chacha_factor_graph/chacha_factor_graph.jl")
+include("../../chacha_factor_graph/add_leakage_to_graph.jl")
+include("../../encryption/leakage_functions.jl")
+include("../../encryption/chacha.jl")
 include("byte_hamming_weight_traces.jl")
 
 # key = zeros(UInt32, 8)
@@ -22,8 +21,8 @@ encryption_output = encrypt(key, nonce, counter)
 number_of_bits = 2
 hamming_position_table = table_for_hamming_values(number_of_bits)
 add_byte_hamming_weight_to_variable = byte_hamming_weight_value_to_function(hamming_position_table )
-variables = Dict{String, Variable}()
-factors = Dict{String, Factor}()
+variables = Dict{String, Variable{Factor}}()
+factors = Dict{String, Factor{Variable}}()
 variables_by_round::Vector{Set{String}} = []
 factors_by_round::Vector{Set{String}} = []
 adds_by_round::Vector{Vector{Int64}} = []

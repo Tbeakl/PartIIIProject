@@ -1,18 +1,20 @@
 using DataStructures
 using Test
 
-include("chacha_factor_graph.jl")
-include("dynamic_message_scheduling.jl")
+include("../../belief_propagation/node.jl")
+include("../../belief_propagation/messages.jl")
+include("../../chacha_factor_graph/chacha_factor_graph.jl")
+include("../../belief_propagation/dynamic_message_scheduling.jl")
 
 function test_quarter_round()
     bits_per_cluster = 2
     number_of_clusters = Int64(ceil(32 / bits_per_cluster))
     initial_state = [0x879531e0, 0xc5ecf37d, 0x516461b1, 0xc9a62f8a, 0x44c20ef3, 0x3390af7f, 0xd9fc690b, 0x2a5f714c, 0x53372767, 0xb00a5631, 0x974c541a, 0x359e9963, 0x5c971061, 0x3d631689, 0x2098d9d6, 0x91dbd320]
-    variables = Dict{String, Variable}()
-    factors = Dict{String, Factor}()
+    variables = Dict{String, Variable{Factor}}()
+    factors = Dict{String, Factor{Variable}}()
     for i in 1:16
         for j in 1:number_of_clusters
-            variables[string(i, "_0_", j)] = Variable(string(i, "_0_", j), bits_per_cluster)
+            variables[string(i, "_0_", j)] = Variable{Factor}(string(i, "_0_", j), bits_per_cluster)
         end
         set_variable_to_value(variables, factors, string(i, "_0"), initial_state[i], bits_per_cluster)
     end
@@ -51,8 +53,8 @@ function test_vec_sec_2_full_encryption()
     counter::UInt32 = 1
 
     bits_per_cluster = 2
-    variables = Dict{String, Variable}()
-    factors = Dict{String, Factor}()
+    variables = Dict{String, Variable{Factor}}()
+    factors = Dict{String, Factor{Variable}}()
     variables_by_round::Vector{Set{String}} = []
     factors_by_round::Vector{Set{String}} = []
     adds_by_round::Vector{Vector{Int64}} = []
@@ -79,8 +81,8 @@ function test_vec_1_full_encryption()
     counter::UInt32 = 0
 
     bits_per_cluster = 1
-    variables = Dict{String, Variable}()
-    factors = Dict{String, Factor}()
+    variables = Dict{String, Variable{Factor}}()
+    factors = Dict{String, Factor{Variable}}()
     variables_by_round::Vector{Set{String}} = []
     factors_by_round::Vector{Set{String}} = []
     adds_by_round::Vector{Vector{Int64}} = []
@@ -108,8 +110,8 @@ function test_vec_2_full_encryption()
     counter::UInt32 = 1
 
     bits_per_cluster = 4
-    variables = Dict{String, Variable}()
-    factors = Dict{String, Factor}()
+    variables = Dict{String, Variable{Factor}}()
+    factors = Dict{String, Factor{Variable}}()
     variables_by_round::Vector{Set{String}} = []
     factors_by_round::Vector{Set{String}} = []
     adds_by_round::Vector{Vector{Int64}} = []
@@ -137,8 +139,8 @@ function test_vec_3_full_encryption()
     counter::UInt32 = 1
 
     bits_per_cluster = 2
-    variables = Dict{String, Variable}()
-    factors = Dict{String, Factor}()
+    variables = Dict{String, Variable{Factor}}()
+    factors = Dict{String, Factor{Variable}}()
     variables_by_round::Vector{Set{String}} = []
     factors_by_round::Vector{Set{String}} = []
     adds_by_round::Vector{Vector{Int64}} = []
@@ -166,8 +168,8 @@ function test_vec_4_full_encryption()
     counter::UInt32 = 2
 
     bits_per_cluster = 2
-    variables = Dict{String, Variable}()
-    factors = Dict{String, Factor}()
+    variables = Dict{String, Variable{Factor}}()
+    factors = Dict{String, Factor{Variable}}()
     variables_by_round::Vector{Set{String}} = []
     factors_by_round::Vector{Set{String}} = []
     adds_by_round::Vector{Vector{Int64}} = []
@@ -195,8 +197,8 @@ function test_vec_5_full_encryption()
     counter::UInt32 = 0
 
     bits_per_cluster = 2
-    variables = Dict{String, Variable}()
-    factors = Dict{String, Factor}()
+    variables = Dict{String, Variable{Factor}}()
+    factors = Dict{String, Factor{Variable}}()
     variables_by_round::Vector{Set{String}} = []
     factors_by_round::Vector{Set{String}} = []
     adds_by_round::Vector{Vector{Int64}} = []
