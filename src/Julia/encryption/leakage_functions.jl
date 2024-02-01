@@ -52,3 +52,18 @@ function encrypt_collect_trace(key::Vector{UInt32}, nonce::Vector{UInt32}, count
 
     return copy(trace)
 end
+
+function generate_random_key()
+    return UInt32.(rand(0:((1 << 32) - 1), 8))
+end
+
+function generate_random_nonce()
+    return UInt32.(rand(0:((1 << 32) - 1), 3))
+end
+
+# Not entirely sure if the counter should actually be set to random or left as 1 because
+# it starts at one for the start of each use with a different nonce and key according to the
+# ChaCha standard
+function generate_random_counter()
+    return UInt32(rand(0:((1 << 32) - 1)))
+end

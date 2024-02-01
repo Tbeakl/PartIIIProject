@@ -2,7 +2,7 @@
 
 julia_version = "1.9.1"
 manifest_format = "2.0"
-project_hash = "0ffad140f08a35e9b1106a4b52464e6b90fe77b7"
+project_hash = "ffcdeba34b904e93ddb2c1a660d4c6bcc42aaa3a"
 
 [[deps.ANSIColoredPrinters]]
 git-tree-sha1 = "574baf8110975760d391c710b6341da1afa48d8c"
@@ -204,6 +204,11 @@ deps = ["Artifacts", "JLLWrappers", "Libdl"]
 git-tree-sha1 = "8e9441ee83492030ace98f9789a654a6d0b1f643"
 uuid = "2702e6a9-849d-5ed8-8c21-79e8b8f9ee43"
 version = "0.0.20230411+0"
+
+[[deps.ExactConvolution]]
+git-tree-sha1 = "40987e26692e94fae51c9462a73b190696ada24e"
+uuid = "0d552887-2f53-4f11-9665-485c167a9a55"
+version = "0.1.0"
 
 [[deps.ExceptionUnwrapping]]
 deps = ["Test"]
