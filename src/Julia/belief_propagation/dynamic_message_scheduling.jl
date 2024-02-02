@@ -4,8 +4,6 @@ using NaNMath
 include("node.jl")
 include("messages.jl")
 
-calculate_entropy(prob_dist) = -NaNMath.sum(prob_dist .* log2.(prob_dist))
-
 function populate_with_variables_two_away(variables::Dict{String, Variable{Factor}})
     for (var_name, variable) in variables
         all_vars_two_away = Set{String}()

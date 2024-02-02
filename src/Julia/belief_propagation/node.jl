@@ -8,13 +8,14 @@ mutable struct Variable{T}
     neighbours::Vector{T}
     incoming_messages::Matrix{Float64}
     index_in_neighbours_neighbour::Vector{Int64}
+    current_entropy::Float64
     previous_entropy::Float64
     variables_two_away::Set{String}
     neighbour_index_to_avoid::Int64
     number_of_bits::Int64
 
     function Variable{T}(name::String, number_of_bits::Int64) where {T}
-        return new(name, Vector{T}[], ones(0, 1 << number_of_bits), Vector{Int64}[], 100_000., Set{String}(), -1, number_of_bits)
+        return new(name, Vector{T}[], ones(0, 1 << number_of_bits), Vector{Int64}[], number_of_bits, 100_000., Set{String}(), -1, number_of_bits)
     end
 end
 

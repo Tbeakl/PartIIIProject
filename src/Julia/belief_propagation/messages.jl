@@ -1,5 +1,7 @@
-using NaNMath
+using NaNMath, Base.Threads
 include("node.jl")
+
+calculate_entropy(prob_dist) = -NaNMath.sum(prob_dist .* log2.(prob_dist))
 
 function tile_to_shape_along_axis(arr::Float64, target_shape::Tuple, target_axis::Int64)
     return fill(arr, target_shape)
@@ -45,7 +47,7 @@ function variable_to_factor_messages(variable::Variable{Factor})
             new_message = prod(variable.incoming_messages[neighbours_to_include, :], dims=1)[1, :]
             # Here normalise the output to be a prob dist.
             new_message ./= sum(new_message)
-            neighbour.incoming_messages[variable.index_in_neighbours_neighbour[i]] = new_message #damping_factor * new_message .+ (1 - damping_factor) * neighbour.incoming_messages[variable.index_in_neighbours_neighbour[i]]
+            neighbour.incoming_messages[variable.index_in_neighbours_neighbour[i]] = new_message#damping_factor * new_message .+ (1 - damping_factor) * neighbour.incoming_messages[variable.index_in_neighbours_neighbour[i]]
             neighbours_to_include[i] = true
         end
     end
@@ -67,9 +69,9 @@ function factor_to_variable_messages(factor::Factor{Variable})
         message_out ./= sum(message_out)
         neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] = message_out
         # if length(neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i]]) != length(message_out)
-        #     neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i]] = message_out
+        #     neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] = message_out
         # else
-        #     neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i]] = damping_factor * message_out .+ (1 - damping_factor) * neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i]]
+        #     neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] = damping_factor * message_out .+ (1 - damping_factor) * neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i]]
         # end
     end
 end
@@ -131,11 +133,22 @@ function read_most_likely_value_from_variable(variables::Dict{String, Variable{F
     return value
 end
 
+function update_all_entropies(variables::Dict{String, Variable{Factor}},
+    all_var_names::Vector{String})
+    Threads.@threads for var_name in all_var_names
+        update_variable_entropy(variables[var_name])
+    end
+end
+
+function update_variable_entropy(variable::Variable{Factor})
+    variable.previous_entropy = variable.current_entropy
+    variable.current_entropy = calculate_entropy(marginal(variable))
+end
+
 function total_entropy_of_graph(variables::Dict{String, Variable{Factor}})
     tot_ent = 0.
     for (i,j) in variables
-        prob_dist = marginal(j)
-        tot_ent -= NaNMath.sum(prob_dist .* log2.(prob_dist))
+        tot_ent += j.current_entropy
     end
     return tot_ent
 end
