@@ -35,7 +35,7 @@ function other_axes_from_labeled_axes(labelled_array::LabelledArray, axis_label:
     return [i for i in 1:length(labelled_array.axes_labels) if labelled_array.axes_labels[i] != axis_label]
 end
 
-damping_factor = 1.
+damping_factor = .9
 
 function variable_to_factor_messages(variable::Variable{Factor})
     # This needs to update the messsages in the factors from this variable
@@ -47,7 +47,8 @@ function variable_to_factor_messages(variable::Variable{Factor})
             new_message = prod(variable.incoming_messages[neighbours_to_include, :], dims=1)[1, :]
             # Here normalise the output to be a prob dist.
             new_message ./= sum(new_message)
-            neighbour.incoming_messages[variable.index_in_neighbours_neighbour[i]] = new_message#damping_factor * new_message .+ (1 - damping_factor) * neighbour.incoming_messages[variable.index_in_neighbours_neighbour[i]]
+            neighbour.incoming_messages[variable.index_in_neighbours_neighbour[i]] = (damping_factor * new_message) .+ ((1 - damping_factor) * neighbour.incoming_messages[variable.index_in_neighbours_neighbour[i]])
+            neighbour.incoming_messages[variable.index_in_neighbours_neighbour[i]] ./= sum(neighbour.incoming_messages[variable.index_in_neighbours_neighbour[i]])
             neighbours_to_include[i] = true
         end
     end
@@ -68,11 +69,12 @@ function factor_to_variable_messages(factor::Factor{Variable})
         message_out = dropdims(value_to_squeeze; dims=Tuple(other_axes))
         message_out ./= sum(message_out)
         neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] = message_out
-        # if length(neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i]]) != length(message_out)
-        #     neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] = message_out
-        # else
-        #     neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] = damping_factor * message_out .+ (1 - damping_factor) * neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i]]
-        # end
+        if length(neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i]]) != length(message_out)
+            neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] = message_out
+        else
+            neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] = (damping_factor * message_out) .+ ((1 - damping_factor) * neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i]])
+        end
+        neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] ./= sum(neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :])
     end
 end
 
@@ -181,3 +183,10 @@ function belief_propagate_forwards_and_back_through_graph(variables::Dict{String
         end
     end
 end
+
+# From looking at a few of the animations of how entropy is changing in the graph over time
+# it becomes clear that the most changes happen at the ends of the execution therefore 
+# I think a good apporach can be to do a set number of full iterations through the graph (like 10)
+# before just doing the first and final x rounds of the propagation to hopefully improve performances and 
+# then might be able to just return values from that once they are no longer changing or after a certain number of rounds
+# for that part

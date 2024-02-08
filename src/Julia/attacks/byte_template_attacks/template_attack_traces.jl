@@ -5,6 +5,18 @@ function generate_mean_vectors(noise::Distribution, signal_to_noise_ratio::Real,
     return signal_to_noise_ratio .* rand(noise, max_value + 1)
 end
 
+function generate_mean_vectors_based_on_hamming_weights(distribution_from_weight::Distribution, number_of_bits::Int64)
+    # The basic plan with this is to have a mean vector associated with each bit being set and then use the digits to add
+    # these together to make the basic mean vector for different values
+    bit_mean_vectors = rand(distribution_from_weight, number_of_bits) .+ 1
+    binary_representation = digits.((0:(1 << number_of_bits) - 1), base = 2, pad = number_of_bits)
+    output = zeros(size(bit_mean_vectors)[1], 1 << number_of_bits)
+    for i in eachindex(binary_representation)
+        output[:, i] = sum(bit_mean_vectors[:, Bool.(binary_representation[i])], dims=2)
+    end
+    return output
+end
+
 function put_value_into_noisy_space(mean_vectors::Matrix{Float64}, noise::Distribution, value::Int64)
     return mean_vectors[:, value + 1] .+ rand(noise)
 end

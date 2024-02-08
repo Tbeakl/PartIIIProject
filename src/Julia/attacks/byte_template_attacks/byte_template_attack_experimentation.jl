@@ -1,4 +1,4 @@
-using Plots, Base.Threads
+using Plots, Base.Threads, Random
 include("../../belief_propagation/node.jl")
 include("../../belief_propagation/messages.jl")
 include("../../chacha_factor_graph/chacha_factor_graph.jl")
@@ -7,7 +7,7 @@ include("../../chacha_factor_graph/heatmap_visualisation.jl")
 include("../../encryption/leakage_functions.jl")
 include("../../encryption/chacha.jl")
 include("template_attack_traces.jl")
-
+Random.seed!(1234)
 # None converging values
 # 0xd13796db
 # 0xe1223fde
@@ -32,22 +32,29 @@ include("template_attack_traces.jl")
 # nonce = [0x09000000, 0x4a000000, 0x00000000]
 # counter::UInt32 = 1
 
+
+number_of_bits = 2
+generate_fresh_graph = true
+file_to_load_or_store = "base_graph.blob"
+
+dimensions = 4
+signal_to_noise_ratio = 1.7
 key = generate_random_key()
 nonce = generate_random_nonce()
 counter = generate_random_counter()
 
-number_of_bits = 2
-dimensions = 4
-signal_to_noise_ratio = 1.5
 encryption_trace = encrypt_collect_trace(key, nonce, counter, byte_values_for_input)
 encryption_output = encrypt(key, nonce, counter)
 
-noise = noise_distribution_random_variances(dimensions)
-mean_vectors = generate_mean_vectors(noise, signal_to_noise_ratio, 255)
+# noise = noise_distribution_random_variances(dimensions)
+noise = noise_distribution_fixed_standard_dev(0.4)
+distribution_from_hamming_weight_per_bit = noise_distribution_fixed_standard_dev(0.1)
+# mean_vectors = generate_mean_vectors(noise, signal_to_noise_ratio, 255)
+mean_vectors = generate_mean_vectors_based_on_hamming_weights(distribution_from_hamming_weight_per_bit, 8)
 add_byte_template_to_variable = byte_template_value_to_function(mean_vectors, noise)
 
-variables = Dict{String, Variable{Factor}}()
-factors = Dict{String, Factor{Variable}}()
+variables = Dict{String,Variable{Factor}}()
+factors = Dict{String,Factor{Variable}}()
 variables_by_round::Vector{Set{String}} = []
 factors_by_round::Vector{Set{String}} = []
 adds_by_round::Vector{Vector{Int64}} = []
@@ -68,7 +75,7 @@ println("Added the factors for the trace")
 all_variables = [keys(variables)...]
 all_factors = [keys(factors)...]
 
-heatmap_plotting_function = plot_change_in_entropy(variables)
+heatmap_plotting_function = plot_current_entropy(variables)
 visualisation_of_entropy::Vector{Matrix{Float64}} = []
 visualisation_variables, x_labels, y_labels = make_positions_to_var_names(number_of_bits)
 tot_entropy_over_time::Vector{Float64} = []
@@ -100,21 +107,13 @@ push!(visualisation_of_entropy, variables_to_heatmap_matrix(visualisation_variab
 push!(tot_entropy_over_time, total_entropy_of_graph(variables))
 println(tot_entropy_over_time[end])
 
-internal_variables = Set{String}()
-internal_factors = Set{String}()
-for (i, vars_for_round) in enumerate(variables_by_round)
-    union!(internal_variables, vars_for_round)
-    union!(internal_factors, factors_by_round[i])
-end
+internal_factors = [union(factors_by_round[:]...)...]
+internal_variables = [union(variables_by_round[:]...)...]
 
-internal_variables = [internal_variables...]
-internal_factors = [internal_factors...]
+initial_number_of_iterations = 20
 
-for i in 1:200
+for i in 1:initial_number_of_iterations
     println(i)
-    # This does not seem to be better for this case because it generally seems that just doing them 
-    # all of them gives quicker convergence and also more likely to converge
-    # belief_propagate_forwards_and_back_through_graph(variables, factors, variables_by_round, factors_by_round, 1)
     Threads.@threads for var_name in internal_variables
         variable_to_factor_messages(variables[var_name])
     end
@@ -126,11 +125,44 @@ for i in 1:200
     
     push!(tot_entropy_over_time, total_entropy_of_graph(variables))
     println(tot_entropy_over_time[end])
-    if tot_entropy_over_time[end] < 1e-3 || abs(tot_entropy_over_time[end] - tot_entropy_over_time[end - 1]) <= 1e-3
+    if tot_entropy_over_time[end] < 1e-3 || abs(tot_entropy_over_time[end] - tot_entropy_over_time[end-1]) <= 1e-3
         break
     end
 end
 
+# Potentially could look at just the very start and end for checking for if we have reached convergence because we 
+# don't really need to solve the centre of the graph if the start and end are correct and will not really change any more
+number_of_end_rounds_to_check = 2
+vars_to_check = [union(variables_by_round[begin:number_of_end_rounds_to_check]..., variables_by_round[end- number_of_end_rounds_to_check - 1:end]...)...]
+calculate_entropy_of_ends() = sum([variables[var].current_entropy for var in vars_to_check])
+
+
+number_of_iterations_of_ends = 400
+rounds_for_ends = 5
+variables_at_ends = [union(variables_by_round[begin:rounds_for_ends]..., variables_by_round[end- rounds_for_ends - 1:end]...)...]
+factors_at_ends = [union(factors_by_round[begin:rounds_for_ends]..., factors_by_round[end- rounds_for_ends - 1:end]...)...]
+prev_ent = calculate_entropy_of_ends()
+for i in 1:number_of_iterations_of_ends
+    println(i)
+    Threads.@threads for var_name in variables_at_ends
+        variable_to_factor_messages(variables[var_name])
+    end
+    Threads.@threads for fact_name in factors_at_ends
+        factor_to_variable_messages(factors[fact_name])
+    end
+    update_all_entropies(variables, variables_at_ends)
+    push!(visualisation_of_entropy, variables_to_heatmap_matrix(visualisation_variables, heatmap_plotting_function))
+
+    push!(tot_entropy_over_time, total_entropy_of_graph(variables))
+    println(tot_entropy_over_time[end])
+    cur_ent = calculate_entropy_of_ends()
+    if tot_entropy_over_time[end] < 1e-3 || abs(tot_entropy_over_time[end] - tot_entropy_over_time[end-1]) <= 1e-3 || abs(cur_ent - prev_ent) <= 1e-7
+        break
+    end
+    prev_ent = cur_ent
+end
+
+read_off_key = [read_most_likely_value_from_variable(variables, string(i + 4, "_0"), number_of_bits) for i in 1:8]
 for i in 1:8
     println(string(read_most_likely_value_from_variable(variables, string(i + 4, "_0"), number_of_bits), base=16))
 end
@@ -138,7 +170,7 @@ end
 plot(tot_entropy_over_time)
 
 anim = @animate for i in 1:length(visualisation_of_entropy)
-    heatmap(visualisation_of_entropy[i]; title=string("Round ", i - 1," entropy of variables")) # clim=(0, number_of_bits),
+    heatmap(visualisation_of_entropy[i]; title=string("Round ", i - 1, " entropy of variables"), clim=(0, number_of_bits)) # 
 end
-heatmap(visualisation_of_entropy[1]; title=string("Round ", 0," entropy of variables")) # clim=(0, number_of_bits),
-gif(anim, "test.gif", fps=2)
+# heatmap(visualisation_of_entropy[1]; title=string("Round ", 0, " entropy of variables")) # clim=(0, number_of_bits),
+gif(anim, "0_85_end_rounds_damping_1234.gif", fps=30)
