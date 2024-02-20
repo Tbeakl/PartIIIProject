@@ -17,16 +17,16 @@ function generate_mean_vectors_based_on_hamming_weights(distribution_from_weight
     return output
 end
 
-function put_value_into_noisy_space(mean_vectors::Matrix{Float64}, noise::Distribution, value::Int64)
+function put_value_into_noisy_space(mean_vectors::AbstractMatrix{Float64}, noise::Distribution, value::Int64)
     return mean_vectors[:, value + 1] .+ rand(noise)
 end
 
-function make_prob_dist_for_byte(mean_vectors::Matrix{Float64}, noise::Distribution, value::Int64)
+function make_prob_dist_for_byte(mean_vectors::AbstractMatrix{Float64}, noise::Distribution, value::Int64)
     likelihood_of_values = pdf(noise, mean_vectors .- put_value_into_noisy_space(mean_vectors, noise, value))
     return likelihood_of_values ./ sum(likelihood_of_values)
 end
 
-function marginalise_prob_dist(original_dist::Vector{Float64}, shift_amount_to_right::Int64, bits_in_marginalisation::Int64)
+function marginalise_prob_dist(original_dist::AbstractVector{Float64}, shift_amount_to_right::Int64, bits_in_marginalisation::Int64)
     output_dist = zeros(1 << bits_in_marginalisation)
     original_indexes_to_new = (((0:length(original_dist) - 1) .>> shift_amount_to_right) .% (1 << bits_in_marginalisation)) .+ 1
     for i in 1:((1 << bits_in_marginalisation))
@@ -35,7 +35,7 @@ function marginalise_prob_dist(original_dist::Vector{Float64}, shift_amount_to_r
     return output_dist
 end
 
-function byte_template_value_to_function(mean_vectors::Matrix{Float64}, noise::Distribution)
+function byte_template_value_to_function(mean_vectors::AbstractMatrix{Float64}, noise::Distribution)
     return function add_byte_template_to_variable(value,
         variables::Dict{String, Variable{Factor}},
         factors::Dict{String, Factor{Variable}},

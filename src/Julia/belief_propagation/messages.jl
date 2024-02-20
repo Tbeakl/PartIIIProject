@@ -35,7 +35,7 @@ function other_axes_from_labeled_axes(labelled_array::LabelledArray, axis_label:
     return [i for i in 1:length(labelled_array.axes_labels) if labelled_array.axes_labels[i] != axis_label]
 end
 
-damping_factor = .9
+damping_factor = 1. #.9
 
 function variable_to_factor_messages(variable::Variable{Factor})
     # This needs to update the messsages in the factors from this variable

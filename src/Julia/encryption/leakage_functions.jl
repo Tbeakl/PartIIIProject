@@ -1,5 +1,4 @@
-using CryptoSideChannel
-using Random
+using CryptoSideChannel, Random, LinearAlgebra
 include("chacha.jl")
 
 function byte_hamming_weight_for_value(value)
@@ -33,10 +32,14 @@ function noise_distribution_random_variances(dimensions::Int64)
     return MvNormal(cov)
 end
 
-function noise_distribution_fixed_standard_dev(standard_deviation)
+function noise_distribution_fixed_standard_dev(standard_deviation, dimensions)
     variance = standard_deviation * standard_deviation
-    covariance_matrix = ones(4) .* variance
+    covariance_matrix = ones(dimensions) .* variance
     return MvNormal(covariance_matrix)
+end
+
+function noise_distribution_given_covaraince_matrix(scov)
+    return MvNormal(Hermitian(scov))
 end
 
 function encrypt_collect_trace(key::Vector{UInt32}, nonce::Vector{UInt32}, counter::UInt32, leakage_function)
