@@ -8,13 +8,13 @@ include("../../encryption/leakage_functions.jl")
 include("../../encryption/chacha.jl")
 include("template_attack_traces.jl")
 
-number_of_bits = 8
+number_of_bits = 2
 dimensions = 8
 initial_number_of_iterations = 20
 number_of_iterations_of_ends = 400
 rounds_for_ends = 5
 
-file_to_write_to_name = "key_templates_nibbles.csv"
+file_to_write_to_name = "key_templates_intermediates_worse_known_output_nonce_counter.csv"
 fileFileIOStream = open(file_to_write_to_name, "a")
 
 variables = Dict{String,Variable{Factor}}()
@@ -38,7 +38,8 @@ number_of_end_rounds_to_check = 2
 vars_to_check = [union(variables_by_round[begin:number_of_end_rounds_to_check]..., variables_by_round[end- number_of_end_rounds_to_check - 1:end]...)...]
 calculate_entropy_of_ends() = sum([variables[var].current_entropy for var in vars_to_check])
 
-base_path_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\ChaCha_Simulation\\templates_ASCON\\templateLDA_O004\\template_KEY\\template_expect_b"
+base_path_key_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\ChaCha_Simulation\\templates_ASCON\\templateLDA_O004\\template_KEY\\template_expect_b"
+base_path_intermediate_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\ChaCha_Simulation\\templates_ASCON\\templateLDA_O004\\template_F_A00\\template_expect_b"
 noise = noise_distribution_fixed_standard_dev(1., dimensions)
 
 for i in 1:1
@@ -58,18 +59,20 @@ for i in 1:1
     encryption_trace = encrypt_collect_trace(key, nonce, counter, byte_values_for_input)
     encryption_output = encrypt(key, nonce, counter)
 
-    mean_vectors = transpose(npzread(string(base_path_mean_vectors, lpad(string(i % 16), 3, "0"), ".npy")))
-    add_byte_template_to_variable = byte_template_value_to_function(mean_vectors, noise)
+    key_mean_vectors = transpose(npzread(string(base_path_key_mean_vectors, lpad(string(i % 16), 3, "0"), ".npy")))
+    add_byte_key_template_to_variable = byte_template_value_to_function(key_mean_vectors, noise)
+    intermediate_mean_vectors = transpose(npzread(string(base_path_intermediate_mean_vectors, lpad(string(i % 40), 3, "0"), ".npy")))
+    add_byte_intermediate_template_to_variable = byte_template_value_to_function(intermediate_mean_vectors, noise)
 
-    # add_values_of_initial_nonce_and_counter(variables, factors, number_of_bits, nonce, counter)
-    add_initial_key_dist(variables, factors, number_of_bits, byte_values_for_input.(key), add_byte_template_to_variable)
-    add_initial_nonce_and_counter_dist(variables, factors, number_of_bits, byte_values_for_input.(nonce), byte_values_for_input(counter), add_byte_template_to_variable)
+    add_values_of_initial_nonce_and_counter(variables, factors, number_of_bits, nonce, counter)
+    add_initial_key_dist(variables, factors, number_of_bits, byte_values_for_input.(key), add_byte_key_template_to_variable)
+    # add_initial_nonce_and_counter_dist(variables, factors, number_of_bits, byte_values_for_input.(nonce), byte_values_for_input(counter), add_byte_template_to_variable)
     for i in 1:16
-        add_byte_template_to_variable(byte_values_for_input(encryption_output[i]), variables, factors, number_of_bits, string(i, "_", location_execution_counts[i]))
-        # set_variable_to_value(variables, factors, string(i, "_", location_execution_counts[i]), encryption_output[i], number_of_bits)
+        # add_byte_template_to_variable(byte_values_for_input(encryption_output[i]), variables, factors, number_of_bits, string(i, "_", location_execution_counts[i]))
+        set_variable_to_value(variables, factors, string(i, "_", location_execution_counts[i]), encryption_output[i], number_of_bits)
     end
 
-    add_trace_to_factor_graph(encryption_trace, variables, factors, number_of_bits, add_byte_template_to_variable)
+    add_trace_to_factor_graph(encryption_trace, variables, factors, number_of_bits, add_byte_intermediate_template_to_variable)
     println("Added trace")
     all_variables = [keys(variables)...]
     all_factors = [keys(factors)...]

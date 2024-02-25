@@ -40,13 +40,14 @@ function byte_template_value_to_function(mean_vectors::AbstractMatrix{Float64}, 
         variables::Dict{String, Variable{Factor}},
         factors::Dict{String, Factor{Variable}},
         bits_per_cluster::Int64,
-        variable_and_count::String)
-        
+        variable_and_count::String,
+        run_number::Int64)
+
         clusters_per_leakage_weight = Int64(ceil(8 / bits_per_cluster))
         for i in 1:4
             prob_dist_for_byte = make_prob_dist_for_byte(mean_vectors, noise, value[i])
             for j in 1:clusters_per_leakage_weight
-                cur_var_name = string(variable_and_count, "_", (i - 1) * clusters_per_leakage_weight + j)
+                cur_var_name = string(variable_and_count, "_", (i - 1) * clusters_per_leakage_weight + j, "_", run_number)
                 cur_dist_name = string("f_", cur_var_name, "_dist")
                 # Marginalise out the prob dist for this particular cluster, where cluster 1 is the LSB
                 marginalised_dist = marginalise_prob_dist(prob_dist_for_byte, (j - 1) * bits_per_cluster, bits_per_cluster)
@@ -55,16 +56,5 @@ function byte_template_value_to_function(mean_vectors::AbstractMatrix{Float64}, 
                 variables[cur_var_name].neighbour_index_to_avoid = length(variables[cur_var_name].neighbours)
             end
         end
-    end
-end
-
-function add_key_dist_byte_templates(variables::Dict{String, Variable{Factor}},
-    factors::Dict{String, Factor{Variable}},
-    bits_per_cluster::Int64,
-    key::Vector{UInt32},
-    add_byte_template_to_variable)
-    key_leakage = byte_values_for_input.(key)
-    for i in 1:8
-        add_byte_template_to_variable(key_leakage[i], variables, factors, bits_per_cluster, string(i + 4, "_", 0))
     end
 end

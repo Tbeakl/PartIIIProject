@@ -3,9 +3,9 @@ function ROTL(a::T, b) where {T}
 end
 
 function QR(block::Vector{T}, a, b, c, d) where {T}
-    block[a] += block[b]
+    block[a] += block[b] # Use Keccack templates from C onwards
     block[d] ⊻= block[a]
-    block[d] = ROTL(block[d], 16)
+    block[d] = ROTL(block[d], 16) # Use Keccack templates from B onwards
 
     block[c] += block[d]
     block[b] ⊻= block[c]

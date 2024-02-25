@@ -35,7 +35,7 @@ function other_axes_from_labeled_axes(labelled_array::LabelledArray, axis_label:
     return [i for i in 1:length(labelled_array.axes_labels) if labelled_array.axes_labels[i] != axis_label]
 end
 
-damping_factor = 1. #.9
+damping_factor = .9 #.9
 
 function variable_to_factor_messages(variable::Variable{Factor})
     # This needs to update the messsages in the factors from this variable
@@ -104,11 +104,12 @@ function set_variable_to_value(variables::Dict{String, Variable{Factor}},
     factors::Dict{String, Factor{Variable}},
     variable_name_with_version::String,
     value::UInt32,
-    number_of_bits_per_cluster::Int64
+    number_of_bits_per_cluster::Int64,
+    run_number::Int64
     )
     number_of_clusters = Int64(ceil(32 / number_of_bits_per_cluster))
     for i in 1:number_of_clusters
-        cur_var_name = string(variable_name_with_version, "_", i)
+        cur_var_name = string(variable_name_with_version, "_", i, "_", run_number)
         cur_dist_name = string("f_", cur_var_name, "_dist")
         dist_table = zeros(1 << number_of_bits_per_cluster)
         # Calculate what value these bits should have
@@ -122,12 +123,13 @@ end
 
 function read_most_likely_value_from_variable(variables::Dict{String, Variable{Factor}},
     variable_name_with_version::String,
-    number_of_bits_per_cluster::Int64)
+    number_of_bits_per_cluster::Int64,
+    run_number::Int64)
 
     number_of_clusters = Int64(ceil(32 / number_of_bits_per_cluster))
     value::UInt32 = 0
     for i in 1:number_of_clusters
-        cur_var_name = string(variable_name_with_version, "_", i)
+        cur_var_name = string(variable_name_with_version, "_", i, "_", run_number)
         dist = marginal(variables[cur_var_name])
         # println(cur_var_name,": ", dist)
         value += (findmax(dist)[2] - 1) << (number_of_bits_per_cluster * (i - 1))
