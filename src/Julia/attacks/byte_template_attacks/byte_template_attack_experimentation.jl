@@ -9,7 +9,7 @@ include("../../encryption/chacha.jl")
 include("template_attack_traces.jl")
 
 number_of_bits = 2
-number_of_encryption_traces = 5
+number_of_encryption_traces = 1
 
 dimensions = 8
 signal_to_noise_ratio = 1.7
@@ -23,10 +23,10 @@ noise = noise_distribution_fixed_standard_dev(1., dimensions)
 # distribution_from_hamming_weight_per_bit = noise_distribution_fixed_standard_dev(0.1, 4)
 # mean_vectors = generate_mean_vectors(noise, signal_to_noise_ratio, 255)
 # mean_vectors = generate_mean_vectors_based_on_hamming_weights(distribution_from_hamming_weight_per_bit, 8)
-base_path_key_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\ChaCha_Simulation\\templates_Keccak\\templateLDA_B_ID\\template_A00\\template_expect_b"
-base_path_intermediate_add_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\ChaCha_Simulation\\templates_Keccak\\templateLDA_B_ID\\template_C00\\template_expect_b"
-base_path_intermediate_rot_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\ChaCha_Simulation\\templates_Keccak\\templateLDA_B_ID\\template_B00\\template_expect_b"
-key_mean_vectors = transpose(npzread(string(base_path_key_mean_vectors, lpad(string(50), 3, "0"), ".npy")))
+base_path_key_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\ChaCha_Simulation\\templates_Keccak\\templateLDA_B_ID\\template_B00\\template_expect_b"
+base_path_intermediate_add_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\ChaCha_Simulation\\templates_Keccak\\templateLDA_B_ID\\template_D00\\template_expect_b"
+base_path_intermediate_rot_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\ChaCha_Simulation\\templates_Keccak\\templateLDA_B_ID\\template_C00\\template_expect_b"
+key_mean_vectors = transpose(npzread(string(base_path_key_mean_vectors, lpad(string(20), 3, "0"), ".npy")))
 add_byte_key_template_to_variable = byte_template_value_to_function(key_mean_vectors, noise)
 add_intermediate_mean_vectors = transpose(npzread(string(base_path_intermediate_add_mean_vectors, lpad(string(20), 3, "0"), ".npy")))
 add_byte_intermediate_add_template_to_variable = byte_template_value_to_function(add_intermediate_mean_vectors, noise)
@@ -74,7 +74,7 @@ all_factors = [keys(factors)...]
 
 heatmap_plotting_function = plot_current_entropy(variables)
 visualisation_of_entropy::Vector{Matrix{Float64}} = []
-visualisation_variables, x_labels, y_labels = make_positions_to_var_names(number_of_bits, 3)
+visualisation_variables, x_labels, y_labels = make_positions_to_var_names(number_of_bits, 1)
 tot_entropy_over_time::Vector{Float64} = []
 
 # # Perform the dynamic message passing around the graph to push information through the entire graph
@@ -113,7 +113,7 @@ println(tot_entropy_over_time[end])
 internal_factors = [union(additional_factors, factors_by_round[:]...)...]
 internal_variables = [union(additional_variables, variables_by_round[:]...)...]
 
-initial_number_of_iterations = 20
+initial_number_of_iterations = 200
 
 for i in 1:initial_number_of_iterations
     println(i)
@@ -140,7 +140,7 @@ vars_to_check = [union(variables_by_round[begin:number_of_end_rounds_to_check]..
 calculate_entropy_of_ends() = sum([variables[var].current_entropy for var in vars_to_check])
 
 
-number_of_iterations_of_ends = 50
+number_of_iterations_of_ends = 2# 200
 rounds_for_ends = 5
 variables_at_ends = [union(additional_variables, variables_by_round[begin:rounds_for_ends]..., variables_by_round[end- rounds_for_ends - 1:end]...)...]
 factors_at_ends = [union(additional_factors, factors_by_round[begin:rounds_for_ends]..., factors_by_round[end- rounds_for_ends - 1:end]...)...]
@@ -176,11 +176,7 @@ anim = @animate for i in eachindex(visualisation_of_entropy)
     heatmap(visualisation_of_entropy[i]; title=string("Round ", i - 1, " entropy of variables"), clim=(0, number_of_bits)) # 
 end
 # heatmap(visualisation_of_entropy[1]; title=string("Round ", 0, " entropy of variables")) # clim=(0, number_of_bits),
-gif(anim, "test.gif", fps=5)
+gif(anim, "test.gif", fps=20)
 
-# Need to check because the top left, hence the counter does not appear to be updating well at all
-# because it is just staying at very high entropy, there also seems to some issue with a variable around the 193 mark
-# 12_0_16_1 seems to have some problem although potentially not
 
-# I think I also need some way of dealing with the NaNs appearing and need to try and find where these are coming from because it 
-# clearly should not be occuring due to them coming from actual runs
+# There looks to be an issue with the counter keeping high entropy despite the fact it should be heavily reduced

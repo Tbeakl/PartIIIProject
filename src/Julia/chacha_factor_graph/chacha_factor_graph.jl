@@ -328,9 +328,9 @@ function chacha_factor_graph!(variables::Dict{String,Variable{Factor}},
         chacha_quarter_round_factor_graph!(variables, factors, 2, 6, 10, 14, number_of_bits_per_cluster, location_execution_counts, number_of_operations, precalculated_prob_tables, cur_round_variables, cur_round_factors, run_number)
         chacha_quarter_round_factor_graph!(variables, factors, 3, 7, 11, 15, number_of_bits_per_cluster, location_execution_counts, number_of_operations, precalculated_prob_tables, cur_round_variables, cur_round_factors, run_number)
         chacha_quarter_round_factor_graph!(variables, factors, 4, 8, 12, 16, number_of_bits_per_cluster, location_execution_counts, number_of_operations, precalculated_prob_tables, cur_round_variables, cur_round_factors, run_number)
-        variables_by_round[2 * i - 1] = union(variables_by_round[2 * i - 1], cur_round_variables)
-        factors_by_round[2 * i - 1] = union(factors_by_round[2 * i - 1], cur_round_factors)
-        adds_by_round[2 * i - 1] = union(adds_by_round[2 * i - 1], Vector(start_add:(number_of_operations["add"]-1)))
+        variables_by_round[2*i-1] = union(variables_by_round[2*i-1], cur_round_variables)
+        factors_by_round[2*i-1] = union(factors_by_round[2*i-1], cur_round_factors)
+        adds_by_round[2*i-1] = union(adds_by_round[2*i-1], Vector(start_add:(number_of_operations["add"]-1)))
         cur_round_variables = Set{String}()
         cur_round_factors = Set{String}()
         start_add = number_of_operations["add"]
@@ -338,9 +338,9 @@ function chacha_factor_graph!(variables::Dict{String,Variable{Factor}},
         chacha_quarter_round_factor_graph!(variables, factors, 2, 7, 12, 13, number_of_bits_per_cluster, location_execution_counts, number_of_operations, precalculated_prob_tables, cur_round_variables, cur_round_factors, run_number)
         chacha_quarter_round_factor_graph!(variables, factors, 3, 8, 9, 14, number_of_bits_per_cluster, location_execution_counts, number_of_operations, precalculated_prob_tables, cur_round_variables, cur_round_factors, run_number)
         chacha_quarter_round_factor_graph!(variables, factors, 4, 5, 10, 15, number_of_bits_per_cluster, location_execution_counts, number_of_operations, precalculated_prob_tables, cur_round_variables, cur_round_factors, run_number)
-        variables_by_round[2 * i] = union(variables_by_round[2 * i], cur_round_variables)
-        factors_by_round[2 * i] = union(factors_by_round[2 * i], cur_round_factors)
-        adds_by_round[2 * i] = union(adds_by_round[2 * i], Vector(start_add:(number_of_operations["add"]-1)))
+        variables_by_round[2*i] = union(variables_by_round[2*i], cur_round_variables)
+        factors_by_round[2*i] = union(factors_by_round[2*i], cur_round_factors)
+        adds_by_round[2*i] = union(adds_by_round[2*i], Vector(start_add:(number_of_operations["add"]-1)))
     end
 
     # At this stage need to put in the add between the original values and the current value 
@@ -401,15 +401,17 @@ function add_equality_between_keys_and_nonces(variables::Dict{String,Variable{Fa
 
     number_of_clusters = Int64(ceil(32 / number_of_bits_per_cluster))
     eqaulity_prob_table = make_equality_prob_array(number_of_bits_per_cluster, number_encryption_runs)
-    for position_in_state in 5:15
-        for i in 1:number_of_clusters
-            factor_name = string("f_", position_in_state, "_0_", i, "_equality")
-            variable_names = [string(position_in_state, "_0_", i, "_", run_number) for run_number in 1:number_of_encryption_traces]
-            factors[factor_name] = Factor{Variable}(factor_name, LabelledArray(eqaulity_prob_table, variable_names))
-            for var_name in variable_names
-                add_edge_between(variables[var_name], factors[factor_name])
+    for position_in_state in 5:16
+        if position_in_state != 13
+            for i in 1:number_of_clusters
+                factor_name = string("f_", position_in_state, "_0_", i, "_equality")
+                variable_names = [string(position_in_state, "_0_", i, "_", run_number) for run_number in 1:number_of_encryption_traces]
+                factors[factor_name] = Factor{Variable}(factor_name, LabelledArray(eqaulity_prob_table, variable_names))
+                for var_name in variable_names
+                    add_edge_between(variables[var_name], factors[factor_name])
+                end
+                push!(factors_names_added, factor_name)
             end
-            push!(factors_names_added, factor_name)
         end
     end
 end
@@ -429,7 +431,7 @@ function add_adds_between_counters(variables::Dict{String,Variable{Factor}},
     add_full_to_carry = take_top_bit_prob_array(number_of_bits_per_cluster + 1)
 
     zero_dist_table = zeros(1 << number_of_bits_per_cluster)
-    zero_dist_table[1] = 1.
+    zero_dist_table[1] = 1.0
 
     for run_number in 1:(number_encryption_runs-1)
         # Need to create a variable which has a value equal to 1 so that it can be added to the value
@@ -443,7 +445,7 @@ function add_adds_between_counters(variables::Dict{String,Variable{Factor}},
                     0.0
                     1.0
                 ], [initial_carry_var_name]))
-        add_edge_between(variables[initial_carry_var_name], factors["f_" * initial_carry_var_name * "_dist"])
+        add_edge_between(variables[initial_carry_var_name], factors["f_"*initial_carry_var_name*"_dist"])
 
         for i in 1:number_of_clusters
             full_add_factor_name = string("f_add_between_runs_", run_number, "_", i)
@@ -452,7 +454,7 @@ function add_adds_between_counters(variables::Dict{String,Variable{Factor}},
 
             carry_in_variable_name = string("add_between_runs_", run_number, "_carry_", i - 1)
             carry_out_variable_name = string("add_between_runs_", run_number, "_carry_", i)
-            input_a_name = string("16_0_", i, "_", run_number)
+            input_a_name = string("13_0_", i, "_", run_number)
 
             input_b_name = string("zero_", i, "_", run_number)
             input_b_dist_name = string("f_", input_b_name, "_dist")
@@ -462,7 +464,7 @@ function add_adds_between_counters(variables::Dict{String,Variable{Factor}},
             factors[input_b_dist_name] = Factor{Variable}(input_b_dist_name, LabelledArray(zero_dist_table, [input_b_name]))
             add_edge_between(variables[input_b_name], factors[input_b_dist_name])
 
-            output_name = string("16_0_", i, "_", run_number + 1)
+            output_name = string("13_0_", i, "_", run_number + 1)
             full_add_output_name = string("add_between_runs_", i, "_", run_number)
 
             push!(variable_names_add, carry_in_variable_name)
@@ -473,7 +475,6 @@ function add_adds_between_counters(variables::Dict{String,Variable{Factor}},
             push!(factors_names_added, add_output_factor_name)
 
             variables[carry_out_variable_name] = Variable{Factor}(carry_out_variable_name, 1)
-            variables[output_name] = Variable{Factor}(output_name, number_of_bits_per_cluster)
             variables[full_add_output_name] = Variable{Factor}(full_add_output_name, number_of_bits_per_cluster + 1)
 
             factors[full_add_factor_name] = Factor{Variable}(full_add_factor_name, LabelledArray(full_add_dist, [carry_in_variable_name, input_a_name, input_b_name, full_add_output_name]))

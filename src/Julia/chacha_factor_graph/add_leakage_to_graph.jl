@@ -89,7 +89,7 @@ function add_trace_to_factor_graph(trace::Vector{Any},
         add_qr_trace(trace, variables, factors, bits_per_cluster, 4, 5, 10, 15, location_execution_counts, run_number, trace_value_to_graph_function_add_output, trace_value_to_graph_function_rot_output)
     end
     # Need to have another part for setting the values to be exactly what they were in the output of the function because
-    # we assume that we have access to those actual values compared to just their leakage values
+    # we assume that we have access to those actual values (or at least a better leakage) compared to just their leakage values
 end
 
 function add_initial_key_dist(variables::Dict{String, Variable{Factor}},
