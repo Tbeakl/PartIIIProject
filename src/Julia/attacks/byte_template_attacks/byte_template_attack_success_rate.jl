@@ -16,11 +16,11 @@ rounds_for_ends = 5
 number_of_encryption_traces = 1
 
 noise = noise_distribution_fixed_standard_dev(1.0, dimensions)
-base_path_key_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\ChaCha_Simulation\\templates_Keccak\\templateLDA_B_ID\\template_B00\\template_expect_b"
+base_path_key_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\ChaCha_Simulation\\templates_Keccak\\templateLDA_B_ID\\template_A00\\template_expect_b"
 base_path_intermediate_add_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\ChaCha_Simulation\\templates_Keccak\\templateLDA_B_ID\\template_C00\\template_expect_b"
-base_path_intermediate_rot_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\ChaCha_Simulation\\templates_Keccak\\templateLDA_B_ID\\template_C00\\template_expect_b"
+base_path_intermediate_rot_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\ChaCha_Simulation\\templates_Keccak\\templateLDA_B_ID\\template_B00\\template_expect_b"
 
-file_to_write_to_name = string("key_B_add_D_rot_C_runs_", number_of_encryption_traces, ".csv")
+file_to_write_to_name = string("key_A_add_C_rot_B_runs_", number_of_encryption_traces, ".csv")
 fileFileIOStream = open(file_to_write_to_name, "a")
 
 variables = Dict{String,Variable{Factor}}()
@@ -62,14 +62,10 @@ calculate_entropy_of_ends() = sum([variables[var].current_entropy for var in var
 # are not being added to the results because it seems to be completely independent amount of entropy
 # reagrdless of the templates which have been chosen
 
-for i in 1:10
-    key_mean_vectors = transpose(npzread(string(base_path_key_mean_vectors, lpad(string((20 + i) % 200), 3, "0"), ".npy")))
-    add_byte_key_template_to_variable = byte_template_value_to_function(key_mean_vectors, noise)
-    add_intermediate_mean_vectors = transpose(npzread(string(base_path_intermediate_add_mean_vectors, lpad(string((20 + i) % 40), 3, "0"), ".npy")))
-    add_byte_intermediate_add_template_to_variable = byte_template_value_to_function(add_intermediate_mean_vectors, noise)
-    rot_intermediate_mean_vectors = transpose(npzread(string(base_path_intermediate_rot_mean_vectors, lpad(string((20 + i) % 40), 3, "0"), ".npy")))
-    add_byte_intermediate_rot_template_to_variable = byte_template_value_to_function(rot_intermediate_mean_vectors, noise)
-
+for i in 1:25
+    add_byte_key_template_to_variable = byte_template_path_to_function(base_path_key_mean_vectors, noise, 200)
+    add_byte_intermediate_add_template_to_variable = byte_template_path_to_function(base_path_intermediate_add_mean_vectors, noise, 40)
+    add_byte_intermediate_rot_template_to_variable = byte_template_path_to_function(base_path_intermediate_rot_mean_vectors, noise, 40)
 
     variables = Dict{String,Variable{Factor}}()
     factors = Dict{String,Factor{Variable}}()
@@ -137,10 +133,10 @@ for i in 1:10
     for i in 1:initial_number_of_iterations
         println(i)
         Threads.@threads for var_name in internal_variables
-            variable_to_factor_messages(variables[var_name])
+            variable_to_factor_messages(variables[var_name], .8)
         end
         Threads.@threads for fact_name in internal_factors
-            factor_to_variable_messages(factors[fact_name])
+            factor_to_variable_messages(factors[fact_name], .8)
         end
         update_all_entropies(variables, all_variables)
         push!(tot_entropy_over_time, total_entropy_of_graph(variables))

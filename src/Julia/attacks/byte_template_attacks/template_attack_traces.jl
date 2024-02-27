@@ -58,3 +58,28 @@ function byte_template_value_to_function(mean_vectors::AbstractMatrix{Float64}, 
         end
     end
 end
+
+
+function byte_template_path_to_function(base_path::String, noise::Distribution, number_of_templates::Int64)
+    return function add_byte_template_to_variable(value,
+        variables::Dict{String, Variable{Factor}},
+        factors::Dict{String, Factor{Variable}},
+        bits_per_cluster::Int64,
+        variable_and_count::String,
+        run_number::Int64)
+        mean_vectors = transpose(npzread(string(base_path, lpad(string(Base.rand(0:(number_of_templates - 1))), 3, "0"), ".npy")))
+        clusters_per_leakage_weight = Int64(ceil(8 / bits_per_cluster))
+        for i in 1:4
+            prob_dist_for_byte = make_prob_dist_for_byte(mean_vectors, noise, value[i])
+            for j in 1:clusters_per_leakage_weight
+                cur_var_name = string(variable_and_count, "_", (i - 1) * clusters_per_leakage_weight + j, "_", run_number)
+                cur_dist_name = string("f_", cur_var_name, "_dist")
+                # Marginalise out the prob dist for this particular cluster, where cluster 1 is the LSB
+                marginalised_dist = marginalise_prob_dist(prob_dist_for_byte, (j - 1) * bits_per_cluster, bits_per_cluster)
+                factors[cur_dist_name] = Factor{Variable}(cur_dist_name, LabelledArray(marginalised_dist, [cur_var_name]))
+                add_edge_between(variables[cur_var_name], factors[cur_dist_name])
+                variables[cur_var_name].neighbour_index_to_avoid = length(variables[cur_var_name].neighbours)
+            end
+        end
+    end
+end

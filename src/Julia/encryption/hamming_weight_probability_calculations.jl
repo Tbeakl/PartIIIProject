@@ -39,7 +39,7 @@ function likelihoods_of_hamming_values(noise_distribution::Distribution, number_
     number_of_set_bits_in_original = 0:number_of_bits_in_input
     number_of_set_bits_in_output = 0:number_of_bits_in_output
 
-    likelihoods_of_set_bits = pdf(noise_distribution, number_of_set_bits_in_original)
+    likelihoods_of_set_bits = pdf(noise_distribution + leakage_value, number_of_set_bits_in_original)
     if sum(likelihoods_of_set_bits) ≈ 0
         likelihoods_of_set_bits = zeros(length(number_of_set_bits_in_original))
         likelihoods_of_set_bits[Int64(round(leakage_value)) + 1] = 1.

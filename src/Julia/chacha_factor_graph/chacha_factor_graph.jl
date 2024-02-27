@@ -405,7 +405,7 @@ function add_equality_between_keys_and_nonces(variables::Dict{String,Variable{Fa
         if position_in_state != 13
             for i in 1:number_of_clusters
                 factor_name = string("f_", position_in_state, "_0_", i, "_equality")
-                variable_names = [string(position_in_state, "_0_", i, "_", run_number) for run_number in 1:number_of_encryption_traces]
+                variable_names = [string(position_in_state, "_0_", i, "_", run_number) for run_number in 1:number_encryption_runs]
                 factors[factor_name] = Factor{Variable}(factor_name, LabelledArray(eqaulity_prob_table, variable_names))
                 for var_name in variable_names
                     add_edge_between(variables[var_name], factors[factor_name])

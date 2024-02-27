@@ -8,8 +8,8 @@ include("../../encryption/leakage_functions.jl")
 include("../../encryption/chacha.jl")
 include("template_attack_traces.jl")
 
-number_of_bits = 2
-number_of_encryption_traces = 9
+number_of_bits = 1
+number_of_encryption_traces = 3
 
 dimensions = 8
 signal_to_noise_ratio = 1.7
@@ -24,14 +24,11 @@ noise = noise_distribution_fixed_standard_dev(1., dimensions)
 # mean_vectors = generate_mean_vectors(noise, signal_to_noise_ratio, 255)
 # mean_vectors = generate_mean_vectors_based_on_hamming_weights(distribution_from_hamming_weight_per_bit, 8)
 base_path_key_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\ChaCha_Simulation\\templates_Keccak\\templateLDA_B_ID\\template_A00\\template_expect_b"
-base_path_intermediate_add_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\ChaCha_Simulation\\templates_Keccak\\templateLDA_B_ID\\template_C00\\template_expect_b"
+base_path_intermediate_add_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\ChaCha_Simulation\\templates_Keccak\\templateLDA_B_ID\\template_B00\\template_expect_b"
 base_path_intermediate_rot_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\ChaCha_Simulation\\templates_Keccak\\templateLDA_B_ID\\template_B00\\template_expect_b"
-key_mean_vectors = transpose(npzread(string(base_path_key_mean_vectors, lpad(string(22), 3, "0"), ".npy")))
-add_byte_key_template_to_variable = byte_template_value_to_function(key_mean_vectors, noise)
-add_intermediate_mean_vectors = transpose(npzread(string(base_path_intermediate_add_mean_vectors, lpad(string(22), 3, "0"), ".npy")))
-add_byte_intermediate_add_template_to_variable = byte_template_value_to_function(add_intermediate_mean_vectors, noise)
-rot_intermediate_mean_vectors = transpose(npzread(string(base_path_intermediate_rot_mean_vectors, lpad(string(22), 3, "0"), ".npy")))
-add_byte_intermediate_rot_template_to_variable = byte_template_value_to_function(rot_intermediate_mean_vectors, noise)
+add_byte_key_template_to_variable = byte_template_path_to_function(base_path_key_mean_vectors, noise, 200)
+add_byte_intermediate_add_template_to_variable = byte_template_path_to_function(base_path_intermediate_add_mean_vectors, noise, 40)
+add_byte_intermediate_rot_template_to_variable = byte_template_path_to_function(base_path_intermediate_rot_mean_vectors, noise, 40)
 
 variables = Dict{String,Variable{Factor}}()
 factors = Dict{String,Factor{Variable}}()
@@ -120,10 +117,10 @@ initial_number_of_iterations = 200
 for i in 1:initial_number_of_iterations
     println(i)
     Threads.@threads for var_name in internal_variables
-        variable_to_factor_messages(variables[var_name])
+        variable_to_factor_messages(variables[var_name], .8)
     end
     Threads.@threads for fact_name in internal_factors
-        factor_to_variable_messages(factors[fact_name])
+        factor_to_variable_messages(factors[fact_name], .8)
     end
     update_all_entropies(variables, all_variables)
     push!(visualisation_of_entropy, variables_to_heatmap_matrix(visualisation_variables, heatmap_plotting_function))
@@ -147,25 +144,25 @@ rounds_for_ends = 5
 variables_at_ends = [union(additional_variables, variables_by_round[begin:rounds_for_ends]..., variables_by_round[end- rounds_for_ends - 1:end]...)...]
 factors_at_ends = [union(additional_factors, factors_by_round[begin:rounds_for_ends]..., factors_by_round[end- rounds_for_ends - 1:end]...)...]
 prev_ent = calculate_entropy_of_ends()
-for i in 1:number_of_iterations_of_ends
-    println(i)
-    Threads.@threads for var_name in variables_at_ends
-        variable_to_factor_messages(variables[var_name])
-    end
-    Threads.@threads for fact_name in factors_at_ends
-        factor_to_variable_messages(factors[fact_name])
-    end
-    update_all_entropies(variables, variables_at_ends)
-    push!(visualisation_of_entropy, variables_to_heatmap_matrix(visualisation_variables, heatmap_plotting_function))
+# for i in 1:number_of_iterations_of_ends
+#     println(i)
+#     Threads.@threads for var_name in variables_at_ends
+#         variable_to_factor_messages(variables[var_name])
+#     end
+#     Threads.@threads for fact_name in factors_at_ends
+#         factor_to_variable_messages(factors[fact_name])
+#     end
+#     update_all_entropies(variables, variables_at_ends)
+#     push!(visualisation_of_entropy, variables_to_heatmap_matrix(visualisation_variables, heatmap_plotting_function))
 
-    push!(tot_entropy_over_time, total_entropy_of_graph(variables))
-    println(tot_entropy_over_time[end])
-    cur_ent = calculate_entropy_of_ends()
-    if tot_entropy_over_time[end] < 1e-6 || abs(tot_entropy_over_time[end] - tot_entropy_over_time[end-1]) <= 1e-6 || abs(cur_ent - prev_ent) <= 1e-7
-        break
-    end
-    prev_ent = cur_ent
-end
+#     push!(tot_entropy_over_time, total_entropy_of_graph(variables))
+#     println(tot_entropy_over_time[end])
+#     cur_ent = calculate_entropy_of_ends()
+#     if tot_entropy_over_time[end] < 1e-6 || abs(tot_entropy_over_time[end] - tot_entropy_over_time[end-1]) <= 1e-6 || abs(cur_ent - prev_ent) <= 1e-7
+#         break
+#     end
+#     prev_ent = cur_ent
+# end
 
 read_off_key = [read_most_likely_value_from_variable(variables, string(i + 4, "_0"), number_of_bits, 1) for i in 1:8]
 for i in 1:8
