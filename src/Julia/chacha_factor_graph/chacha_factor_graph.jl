@@ -294,7 +294,7 @@ function chacha_factor_graph!(variables::Dict{String,Variable{Factor}},
     number_of_bits_per_cluster::Int64,
     variables_by_round::Vector{Set{String}},
     factors_by_round::Vector{Set{String}},
-    adds_by_round::Vector{Vector{Int64}},
+    adds_by_round::Vector{Set{Int64}},
     location_execution_counts::Vector{Int64},
     run_number::Int64
 )
@@ -330,7 +330,7 @@ function chacha_factor_graph!(variables::Dict{String,Variable{Factor}},
         chacha_quarter_round_factor_graph!(variables, factors, 4, 8, 12, 16, number_of_bits_per_cluster, location_execution_counts, number_of_operations, precalculated_prob_tables, cur_round_variables, cur_round_factors, run_number)
         variables_by_round[2*i-1] = union(variables_by_round[2*i-1], cur_round_variables)
         factors_by_round[2*i-1] = union(factors_by_round[2*i-1], cur_round_factors)
-        adds_by_round[2*i-1] = union(adds_by_round[2*i-1], Vector(start_add:(number_of_operations["add"]-1)))
+        adds_by_round[2*i-1] = union(adds_by_round[2*i-1], Set(start_add:(number_of_operations["add"]-1)))
         cur_round_variables = Set{String}()
         cur_round_factors = Set{String}()
         start_add = number_of_operations["add"]
@@ -340,7 +340,7 @@ function chacha_factor_graph!(variables::Dict{String,Variable{Factor}},
         chacha_quarter_round_factor_graph!(variables, factors, 4, 5, 10, 15, number_of_bits_per_cluster, location_execution_counts, number_of_operations, precalculated_prob_tables, cur_round_variables, cur_round_factors, run_number)
         variables_by_round[2*i] = union(variables_by_round[2*i], cur_round_variables)
         factors_by_round[2*i] = union(factors_by_round[2*i], cur_round_factors)
-        adds_by_round[2*i] = union(adds_by_round[2*i], Vector(start_add:(number_of_operations["add"]-1)))
+        adds_by_round[2*i] = union(adds_by_round[2*i], Set(start_add:(number_of_operations["add"]-1)))
     end
 
     # At this stage need to put in the add between the original values and the current value 
@@ -352,7 +352,7 @@ function chacha_factor_graph!(variables::Dict{String,Variable{Factor}},
     end
     variables_by_round[end] = union(variables_by_round[end], cur_round_variables)
     factors_by_round[end] = union(factors_by_round[end], cur_round_factors)
-    adds_by_round[end] = union(adds_by_round[end], Vector(start_add:(number_of_operations["add"]-1)))
+    adds_by_round[end] = union(adds_by_round[end], Set(start_add:(number_of_operations["add"]-1)))
     # This means that all of the variables and factors for the execution of the algorithm have been gone through
     # need to now add in factors for the initial conditions of the ChaCha algorithm this is the first few words being
     # set in the standard
@@ -374,11 +374,11 @@ function add_distribution_of_initial_values(variables::Dict{String,Variable{Fact
     key::Vector{UInt32}, nonce::Vector{UInt32}, counter::UInt32,
     run_number::Int64)
     for i in 1:8
-        set_variable_to_value(variables, factors, string(i + 4, "_0", "_", run_number), key[i], number_of_bits_per_cluster, run_number)
+        set_variable_to_value(variables, factors, string(i + 4, "_0"), key[i], number_of_bits_per_cluster, run_number)
     end
-    set_variable_to_value(variables, factors, string("13_0", "_", run_number), counter, number_of_bits_per_cluster, run_number)
+    set_variable_to_value(variables, factors, string("13_0"), counter, number_of_bits_per_cluster, run_number)
     for i in 1:3
-        set_variable_to_value(variables, factors, string(i + 13, "_0", "_", run_number), nonce[i], number_of_bits_per_cluster, run_number)
+        set_variable_to_value(variables, factors, string(i + 13, "_0"), nonce[i], number_of_bits_per_cluster, run_number)
     end
 end
 

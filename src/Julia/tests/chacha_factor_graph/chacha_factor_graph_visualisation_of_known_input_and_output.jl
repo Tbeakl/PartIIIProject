@@ -25,16 +25,16 @@ encryption_output = encrypt(key, nonce, counter)
 
 variables = Dict{String,Variable{Factor}}()
 factors = Dict{String,Factor{Variable}}()
-variables_by_round::Vector{Set{String}} = []
-factors_by_round::Vector{Set{String}} = []
-adds_by_round::Vector{Vector{Int64}} = []
+variables_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
+factors_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
+adds_by_round::Vector{Set{Int64}} = [Set{Int64}() for _ in 1:21]
 location_execution_counts = zeros(Int64, 16)
-chacha_factor_graph!(variables, factors, number_of_bits, variables_by_round, factors_by_round, adds_by_round, location_execution_counts)
-add_starting_constant_values(variables, factors, number_of_bits)
-add_distribution_of_initial_values(variables, factors, number_of_bits, key, nonce, counter)
+chacha_factor_graph!(variables, factors, number_of_bits, variables_by_round, factors_by_round, adds_by_round, location_execution_counts, 1)
+add_starting_constant_values(variables, factors, number_of_bits, 1)
+add_distribution_of_initial_values(variables, factors, number_of_bits, key, nonce, counter, 1)
 
 for i in 1:16
-    set_variable_to_value(variables, factors, string(i, "_", location_execution_counts[i]), encryption_output[i], number_of_bits)
+    set_variable_to_value(variables, factors, string(i, "_", location_execution_counts[i]), encryption_output[i], number_of_bits, 1)
 end
 
 all_variables = [keys(variables)...]
@@ -42,7 +42,7 @@ all_factors = [keys(factors)...]
 
 heatmap_plotting_function = plot_current_entropy(variables)
 visualisation_of_entropy::Vector{Matrix{Float64}} = []
-visualisation_variables, x_labels, y_labels = make_positions_to_var_names(number_of_bits)
+visualisation_variables, x_labels, y_labels = make_positions_to_var_names(number_of_bits, 1)
 tot_entropy_over_time::Vector{Float64} = []
 
 # # Perform the dynamic message passing around the graph to push information through the entire graph
@@ -63,8 +63,10 @@ end
 # I think these will be the main source of the issues although there could be ones also for the rotations probably should 
 # just add the correct leakages in for before the rotation has taken place as well because that might actually be recoverable
 
-for i in 0:adds_by_round[end][end]
-    belief_propagate_through_add(variables, factors, number_of_bits, i)
+for add_nums in adds_by_round
+    for add_num in add_nums
+        belief_propagate_through_add(variables, factors, number_of_bits, add_num, 1)
+    end
 end
 
 update_all_entropies(variables, all_variables)
@@ -75,7 +77,7 @@ println(tot_entropy_over_time[end])
 internal_factors = [union(factors_by_round[:]...)...]
 internal_variables = [union(variables_by_round[:]...)...]
 
-initial_number_of_iterations = 100
+initial_number_of_iterations = 120
 
 for i in 1:initial_number_of_iterations
     println(i)
@@ -92,9 +94,9 @@ for i in 1:initial_number_of_iterations
     println(tot_entropy_over_time[end])
 end
 
-anim = @animate for i in 1:length(visualisation_of_entropy)
+anim = @animate for i in eachindex(visualisation_of_entropy)
     heatmap(visualisation_of_entropy[i]; title=string("Round ", i - 1, " entropy of variables"), clim=(0, number_of_bits)) # 
 end
 
 # heatmap(visualisation_of_entropy[1]; title=string("Round ", 0, " entropy of variables")) # clim=(0, number_of_bits),
-gif(anim, "known_input.gif", fps=5)
+gif(anim, "known_input.gif", fps=10)

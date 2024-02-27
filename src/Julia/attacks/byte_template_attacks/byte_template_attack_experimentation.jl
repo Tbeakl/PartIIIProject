@@ -9,7 +9,7 @@ include("../../encryption/chacha.jl")
 include("template_attack_traces.jl")
 
 number_of_bits = 2
-number_of_encryption_traces = 1
+number_of_encryption_traces = 9
 
 dimensions = 8
 signal_to_noise_ratio = 1.7
@@ -23,21 +23,21 @@ noise = noise_distribution_fixed_standard_dev(1., dimensions)
 # distribution_from_hamming_weight_per_bit = noise_distribution_fixed_standard_dev(0.1, 4)
 # mean_vectors = generate_mean_vectors(noise, signal_to_noise_ratio, 255)
 # mean_vectors = generate_mean_vectors_based_on_hamming_weights(distribution_from_hamming_weight_per_bit, 8)
-base_path_key_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\ChaCha_Simulation\\templates_Keccak\\templateLDA_B_ID\\template_B00\\template_expect_b"
-base_path_intermediate_add_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\ChaCha_Simulation\\templates_Keccak\\templateLDA_B_ID\\template_D00\\template_expect_b"
-base_path_intermediate_rot_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\ChaCha_Simulation\\templates_Keccak\\templateLDA_B_ID\\template_C00\\template_expect_b"
-key_mean_vectors = transpose(npzread(string(base_path_key_mean_vectors, lpad(string(20), 3, "0"), ".npy")))
+base_path_key_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\ChaCha_Simulation\\templates_Keccak\\templateLDA_B_ID\\template_A00\\template_expect_b"
+base_path_intermediate_add_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\ChaCha_Simulation\\templates_Keccak\\templateLDA_B_ID\\template_C00\\template_expect_b"
+base_path_intermediate_rot_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\ChaCha_Simulation\\templates_Keccak\\templateLDA_B_ID\\template_B00\\template_expect_b"
+key_mean_vectors = transpose(npzread(string(base_path_key_mean_vectors, lpad(string(22), 3, "0"), ".npy")))
 add_byte_key_template_to_variable = byte_template_value_to_function(key_mean_vectors, noise)
-add_intermediate_mean_vectors = transpose(npzread(string(base_path_intermediate_add_mean_vectors, lpad(string(20), 3, "0"), ".npy")))
+add_intermediate_mean_vectors = transpose(npzread(string(base_path_intermediate_add_mean_vectors, lpad(string(22), 3, "0"), ".npy")))
 add_byte_intermediate_add_template_to_variable = byte_template_value_to_function(add_intermediate_mean_vectors, noise)
-rot_intermediate_mean_vectors = transpose(npzread(string(base_path_intermediate_rot_mean_vectors, lpad(string(20), 3, "0"), ".npy")))
-add_byte_intermediate_add_template_to_variable = byte_template_value_to_function(rot_intermediate_mean_vectors, noise)
+rot_intermediate_mean_vectors = transpose(npzread(string(base_path_intermediate_rot_mean_vectors, lpad(string(22), 3, "0"), ".npy")))
+add_byte_intermediate_rot_template_to_variable = byte_template_value_to_function(rot_intermediate_mean_vectors, noise)
 
 variables = Dict{String,Variable{Factor}}()
 factors = Dict{String,Factor{Variable}}()
 variables_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
 factors_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
-adds_by_round::Vector{Vector{Int64}} = [Vector{Int64}[] for _ in 1:21]
+adds_by_round::Vector{Set{Int64}} = [Set{Int64}() for _ in 1:21]
 
 for encryption_run_number in 1:number_of_encryption_traces
     encryption_trace = encrypt_collect_trace(key, nonce, counter, byte_values_for_input)
@@ -55,7 +55,7 @@ for encryption_run_number in 1:number_of_encryption_traces
         # set_variable_to_value(variables, factors, string(i, "_", location_execution_counts[i]), encryption_output[i], number_of_bits, 1)
     end
     println("Starting to add the factors for the trace")
-    add_trace_to_factor_graph(encryption_trace, variables, factors, number_of_bits, encryption_run_number, add_byte_intermediate_add_template_to_variable, add_byte_intermediate_add_template_to_variable)
+    add_trace_to_factor_graph(encryption_trace, variables, factors, number_of_bits, encryption_run_number, add_byte_intermediate_add_template_to_variable, add_byte_intermediate_rot_template_to_variable)
     println("Added the factors for the trace")
     counter = counter + 0x1
 end
@@ -99,9 +99,11 @@ end
 # I think these will be the main source of the issues although there could be ones also for the rotations probably should 
 # just add the correct leakages in for before the rotation has taken place as well because that might actually be recoverable
 
-for i in 0:adds_by_round[end][end]
-    for j in 1:number_of_encryption_traces
-        belief_propagate_through_add(variables, factors, number_of_bits, i, j)
+for add_nums in adds_by_round
+    for add_num in add_nums
+        for encryption_run in 1:number_of_encryption_traces
+            belief_propagate_through_add(variables, factors, number_of_bits, add_num, encryption_run)
+        end
     end
 end
 

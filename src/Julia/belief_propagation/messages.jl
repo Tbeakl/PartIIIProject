@@ -35,9 +35,7 @@ function other_axes_from_labeled_axes(labelled_array::LabelledArray, axis_label:
     return [i for i in 1:length(labelled_array.axes_labels) if labelled_array.axes_labels[i] != axis_label]
 end
 
-damping_factor = .9 #.9
-
-function variable_to_factor_messages(variable::Variable{Factor})
+function variable_to_factor_messages(variable::Variable{Factor}, damping_factor::Float64 = 1.)
     # This needs to update the messsages in the factors from this variable
     neighbours_to_include = ones(Bool, size(variable.incoming_messages)[1])
     for (i, neighbour) in enumerate(variable.neighbours)
@@ -54,7 +52,7 @@ function variable_to_factor_messages(variable::Variable{Factor})
     end
 end
 
-function factor_to_variable_messages(factor::Factor{Variable})
+function factor_to_variable_messages(factor::Factor{Variable}, damping_factor::Float64 = 1.)
     # This needs to update all the incoming messages of the connected variables
     tiled_incoming_messages = [tile_to_other_dist_along_axis_name(LabelledArray(factor.incoming_messages[i], [neighbour.name]), factor.data).array for (i, neighbour) in enumerate(factor.neighbours)]
     for (i, neighbour) in enumerate(factor.neighbours)

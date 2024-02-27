@@ -14,19 +14,19 @@ function all_zeros_single_bit_clusters_perturbed_output()
     number_of_bits = 1
     variables = Dict{String, Variable{Factor}}()
     factors = Dict{String, Factor{Variable}}()
-    variables_by_round::Vector{Set{String}} = []
-    factors_by_round::Vector{Set{String}} = []    
-    adds_by_round::Vector{Vector{Int64}} = []
+    variables_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
+    factors_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
+    adds_by_round::Vector{Set{Int64}} = [Set{Int64}() for _ in 1:21]
     location_execution_counts = zeros(Int64, 16)
-    chacha_factor_graph!(variables, factors, number_of_bits, variables_by_round, factors_by_round, adds_by_round, location_execution_counts)
-    add_starting_constant_values(variables, factors, number_of_bits)
-    add_distribution_of_initial_values(variables, factors, number_of_bits, key, nonce, counter)
+    chacha_factor_graph!(variables, factors, number_of_bits, variables_by_round, factors_by_round, adds_by_round, location_execution_counts, 1)
+    add_starting_constant_values(variables, factors, number_of_bits, 1)
+    add_distribution_of_initial_values(variables, factors, number_of_bits, key, nonce, counter, 1)
     println(encryption_trace[end])
     # Here flip the lowest bit in the final trace value, which should then allow us to see
     # that information can correctly flow through the graph
     encryption_trace[end] = 0x1 ⊻ encryption_trace[end]
     println(encryption_trace[end])
-    add_trace_to_factor_graph(encryption_trace, variables, factors, number_of_bits)
+    add_trace_to_factor_graph(encryption_trace, variables, factors, number_of_bits, 1)
 
     # Perform the dynamic message passing around the graph to push information through the entire graph
     dynamic_belief_propogate_through_graph(variables, factors, 100_000)
@@ -48,19 +48,19 @@ function all_zeros_2_bit_clusters_perturbed_output()
     number_of_bits = 2
     variables = Dict{String, Variable{Factor}}()
     factors = Dict{String, Factor{Variable}}()
-    variables_by_round::Vector{Set{String}} = []
-    factors_by_round::Vector{Set{String}} = []    
-    adds_by_round::Vector{Vector{Int64}} = []
+    variables_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
+    factors_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
+    adds_by_round::Vector{Set{Int64}} = [Set{Int64}() for _ in 1:21]
     location_execution_counts = zeros(Int64, 16)
-    chacha_factor_graph!(variables, factors, number_of_bits, variables_by_round, factors_by_round, adds_by_round, location_execution_counts)
-    add_starting_constant_values(variables, factors, number_of_bits)
-    add_distribution_of_initial_values(variables, factors, number_of_bits, key, nonce, counter)
+    chacha_factor_graph!(variables, factors, number_of_bits, variables_by_round, factors_by_round, adds_by_round, location_execution_counts, 1)
+    add_starting_constant_values(variables, factors, number_of_bits, 1)
+    add_distribution_of_initial_values(variables, factors, number_of_bits, key, nonce, counter, 1)
     println(encryption_trace[end])
     # Here flip the lowest bit in the final trace value, which should then allow us to see
     # that information can correctly flow through the graph
     encryption_trace[end] = 0x1 ⊻ encryption_trace[end]
     println(encryption_trace[end])
-    add_trace_to_factor_graph(encryption_trace, variables, factors, number_of_bits)
+    add_trace_to_factor_graph(encryption_trace, variables, factors, number_of_bits, 1)
 
     # Perform the dynamic message passing around the graph to push information through the entire graph
     dynamic_belief_propogate_through_graph(variables, factors, 100_000)
@@ -82,19 +82,19 @@ function all_zeros_4_bit_clusters_perturbed_output()
     number_of_bits = 4
     variables = Dict{String, Variable{Factor}}()
     factors = Dict{String, Factor{Variable}}()
-    variables_by_round::Vector{Set{String}} = []
-    factors_by_round::Vector{Set{String}} = []    
-    adds_by_round::Vector{Vector{Int64}} = []
+    variables_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
+    factors_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
+    adds_by_round::Vector{Set{Int64}} = [Set{Int64}() for _ in 1:21]
     location_execution_counts = zeros(Int64, 16)
-    chacha_factor_graph!(variables, factors, number_of_bits, variables_by_round, factors_by_round, adds_by_round, location_execution_counts)
-    add_starting_constant_values(variables, factors, number_of_bits)
-    add_distribution_of_initial_values(variables, factors, number_of_bits, key, nonce, counter)
+    chacha_factor_graph!(variables, factors, number_of_bits, variables_by_round, factors_by_round, adds_by_round, location_execution_counts, 1)
+    add_starting_constant_values(variables, factors, number_of_bits, 1)
+    add_distribution_of_initial_values(variables, factors, number_of_bits, key, nonce, counter, 1)
     println(encryption_trace[end])
     # Here flip the lowest bit in the final trace value, which should then allow us to see
     # that information can correctly flow through the graph
     encryption_trace[end] = 0x1 ⊻ encryption_trace[end]
     println(encryption_trace[end])
-    add_trace_to_factor_graph(encryption_trace, variables, factors, number_of_bits)
+    add_trace_to_factor_graph(encryption_trace, variables, factors, number_of_bits, 1)
 
     # Perform the dynamic message passing around the graph to push information through the entire graph
     dynamic_belief_propogate_through_graph(variables, factors, 100_000)
