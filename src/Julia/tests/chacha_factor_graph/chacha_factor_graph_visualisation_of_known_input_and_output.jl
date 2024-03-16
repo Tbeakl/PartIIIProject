@@ -11,15 +11,15 @@ include("../../encryption/chacha.jl")
 # nonce = zeros(UInt32, 3)
 # counter::UInt32 = 0
 
-# key = [0x03020100, 0x07060504, 0x0b0a0908, 0x0f0e0d0c, 0x13121110, 0x17161514, 0x1b1a1918, 0x1f1e1d1c]
-# nonce = [0x09000000, 0x4a000000, 0x00000000]
-# counter::UInt32 = 1
+key = [0x03020100, 0x07060504, 0x0b0a0908, 0x0f0e0d0c, 0x13121110, 0x17161514, 0x1b1a1918, 0x1f1e1d1c]
+nonce = [0x09000000, 0x4a000000, 0x00000000]
+counter::UInt32 = 1
 
 number_of_bits = 2
 
-key = generate_random_key()
-nonce = generate_random_nonce()
-counter = generate_random_counter()
+# key = generate_random_key()
+# nonce = generate_random_nonce()
+# counter = generate_random_counter()
 
 encryption_output = encrypt(key, nonce, counter)
 
@@ -63,11 +63,11 @@ end
 # I think these will be the main source of the issues although there could be ones also for the rotations probably should 
 # just add the correct leakages in for before the rotation has taken place as well because that might actually be recoverable
 
-for add_nums in adds_by_round
-    for add_num in add_nums
-        belief_propagate_through_add(variables, factors, number_of_bits, add_num, 1)
-    end
-end
+# for add_nums in adds_by_round
+#     for add_num in add_nums
+#         belief_propagate_through_add(variables, factors, number_of_bits, add_num, 1)
+#     end
+# end
 
 update_all_entropies(variables, all_variables)
 push!(visualisation_of_entropy, variables_to_heatmap_matrix(visualisation_variables, heatmap_plotting_function))
@@ -77,7 +77,7 @@ println(tot_entropy_over_time[end])
 internal_factors = [union(factors_by_round[:]...)...]
 internal_variables = [union(variables_by_round[:]...)...]
 
-initial_number_of_iterations = 120
+initial_number_of_iterations = 250
 
 for i in 1:initial_number_of_iterations
     println(i)
@@ -92,6 +92,9 @@ for i in 1:initial_number_of_iterations
     
     push!(tot_entropy_over_time, total_entropy_of_graph(variables))
     println(tot_entropy_over_time[end])
+    if tot_entropy_over_time[end] < 1e-100
+        break
+    end
 end
 
 anim = @animate for i in eachindex(visualisation_of_entropy)
@@ -99,4 +102,4 @@ anim = @animate for i in eachindex(visualisation_of_entropy)
 end
 
 # heatmap(visualisation_of_entropy[1]; title=string("Round ", 0, " entropy of variables")) # clim=(0, number_of_bits),
-gif(anim, "known_input.gif", fps=10)
+gif(anim, string("known_input_output_only_reversed_qr_straight_xors_no_final_xor_", number_of_bits, ".gif"), fps=10)

@@ -8,18 +8,18 @@ include("../../encryption/leakage_functions.jl")
 include("../../encryption/chacha.jl")
 include("template_attack_traces.jl")
 
-number_of_bits = 1
-number_of_encryption_traces = 3
+number_of_bits::Int64 = 1
+number_of_encryption_traces::Int64 = 1
 
-dimensions = 8
-signal_to_noise_ratio = 1.7
-key = generate_random_key()
-nonce = generate_random_nonce()
-counter = generate_random_counter()
+dimensions::Int64 = 8
+signal_to_noise_ratio::Float64 = 1.7
+key::Vector{UInt32} = generate_random_key()
+nonce::Vector{UInt32} = generate_random_nonce()
+counter::UInt32 = generate_random_counter()
 
 
 # noise = noise_distribution_random_variances(dimensions)
-noise = noise_distribution_fixed_standard_dev(1., dimensions)
+noise = noise_distribution_fixed_standard_dev(1.0, dimensions)
 # distribution_from_hamming_weight_per_bit = noise_distribution_fixed_standard_dev(0.1, 4)
 # mean_vectors = generate_mean_vectors(noise, signal_to_noise_ratio, 255)
 # mean_vectors = generate_mean_vectors_based_on_hamming_weights(distribution_from_hamming_weight_per_bit, 8)
@@ -66,8 +66,8 @@ if number_of_encryption_traces > 1
     add_adds_between_counters(variables, factors, number_of_bits, number_of_encryption_traces, additional_factors, additional_variables)
 end
 
-all_variables = [keys(variables)...]
-all_factors = [keys(factors)...]
+all_variables::Vector{String} = [keys(variables)...]
+all_factors::Vector{String} = [keys(factors)...]
 
 heatmap_plotting_function = plot_current_entropy(variables)
 visualisation_of_entropy::Vector{Matrix{Float64}} = []
@@ -116,12 +116,16 @@ initial_number_of_iterations = 200
 
 for i in 1:initial_number_of_iterations
     println(i)
+    timing_info = @timed begin
     Threads.@threads for var_name in internal_variables
-        variable_to_factor_messages(variables[var_name], .8)
+            variable_to_factor_messages(variables[var_name], 0.8)
     end
     Threads.@threads for fact_name in internal_factors
-        factor_to_variable_messages(factors[fact_name], .8)
+            factor_to_variable_messages(factors[fact_name], 0.8)
+        end
     end
+    push!(execution_times, timing_info.time)
+    push!(gc_execution_times, timing_info.gctime)
     update_all_entropies(variables, all_variables)
     push!(visualisation_of_entropy, variables_to_heatmap_matrix(visualisation_variables, heatmap_plotting_function))
     
@@ -132,18 +136,21 @@ for i in 1:initial_number_of_iterations
     end
 end
 
+println("Average time: ", mean(execution_times), " Standard deviation: ", std(execution_times))
+println("Average gc time: ", mean(gc_execution_times), " Standard deviation: ", std(gc_execution_times))
+
 # Potentially could look at just the very start and end for checking for if we have reached convergence because we 
 # don't really need to solve the centre of the graph if the start and end are correct and will not really change any more
-number_of_end_rounds_to_check = 2
-vars_to_check = [union(variables_by_round[begin:number_of_end_rounds_to_check]..., variables_by_round[end- number_of_end_rounds_to_check - 1:end]...)...]
-calculate_entropy_of_ends() = sum([variables[var].current_entropy for var in vars_to_check])
+# number_of_end_rounds_to_check = 2
+# vars_to_check = [union(variables_by_round[begin:number_of_end_rounds_to_check]..., variables_by_round[end-number_of_end_rounds_to_check-1:end]...)...]
+# calculate_entropy_of_ends() = sum([variables[var].current_entropy for var in vars_to_check])
 
 
-number_of_iterations_of_ends = 2# 200
-rounds_for_ends = 5
-variables_at_ends = [union(additional_variables, variables_by_round[begin:rounds_for_ends]..., variables_by_round[end- rounds_for_ends - 1:end]...)...]
-factors_at_ends = [union(additional_factors, factors_by_round[begin:rounds_for_ends]..., factors_by_round[end- rounds_for_ends - 1:end]...)...]
-prev_ent = calculate_entropy_of_ends()
+# number_of_iterations_of_ends = 2# 200
+# rounds_for_ends = 5
+# variables_at_ends = [union(additional_variables, variables_by_round[begin:rounds_for_ends]..., variables_by_round[end-rounds_for_ends-1:end]...)...]
+# factors_at_ends = [union(additional_factors, factors_by_round[begin:rounds_for_ends]..., factors_by_round[end-rounds_for_ends-1:end]...)...]
+# prev_ent = calculate_entropy_of_ends()
 # for i in 1:number_of_iterations_of_ends
 #     println(i)
 #     Threads.@threads for var_name in variables_at_ends
@@ -176,6 +183,3 @@ anim = @animate for i in eachindex(visualisation_of_entropy)
 end
 # heatmap(visualisation_of_entropy[1]; title=string("Round ", 0, " entropy of variables")) # clim=(0, number_of_bits),
 gif(anim, "test.gif", fps=20)
-
-
-# There looks to be an issue with the counter keeping high entropy despite the fact it should be heavily reduced

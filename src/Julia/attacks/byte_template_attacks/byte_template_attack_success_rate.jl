@@ -10,7 +10,7 @@ include("template_attack_traces.jl")
 
 number_of_bits = 2
 dimensions = 8
-initial_number_of_iterations = 200
+initial_number_of_iterations = 250
 number_of_iterations_of_ends = 0
 rounds_for_ends = 5
 number_of_encryption_traces = 1
@@ -20,7 +20,7 @@ base_path_key_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartI
 base_path_intermediate_add_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\ChaCha_Simulation\\templates_Keccak\\templateLDA_B_ID\\template_C00\\template_expect_b"
 base_path_intermediate_rot_mean_vectors = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\ChaCha_Simulation\\templates_Keccak\\templateLDA_B_ID\\template_B00\\template_expect_b"
 
-file_to_write_to_name = string("key_A_add_C_rot_B_runs_", number_of_encryption_traces, ".csv")
+file_to_write_to_name = string("key_A_add_C_rot_B_runs_bits_2_", number_of_encryption_traces, ".csv")
 fileFileIOStream = open(file_to_write_to_name, "a")
 
 variables = Dict{String,Variable{Factor}}()
