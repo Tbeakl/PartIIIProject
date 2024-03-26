@@ -21,6 +21,11 @@ function put_value_into_noisy_space(mean_vectors::AbstractMatrix{Float64}, noise
     return mean_vectors[:, value + 1] .+ rand(noise)
 end
 
+function get_prob_dist_of_vector(mean_vectors::AbstractMatrix{Float32}, noise::Distribution, current_vector::AbstractVector{Float32})
+    likelihood_of_values = pdf(noise, mean_vectors .- current_vector)
+    return likelihood_of_values ./ sum(likelihood_of_values)
+end
+
 function make_prob_dist_for_byte(mean_vectors::AbstractMatrix{Float64}, noise::Distribution, value::Int64)
     likelihood_of_values = pdf(noise, mean_vectors .- put_value_into_noisy_space(mean_vectors, noise, value))
     return likelihood_of_values ./ sum(likelihood_of_values)

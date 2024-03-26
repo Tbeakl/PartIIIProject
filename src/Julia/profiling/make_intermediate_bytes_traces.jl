@@ -18,7 +18,13 @@ for file_number in 1:360
         ciphertext = encrypt(key, nonce, counter) .⊻ plaintext
         trace = encrypt_collect_trace(key, nonce, counter, byte_values_for_input)[elements_of_trace_to_select]
 
-        all_trace_values = append!(byte_values_for_input.(key), byte_values_for_input.(nonce), byte_values_for_input.([counter]), byte_values_for_input.(plaintext), trace, byte_values_for_input.(ciphertext))
+        all_trace_values = append!(
+            byte_values_for_input.(key),
+            byte_values_for_input.(nonce),
+            byte_values_for_input.([counter]),
+            byte_values_for_input.(plaintext),
+            trace,
+            byte_values_for_input.(ciphertext))
         all_values = UInt8.(collect(Iterators.flatten(all_trace_values)))
         intermediates_fid[string("power_", trace_number)] = all_values
     end

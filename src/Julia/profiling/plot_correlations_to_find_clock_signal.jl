@@ -1,4 +1,4 @@
-using HDF5, Plots, Statistics
+using HDF5, Plots, Statistics, CUDA
 plotly()
 
 lower_bound_samples = 563000
@@ -7,17 +7,17 @@ upper_bound_samples = 587000
 intermediate_value_index = 1
 number_of_intermediate_values = 2800
 
-intermediate_values_base_path = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\intermediate_value_traces\\recording_profiling_"
-traces_base_path = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\captures\\ChaChaRecordings\\recording_profiling_"
+intermediate_values_base_path = "D:\\ChaChaData\\intermediate_value_traces\\recording_profiling_"
+traces_base_path = "D:\\ChaChaData\\captures\\ChaChaRecordings\\recording_profiling_"
 
-fid = h5open("D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\attack_profiling\\mean_trace.hdf5", "r")
+fid = h5open("D:\\ChaChaData\\attack_profiling\\mean_trace.hdf5", "r")
 mean_trace = read(fid["mean_trace"])
 trimmed_mean_trace = mean_trace[50:(end-50)]
 mean_arg_min = argmin(mean_trace)
 close(fid)
 
 trace_range_per_file = 0:249
-file_range = 9:72 #9:72
+file_range = 9:72
 
 all_intermediate_values = zeros(UInt8, length(trace_range_per_file) * length(file_range), number_of_intermediate_values)
 sections_of_trace = zeros(Int16, length(trace_range_per_file) * length(file_range), upper_bound_samples - lower_bound_samples)
@@ -39,48 +39,25 @@ for i in file_range
     end
     close(fid)
 end
-
-# Need to get the correlations for each of the different parts of trace, will just try the hamming weight of the intermediate value for the time being
-
-# hamming_weight_values = Base.count_ones.(all_intermediate_values)
-# all_correlations = zeros(upper_bound_samples - lower_bound_samples, 4)
-# for j in 1:4
-#     weight_vector = hamming_weight_values[:, 4*j-1]
-#     for i in 1:(upper_bound_samples-lower_bound_samples)
-#         all_correlations[i, j] = cor(weight_vector, sections_of_trace[:, i])^2
-#     end
-# end
-# p = plot(all_correlations, size=(1200, 800))
-# savefig(p, "./plots/hamming_weight_correlations.html")
-
-# all_correlations_on_linear_model = zeros(upper_bound_samples - lower_bound_samples, 4)
-# for j in 1:4
-#     base_prediction_matrix = permutedims(hcat(digits.(all_intermediate_values[:, j], base=2, pad=9)...))
-#     base_prediction_matrix[:, end] .= 1
-#     for i in 1:(upper_bound_samples-lower_bound_samples)
-#         # Need to make the correct weights matrix for the prediction
-#         β = (base_prediction_matrix' * base_prediction_matrix) \ base_prediction_matrix' * sections_of_trace[:, i]
-#         predicted_values = base_prediction_matrix * β
-#         all_correlations_on_linear_model[i, j] = cor(predicted_values, sections_of_trace[:, i])^2
-#     end
-# end
-# p = plot(all_correlations_on_linear_model, size=(1200, 800))
-# savefig(p, "./plots/linear_models_correlations.html")
-
 # These correlation graphs seem to show that it is good to start each clock cycle at approximate 450/950 because that incleudes all the big peaks and is in a trough
 
-value_columns = eachcol(sections_of_trace)
-variances = var.(value_columns)
+sections_of_trace = CuArray(sections_of_trace)
+all_intermediate_values = CuArray(all_intermediate_values)
 
-function calculate_normalised_interclass_variances(intermediate_value_vector, trace_values, variance)
-    get_mean(j) = mean(trace_values[intermediate_value_vector .== j])
-    return var(get_mean.(0:255)) / variance
+variances = var(sections_of_trace, dims=1)[1, :]
+
+function calculate_NICV(traces, variances, all_intermediate_values, intermediate_index)
+    intermediate_value_vector = all_intermediate_values[:, intermediate_index]
+    all_mean_values = CUDA.zeros(size(traces)[2], 256)
+    for j in 0:255
+        all_mean_values[:, j + 1] = mean(traces[intermediate_value_vector .== j, :], dims=1)[1, :]
+    end
+    return var(all_mean_values, dims=2) ./ variances
 end
 
-all_NICV = zeros(upper_bound_samples - lower_bound_samples, 4)
-for j in 1:4
-    intermediate_value_vector = all_intermediate_values[:, j]
-    all_NICV[:, j] = calculate_normalised_interclass_variances.(Ref(intermediate_value_vector), value_columns, variances)
+all_NICV = CUDA.zeros(upper_bound_samples - lower_bound_samples, 4)
+for i in 1:4
+    all_NICV[:, i] = calculate_NICV(sections_of_trace, variances, all_intermediate_values, i)
 end
-p = plot(all_NICV, size=(1200, 800))
+p = plot(Array(all_NICV))
 savefig(p, "./plots/NICVs.html")

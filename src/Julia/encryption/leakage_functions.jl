@@ -1,4 +1,4 @@
-using CryptoSideChannel, Random, LinearAlgebra
+using  Random, LinearAlgebra #CryptoSideChannel,
 include("chacha.jl")
 
 function byte_hamming_weight_for_value(value)
