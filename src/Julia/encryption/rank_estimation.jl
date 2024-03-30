@@ -9,7 +9,7 @@ function make_log_likelihood_tables_for_key(variables::Dict{String,Variable{Fact
     number_of_cluster_per_word = Int64(ceil(32 / bits_per_cluster))
     for i in 1:8
         for cluster_num in 1:number_of_cluster_per_word
-            push!(tables, log2.(marginal(variables[string(i + 4, "_0_", cluster_num)])))
+            push!(tables, log2.(marginal(variables[string(i + 4, "_0_", cluster_num, "_1")])))
         end
     end
     return tables
@@ -39,11 +39,12 @@ function rank_estimate_key(key::Vector{UInt32},
     log_likelihood_tables::Vector{Vector{Float64}},
     number_of_bins::Int64,
     bits_per_cluster::Int64)
-    min_likelihood = minimum(minimum.(log_likelihood_tables))
-    max_likelihood = maximum(maximum.(log_likelihood_tables))
+    min_likelihood = minimum(minimum.(log_likelihood_tables)) - 0.001
+    max_likelihood = maximum(maximum.(log_likelihood_tables)) + 0.001
     log_likelihood_of_key = calculate_log_likelihood_of_key(key, log_likelihood_tables, bits_per_cluster)
 
     edges = range(min_likelihood, max_likelihood, number_of_bins + 1)
+    # Some are missing from here like the top values if they are fractionally above
     histogram_bins = [BigInt.(fit(Histogram, log_likelihood_tables[i], edges).weights) for i in 1:length(log_likelihood_tables)]
     # Need to work out how to do the convolution because it seems that the regular conv method does not work correctly
     # due to the large size of the integers therefore might need to use their suggested chinese remainder theorem method
@@ -63,10 +64,17 @@ function rank_estimate_key(key::Vector{UInt32},
     
     # Not entirely sure if this is the correct method for calculating the mid points of the histogram bins
     new_bin_mid_points = range(length(histogram_bins) * (min_likelihood + (step_size / 2)), length(histogram_bins) * (max_likelihood - (step_size / 2)), length(curr_hist_bins))
-    vector_of_bins_to_include = new_bin_mid_points .>= (log_likelihood_of_key - (step_size / 2)) # Also may want to change this
-    return sum(curr_hist_bins[vector_of_bins_to_include])
+    vector_of_bins_to_include = new_bin_mid_points .>= (log_likelihood_of_key - (step_size / 2)) # Also may want to change this #/ 2
+    return sum(curr_hist_bins[vector_of_bins_to_include]) # This estimate is clearly falling a long away from what is actually happening think it is likely that the bin midpoints 
+    # are incorrect or something
 end
 
+# Pretty sure this code is giving the wrong estiamtes out or there it is not using 
+# enough bins or something to be useful but I think it is something else because there should be lots of
+# keys in the top bins I think
 
 likelihood_tables = make_log_likelihood_tables_for_key(variables, number_of_bits)
-estimated_rank = rank_estimate_key(key, likelihood_tables, 200, 2)
+estimated_rank = rank_estimate_key(key, likelihood_tables, 500, number_of_bits)
+log_likelihood_tables = likelihood_tables
+bits_per_cluster = 2
+number_of_bins = 200

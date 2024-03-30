@@ -5,18 +5,20 @@ include("../encryption/leakage_functions.jl")
 # 10001)
 elements_of_trace_to_select = append!(repeat([true, false, false, false, true], 320), ones(Bool, 16))
 
-for file_number in 1:360
-    intermediates_fid = h5open(string("D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\intermediate_value_traces\\recording_profiling_", file_number, ".hdf5"), "w")
-    trace_fid = h5open(string("D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\captures\\ChaChaRecordings\\recording_profiling_", file_number, ".hdf5"), "r")
+file_number = 1
+trace_number = 1
+# for file_number in 1:360
+    # intermediates_fid = h5open(string("D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\intermediate_value_traces\\recording_profiling_", file_number, ".hdf5"), "w")
+    trace_fid = h5open(string("D:\\ChaChaData\\captures\\ChaChaRecordings\\recording_profiling_", file_number, ".hdf5"), "r")
 
 
-    for trace_number in 0:249
+    # for trace_number in 0:249
         key = UInt32.(read(trace_fid[string("power_", trace_number)]["key"]))
         nonce = UInt32.(read(trace_fid[string("power_", trace_number)]["nonce"]))
         counter = UInt32.(read(trace_fid[string("power_", trace_number)]["counter"]))[1]
         plaintext = UInt32.(read(trace_fid[string("power_", trace_number)]["plaintext"]))
         ciphertext = encrypt(key, nonce, counter) .⊻ plaintext
-        trace = encrypt_collect_trace(key, nonce, counter, byte_values_for_input)[elements_of_trace_to_select]
+        trace = encrypt_collect_trace(key, nonce, counter, byte_values_for_input)#[elements_of_trace_to_select]
 
         all_trace_values = append!(
             byte_values_for_input.(key),
@@ -26,12 +28,14 @@ for file_number in 1:360
             trace,
             byte_values_for_input.(ciphertext))
         all_values = UInt8.(collect(Iterators.flatten(all_trace_values)))
-        intermediates_fid[string("power_", trace_number)] = all_values
-    end
+        # intermediates_fid[string("power_", trace_number)] = all_values
+
+        UInt8.(collect(Iterators.flatten(trace)))
+    # end
 
     close(trace_fid)
     close(intermediates_fid)
-end
+# end
 # Need to make the code for correctly selecting the parts of the trace we care about, and add the plaintext values into the output alongside
 # the output of the ciphertext, key, nonce, counter
 

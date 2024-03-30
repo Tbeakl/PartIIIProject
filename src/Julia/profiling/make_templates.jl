@@ -1,5 +1,5 @@
 using HDF5, MultivariateStats, Plots
-plotly()
+gr()
 number_of_intermediate_values = 2800
 number_of_samples_per_cycle = 50
 final_number_of_samples = 74941
@@ -9,7 +9,7 @@ number_of_output_dimensions = 8
 bitmask_path = "D:\\ChaChaData\\attack_profiling\\clock_cycles_bitmasks.hdf5"
 data_path = "D:\\ChaChaData\\attack_profiling\\downsampled_10_traces_profiling.hdf5"
 path_to_templates = "D:\\ChaChaData\\attack_profiling\\initial_templates\\"
-intermediate_value_index = 1000
+intermediate_value_index = 1
 
 function calculate_within_class_scatter(data_samples, labels, means)
     # Data samples has the dimensions of (d, n) where n is the number of samples and d is the dimensions of the data
@@ -54,11 +54,11 @@ end
     within_class_scatter = MultivariateStats.withclass_scatter(lda)
     between_class_scatter = MultivariateStats.betweenclass_scatter(lda)
 
-    projected_class_means = original_class_means' * projection_to_subspace
+    projected_class_means = (original_class_means' * projection_to_subspace)
     projected_within_class_scatter = (within_class_scatter * projection_to_subspace)' * projection_to_subspace
 
     original_data_projected = projection_to_subspace' * matrix_of_current_data
-    projected_scatter = calculate_within_class_scatter(original_data_projected, intermediate_value_vector, projected_class_means)
+    # projected_scatter = calculate_within_class_scatter(original_data_projected, intermediate_value_vector, projected_class_means)
     
     # Think my covaraince matrix may be quite wrong really it seems to not have the correct, it is just giving out far to large distriubtion between the 
     # the values which is then resulting in a very weird distribution where pretty much everything is uniform when it really should not
@@ -69,9 +69,9 @@ end
     # I believe the covariance matrix needs to be divided by the number of samples which made it up which in this case is 64,000, this seems to give very reasonable 
     # results when actually looking at the scatter in the first couple of dimensions and means we should not see entirely uniform results out when actually doing the templates
     # val = 0
-    # current_value_matrix = matrix_of_current_data[:, intermediate_value_vector .== val]' * projection_to_subspace
+    # current_value_matrix = (matrix_of_current_data[:, intermediate_value_vector .== val]' * projection_to_subspace)
     # current_mean = projected_class_means[val + 1, :]
-    # dist = noise_distribution_given_covaraince_matrix(projected_within_class_scatter ./ 64000)
+    # dist = noise_distribution_fixed_standard_dev(1., 8) #noise_distribution_given_covaraince_matrix(projected_within_class_scatter)
     # p = scatter(size=(1000, 1000))
     # randomly_generated_values_around_mean = rand(dist, 256) .+ current_mean
     # # scatter!(p, [original_data_projected[1, :]], [original_data_projected[2, :]])
@@ -83,8 +83,8 @@ end
     # noise_distribution_given_covaraince_matrix()
 
     fid = h5open(string(path_to_templates, intermediate_value_index, "_template_more_dimensions.hdf5"), "w")
-    fid["projection"] = projection_to_subspace
-    fid["class_means"] = projected_class_means
+    fid["projection"] = projection_to_subspace  .* sqrt(64_000)
+    fid["class_means"] = projected_class_means .* sqrt(64_000)
     fid["covariance_matrix"] = projected_within_class_scatter
     fid["downsampled_sample_bitmask"] = sample_bitmask
     close(fid)
