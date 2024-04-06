@@ -15,7 +15,7 @@ key = [0x03020100, 0x07060504, 0x0b0a0908, 0x0f0e0d0c, 0x13121110, 0x17161514, 0
 nonce = [0x09000000, 0x4a000000, 0x00000000]
 counter::UInt32 = 1
 
-number_of_bits = 2
+number_of_bits = 1
 
 # key = generate_random_key()
 # nonce = generate_random_nonce()
@@ -102,4 +102,4 @@ anim = @animate for i in eachindex(visualisation_of_entropy)
 end
 
 # heatmap(visualisation_of_entropy[1]; title=string("Round ", 0, " entropy of variables")) # clim=(0, number_of_bits),
-gif(anim, string("known_input_output_only_reversed_qr_straight_xors_no_final_xor_", number_of_bits, ".gif"), fps=10)
+gif(anim, string("test_test_", number_of_bits, ".gif"), fps=10)

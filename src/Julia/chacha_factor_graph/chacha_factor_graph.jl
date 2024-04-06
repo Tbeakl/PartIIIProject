@@ -132,8 +132,16 @@ function xor_with_cluster_shift_factor_graph!(variables::Dict{String,Variable{Fa
     number_of_clusters = Int64(ceil(32 / number_of_bits_per_cluster))
     for i in 1:number_of_clusters
         cur_factor_name = string("f_xor_", number_of_operations["xor"], "_", i, "_", run_number)
-        input_a_name = string(input_a, "_", location_execution_counts[input_a], "_", i, "_", run_number)
-        input_b_name = string(input_b, "_", location_execution_counts[input_b], "_", i, "_", run_number)
+        if location_execution_counts[input_a] == 0 && input_a != 13
+            input_a_name = string(input_a, "_", location_execution_counts[input_a], "_", i, "_", 1)
+        else
+            input_a_name = string(input_a, "_", location_execution_counts[input_a], "_", i, "_", run_number)
+        end
+        if location_execution_counts[input_b] == 0 && input_b != 13
+            input_b_name = string(input_b, "_", location_execution_counts[input_b], "_", i, "_", 1)
+        else
+            input_b_name = string(input_b, "_", location_execution_counts[input_b], "_", i, "_", run_number)
+        end
         output_name = string(output, "_", location_execution_counts[output] + 1, "_", ((i - 1 + number_of_clusters + number_of_clusters_shifted) % number_of_clusters) + 1, "_", run_number)
         push!(round_variables, input_a_name)
         push!(round_variables, input_b_name)
@@ -182,7 +190,6 @@ function add_factor_graph!(variables::Dict{String,Variable{Factor}},
                 1.0
                 0.0
             ], [initial_carry_var_name]))
-    add_edge_between(variables[initial_carry_var_name], factors["f_"*initial_carry_var_name*"_dist"])
 
     for i in 1:number_of_clusters
         full_add_factor_name = string("f_add_", number_of_operations["add"], "_", i, "_", run_number)
@@ -191,8 +198,18 @@ function add_factor_graph!(variables::Dict{String,Variable{Factor}},
 
         carry_in_variable_name = string("add_", number_of_operations["add"], "_carry_", i - 1, "_", run_number)
         carry_out_variable_name = string("add_", number_of_operations["add"], "_carry_", i, "_", run_number)
-        input_a_name = string(input_a, "_", input_a_version, "_", i, "_", run_number)
-        input_b_name = string(input_b, "_", input_b_version, "_", i, "_", run_number)
+        if input_a_version == 0 && input_a != 13
+            input_a_name = string(input_a, "_", input_a_version, "_", i, "_", 1)
+        else
+            input_a_name = string(input_a, "_", input_a_version, "_", i, "_", run_number)
+        end
+        if input_b_version == 0 && input_b != 13
+            input_b_name = string(input_b, "_", input_b_version, "_", i, "_", 1)
+        else
+            input_b_name = string(input_b, "_", input_b_version, "_", i, "_", run_number)
+        end
+        # input_a_name = string(input_a, "_", input_a_version, "_", i, "_", run_number)
+        # input_b_name = string(input_b, "_", input_b_version, "_", i, "_", run_number)
         output_name = string(output, "_", location_execution_counts[output] + 1, "_", i, "_", run_number)
         full_add_output_name = string("add_full_out_", number_of_operations["add"], "_", i, "_", run_number)
 
@@ -226,6 +243,8 @@ function add_factor_graph!(variables::Dict{String,Variable{Factor}},
         add_edge_between(variables[output_name], factors[add_output_factor_name])
     end
 
+    #Ensuring that the distribution for the initial carry is the last neighbour for that variable
+    add_edge_between(variables[initial_carry_var_name], factors["f_"*initial_carry_var_name*"_dist"])
     number_of_operations["add"] += 1
     location_execution_counts[output] += 1
 end
@@ -301,12 +320,17 @@ function chacha_factor_graph!(variables::Dict{String,Variable{Factor}},
     number_of_clusters = Int64(ceil(32 / number_of_bits_per_cluster))
 
     # Initially add the opening variables
-    for i in 1:16
+    if !("1_0_1_1" in keys(variables))
+        for i in 1:16
+            for j in 1:number_of_clusters
+                variables[string(i, "_0_", j, "_1")] = Variable{Factor}(string(i, "_0_", j, "_1"), number_of_bits_per_cluster)
+            end
+        end
+    else
         for j in 1:number_of_clusters
-            variables[string(i, "_0_", j, "_", run_number)] = Variable{Factor}(string(i, "_0_", j, "_", run_number), number_of_bits_per_cluster)
+            variables[string("13_0_", j, "_", run_number)] = Variable{Factor}(string("13_0_", j, "_", run_number), number_of_bits_per_cluster)
         end
     end
-
     number_of_operations = Dict("xor" => 0, "add" => 0, "rot" => 0)
     precalculated_prob_tables = Dict("xor_cluster" => make_xor_prob_table(number_of_bits_per_cluster),
         "full_add_cluster" => make_add_including_carry_prob_array(number_of_bits_per_cluster),

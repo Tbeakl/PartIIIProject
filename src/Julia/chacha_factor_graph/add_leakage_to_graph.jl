@@ -189,7 +189,7 @@ function add_initial_key_dist(variables::Dict{String, Variable{Factor}},
     run_number::Int64,
     add_dist_to_variable)
     for i in 1:8
-        add_dist_to_variable(key_leakage[i], variables, factors, bits_per_cluster, string(i + 4, "_", 0), run_number)
+        add_dist_to_variable(key_leakage[i], variables, factors, bits_per_cluster, string(i + 4, "_", 0), run_number, 1)
     end
 end
 
@@ -202,6 +202,6 @@ function add_initial_nonce_and_counter_dist(variables::Dict{String, Variable{Fac
     add_dist_to_variable)
     add_dist_to_variable(counter_leakage, variables, factors, number_of_bits_per_cluster, string("13_0"), run_number)
     for i in 1:3
-        add_dist_to_variable(nonce_leakage[i], variables, factors, number_of_bits_per_cluster, string(i + 13, "_0"), run_number)
+        add_dist_to_variable(nonce_leakage[i], variables, factors, number_of_bits_per_cluster, string(i + 13, "_0"), run_number, 1)
     end
 end

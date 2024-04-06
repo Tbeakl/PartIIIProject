@@ -15,6 +15,8 @@ number_of_values_averaged_over_key_leakage = 20
 base_path_templates = "D:\\ChaChaData\\attack_profiling\\initial_templates\\"
 add_byte_template_function = real_byte_template_path_to_function(base_path_templates)
 
+base_key_templates = "D:\\ChaChaData\\attack_profiling\\initial_templates_two_bits\\"
+
 variables = Dict{String,Variable{Factor}}()
 factors = Dict{String,Factor{Variable}}()
 variables_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
@@ -37,8 +39,8 @@ for encryption_run_number in 1:number_of_encryption_traces
     add_leakage_trace_to_factor_graph(encryption_trace, variables, factors, number_of_bits, encryption_run_number, add_byte_template_function)
     println("Added the factors for the trace")
     println("Starting adding key distribution")
-    # add_initial_key_distribution_from_leakage_trace(encryption_trace, variables, factors, number_of_bits, encryption_run_number, base_path_templates)
-    add_initial_key_distribution_from_simulated_leakage(byte_values_for_input.(key), variables, factors, number_of_bits, encryption_run_number, base_path_templates, number_of_values_averaged_over_key_leakage)
+    # add_initial_key_distribution_from_leakage_trace(encryption_trace, variables, factors, number_of_bits, encryption_run_number, base_key_templates)
+    add_initial_key_distribution_from_simulated_leakage(byte_values_for_input.(key), variables, factors, number_of_bits, encryption_run_number, base_key_templates, number_of_values_averaged_over_key_leakage)
     println("Added key distribution")
 
     # Also want to add in the known outputs of the encryption as part of the model
@@ -152,8 +154,8 @@ end
 
 plot(tot_entropy_over_time)
 
-anim = @animate for i in eachindex(visualisation_of_entropy)
-    heatmap(visualisation_of_entropy[i]; title=string("Round ", i - 1, " entropy of variables"), clim=(0, number_of_bits)) # 
-end
-# heatmap(visualisation_of_entropy[1]; title=string("Round ", 0, " entropy of variables")) # clim=(0, number_of_bits),
-gif(anim, "test.gif", fps=50)
+# anim = @animate for i in eachindex(visualisation_of_entropy)
+#     heatmap(visualisation_of_entropy[i]; title=string("Round ", i - 1, " entropy of variables"), clim=(0, number_of_bits)) # 
+# end
+# # heatmap(visualisation_of_entropy[1]; title=string("Round ", 0, " entropy of variables")) # clim=(0, number_of_bits),
+# gif(anim, "test.gif", fps=50)

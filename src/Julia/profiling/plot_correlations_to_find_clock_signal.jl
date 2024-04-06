@@ -17,7 +17,7 @@ mean_arg_min = argmin(mean_trace)
 close(fid)
 
 trace_range_per_file = 0:249
-file_range = 9:72
+file_range = 9:9#9:72
 
 all_intermediate_values = zeros(UInt8, length(trace_range_per_file) * length(file_range), number_of_intermediate_values)
 sections_of_trace = zeros(Int16, length(trace_range_per_file) * length(file_range), upper_bound_samples - lower_bound_samples)
@@ -40,9 +40,18 @@ for i in file_range
     close(fid)
 end
 # These correlation graphs seem to show that it is good to start each clock cycle at approximate 450/950 because that incleudes all the big peaks and is in a trough
+data_path = "D:\\ChaChaData\\attack_profiling\\downsampled_10_traces_profiling.hdf5"
+data_fid = h5open(data_path, "r")
+intermediate_value_vector = read(data_fid["intermediate_values"])[1:16000, :]
+dset = data_fid["downsampled_matrix"]
+if HDF5.ismmappable(dset)
+    dset = HDF5.readmmap(dset)
+end
+original_matrix_of_current_data = dset[1:16000, :]
+close(data_fid)
 
-sections_of_trace = CuArray(sections_of_trace)
-all_intermediate_values = CuArray(all_intermediate_values)
+sections_of_trace = CuArray(original_matrix_of_current_data)
+all_intermediate_values = CuArray(intermediate_value_vector)
 
 variances = var(sections_of_trace, dims=1)[1, :]
 
@@ -55,9 +64,10 @@ function calculate_NICV(traces, variances, all_intermediate_values, intermediate
     return var(all_mean_values, dims=2) ./ variances
 end
 
-all_NICV = CUDA.zeros(upper_bound_samples - lower_bound_samples, 4)
-for i in 1:4
-    all_NICV[:, i] = calculate_NICV(sections_of_trace, variances, all_intermediate_values, i)
+all_NICV = CUDA.zeros(size(sections_of_trace)[2], 4)
+for i in 1001:1004
+    all_NICV[:, i - 1000] = calculate_NICV(sections_of_trace, variances, all_intermediate_values, i)
 end
 p = plot(Array(all_NICV))
+p = plot(mean(Array(all_NICV), dims=2)[:, 1])
 savefig(p, "./plots/NICVs.html")

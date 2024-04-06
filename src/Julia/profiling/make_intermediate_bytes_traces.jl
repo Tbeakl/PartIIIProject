@@ -18,7 +18,7 @@ trace_number = 1
         counter = UInt32.(read(trace_fid[string("power_", trace_number)]["counter"]))[1]
         plaintext = UInt32.(read(trace_fid[string("power_", trace_number)]["plaintext"]))
         ciphertext = encrypt(key, nonce, counter) .⊻ plaintext
-        trace = encrypt_collect_trace(key, nonce, counter, byte_values_for_input)#[elements_of_trace_to_select]
+        trace = encrypt_collect_trace(key, nonce, counter, byte_values_for_input)[elements_of_trace_to_select]
 
         all_trace_values = append!(
             byte_values_for_input.(key),

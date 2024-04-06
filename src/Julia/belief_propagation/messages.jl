@@ -37,9 +37,13 @@ end
 
 function variable_to_factor_messages(variable::Variable{Factor}, damping_factor::Float64 = 1.)
     # This needs to update the messsages in the factors from this variable
+    # We need to make sure that the dist is the last factor added onto each variable
+    # so that all values above them are discarded allowing us to have lots of different
+    # for a variable without needing to specify that we don't need to send data to each one
     neighbours_to_include = ones(Bool, size(variable.incoming_messages)[1])
     for (i, neighbour) in enumerate(variable.neighbours)
-        if i != variable.neighbour_index_to_avoid
+
+        if variable.neighbour_index_to_avoid <= 0 || i < variable.neighbour_index_to_avoid
             # The i message needs to be excluded from the calculation
             neighbours_to_include[i] = false
             new_message = prod(variable.incoming_messages[neighbours_to_include, :], dims=1)[1, :]
