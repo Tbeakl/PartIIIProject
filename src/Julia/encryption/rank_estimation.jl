@@ -81,9 +81,14 @@ function rank_estimate_key(key::Vector{UInt32},
 
     step_size = (max_likelihood - min_likelihood) / number_of_bins
 
-    # This is clearly not the correct calculation of the bin midpoints because they are not working out properly need to find out the correct method
-    new_bin_mid_points = range(length(histogram_bins) * (min_likelihood + (step_size / 2)), (max_likelihood - (step_size / 2)), length(actual_histogram_values))
-    vector_of_bins_to_include = new_bin_mid_points .>= (log_likelihood_of_key - (step_size / 2))
+    new_bin_mid_points = range(length(histogram_bins) * (min_likelihood + (step_size / 2)), length(histogram_bins) * (max_likelihood - (step_size / 2)), length(actual_histogram_values))
+    # Not entirely sure what the correct solution is here for the number of bins which should be included because it is clearly not working
+    # quite right I don't think but it potentially is
+    # Because the upper end of the bins to the left are decreasing from the original upper end of the binds at the step rate as well 
+    # so to get the overestimate can look to get the upper end of the bin included instead
+    bin_upper_values = (-(length(actual_histogram_values) - 1):0 .* step_size) .+ (length(histogram_bins) * max_likelihood)
+    # vector_of_bins_to_include = new_bin_mid_points .>= log_likelihood_of_key
+    vector_of_bins_to_include = bin_upper_values .>= log_likelihood_of_key
     return sum(actual_histogram_values[vector_of_bins_to_include])
 end
 

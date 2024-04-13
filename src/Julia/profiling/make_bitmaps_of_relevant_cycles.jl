@@ -99,8 +99,8 @@ intermediate_locations = make_break_down_of_values()
 
 # all_bitmasks = dilate(base_bitmasks; dims=1, r=number_of_cycles_to_expand)
 
-# fid = h5open("D:\\ChaChaData\\attack_profiling\\clock_cycles_bitmasks.hdf5", "w")
-# for intermediate_value_index in 1:number_of_intermediate_values
-#     fid[string("bitmask_", intermediate_value_index)] = all_bitmasks[:, intermediate_value_index]
-# end
-# close(fid)
+fid = h5open("D:\\ChaChaData\\attack_profiling\\clock_cycles_bitmasks_no_dilation.hdf5", "w")
+for intermediate_value_index in 1:number_of_intermediate_values
+    fid[string("bitmask_", intermediate_value_index)] = all_bitmasks[:, intermediate_value_index]
+end
+close(fid)

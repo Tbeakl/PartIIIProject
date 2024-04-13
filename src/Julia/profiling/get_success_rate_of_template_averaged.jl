@@ -18,14 +18,14 @@ function main()
     all_intermediate_values = read(fid["intermediate_values"])
     downsampled_matrix = read(fid["downsampled_matrix"])
 
-    number_of_bits_per_template = 2
+    number_of_bits_per_template = 8
     number_of_templates_per_intermediate_byte = 8 ÷ number_of_bits_per_template
-    intermediate_value_index = 1006
-    template_number = 3
+    intermediate_value_index = 1933
+    template_number = 1
 
     number_correct = 0
     println(template_number)
-    template_path = string("D:\\ChaChaData\\attack_profiling\\initial_templates_two_bits\\", intermediate_value_index, "_", template_number, "_template.hdf5")
+    template_path = string("D:\\ChaChaData\\attack_profiling\\initial_templates\\", intermediate_value_index, "_template.hdf5")
     intermediate_value_vector = (all_intermediate_values[:, intermediate_value_index] .>> (number_of_bits_per_template * (template_number - 1))) .& ((1 << number_of_bits_per_template) - 1)
     fid = h5open(template_path, "r")
     sample_bitmask = read(fid["downsampled_sample_bitmask"])
@@ -35,10 +35,10 @@ function main()
     close(fid)
     projected_vectors = downsampled_matrix[:, sample_bitmask] * template_projection
     noise_distribution = noise_distribution_given_covaraince_matrix(cov_matrix)
-    values_predicted = zeros(Int64, 4)
+    values_predicted = zeros(Int64, 256)
     for j in eachindex(intermediate_value_vector)
         most_likely_value = findmax(get_prob_dist_of_vector(mean_vectors, noise_distribution, projected_vectors[j, :]))[2] - 1
-        values_predicted[most_likely_value+1] += 1
+        values_predicted[most_likely_value + 1] += 1
         if intermediate_value_vector[j] == most_likely_value
             number_correct += 1
         end

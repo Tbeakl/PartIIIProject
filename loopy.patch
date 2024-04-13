@@ -1,0 +1,147 @@
+diff --git a/src/Julia/chacha_factor_graph/chacha_factor_graph.jl b/src/Julia/chacha_factor_graph/chacha_factor_graph.jl
+index b273479..f1166c2 100644
+--- a/src/Julia/chacha_factor_graph/chacha_factor_graph.jl
++++ b/src/Julia/chacha_factor_graph/chacha_factor_graph.jl
+@@ -47,6 +47,30 @@ function make_add_including_carry_prob_array(num_of_bits::Int64)
+     return output
+ end
+ 
++function make_add_output(num_of_bits::Int64)
++    output = zeros(2, 1 << num_of_bits, 1 << num_of_bits, 1 << num_of_bits)
++    for carry_in in 0:1
++        for input_a in 0:((1<<num_of_bits) - 1)
++            for input_b in 0:((1<<num_of_bits) - 1)
++                output[carry_in + 1, input_a + 1, input_b + 1, ((input_a + input_b + carry_in) % (1 << num_of_bits)) + 1] = 1.0
++            end
++        end
++    end
++    return output
++end
++
++function make_add_carry(num_of_bits::Int64)
++    output = zeros(2, 1 << num_of_bits, 1 << num_of_bits, 2)
++    for carry_in in 0:1
++        for input_a in 0:((1<<num_of_bits) - 1)
++            for input_b in 0:((1<<num_of_bits) - 1)
++                output[carry_in + 1, input_a + 1, input_b + 1, Int64((input_a + input_b + carry_in) >= (1 << num_of_bits)) + 1] = 1.0
++            end
++        end
++    end
++    return output
++end
++
+ function take_top_bit_prob_array(num_of_bits::Int64)
+     output = zeros(1 << num_of_bits, 2)
+     for val_in in 1:(1<<num_of_bits)
+@@ -177,7 +201,7 @@ function add_factor_graph!(variables::Dict{String,Variable{Factor}},
+     run_number::Int64)
+ 
+     number_of_clusters = Int64(ceil(32 / number_of_bits_per_cluster))
+-    full_add_dist = precalculated_prob_tables["full_add_cluster"]
++    # full_add_dist = precalculated_prob_tables["full_add_cluster"]
+     add_full_to_output = precalculated_prob_tables["add_full_to_output_cluster"]
+     add_full_to_carry = precalculated_prob_tables["add_full_to_carry_cluster"]
+ 
+@@ -192,7 +216,7 @@ function add_factor_graph!(variables::Dict{String,Variable{Factor}},
+             ], [initial_carry_var_name]))
+ 
+     for i in 1:number_of_clusters
+-        full_add_factor_name = string("f_add_", number_of_operations["add"], "_", i, "_", run_number)
++        # full_add_factor_name = string("f_add_", number_of_operations["add"], "_", i, "_", run_number)
+         add_carry_out_factor_name = string("f_add_carry_", number_of_operations["add"], "_", i, "_", run_number)
+         add_output_factor_name = string("f_add_output_", number_of_operations["add"], "_", i, "_", run_number)
+ 
+@@ -211,35 +235,39 @@ function add_factor_graph!(variables::Dict{String,Variable{Factor}},
+         # input_a_name = string(input_a, "_", input_a_version, "_", i, "_", run_number)
+         # input_b_name = string(input_b, "_", input_b_version, "_", i, "_", run_number)
+         output_name = string(output, "_", location_execution_counts[output] + 1, "_", i, "_", run_number)
+-        full_add_output_name = string("add_full_out_", number_of_operations["add"], "_", i, "_", run_number)
++        # full_add_output_name = string("add_full_out_", number_of_operations["add"], "_", i, "_", run_number)
+ 
+         push!(round_variables, carry_in_variable_name)
+         push!(round_variables, carry_out_variable_name)
+         push!(round_variables, input_a_name)
+         push!(round_variables, input_b_name)
+         push!(round_variables, output_name)
+-        push!(round_variables, full_add_output_name)
+-        push!(round_factors, full_add_factor_name)
++        # push!(round_variables, full_add_output_name)
++        # push!(round_factors, full_add_factor_name)
+         push!(round_factors, add_carry_out_factor_name)
+         push!(round_factors, add_output_factor_name)
+ 
+         variables[carry_out_variable_name] = Variable{Factor}(carry_out_variable_name, 1)
+         variables[output_name] = Variable{Factor}(output_name, number_of_bits_per_cluster)
+-        variables[full_add_output_name] = Variable{Factor}(full_add_output_name, number_of_bits_per_cluster + 1)
++        # variables[full_add_output_name] = Variable{Factor}(full_add_output_name, number_of_bits_per_cluster + 1)
+ 
+-        factors[full_add_factor_name] = Factor{Variable}(full_add_factor_name, LabelledArray(full_add_dist, [carry_in_variable_name, input_a_name, input_b_name, full_add_output_name]))
+-        factors[add_carry_out_factor_name] = Factor{Variable}(add_carry_out_factor_name, LabelledArray(add_full_to_carry, [full_add_output_name, carry_out_variable_name]))
+-        factors[add_output_factor_name] = Factor{Variable}(add_output_factor_name, LabelledArray(add_full_to_output, [full_add_output_name, output_name]))
++        # factors[full_add_factor_name] = Factor{Variable}(full_add_factor_name, LabelledArray(full_add_dist, [carry_in_variable_name, input_a_name, input_b_name, full_add_output_name]))
++        factors[add_carry_out_factor_name] = Factor{Variable}(add_carry_out_factor_name, LabelledArray(add_full_to_carry, [carry_in_variable_name, input_a_name, input_b_name, carry_out_variable_name]))
++        factors[add_output_factor_name] = Factor{Variable}(add_output_factor_name, LabelledArray(add_full_to_output, [carry_in_variable_name, input_a_name, input_b_name, output_name]))
+ 
+-        add_edge_between(variables[carry_in_variable_name], factors[full_add_factor_name])
+-        add_edge_between(variables[input_a_name], factors[full_add_factor_name])
+-        add_edge_between(variables[input_b_name], factors[full_add_factor_name])
+-        add_edge_between(variables[full_add_output_name], factors[full_add_factor_name])
++        # add_edge_between(variables[carry_in_variable_name], factors[full_add_factor_name])
++        # add_edge_between(variables[input_a_name], factors[full_add_factor_name])
++        # add_edge_between(variables[input_b_name], factors[full_add_factor_name])
++        # add_edge_between(variables[full_add_output_name], factors[full_add_factor_name])
+ 
+-        add_edge_between(variables[full_add_output_name], factors[add_carry_out_factor_name])
++        add_edge_between(variables[carry_in_variable_name], factors[add_carry_out_factor_name])
++        add_edge_between(variables[input_a_name], factors[add_carry_out_factor_name])
++        add_edge_between(variables[input_b_name], factors[add_carry_out_factor_name])
+         add_edge_between(variables[carry_out_variable_name], factors[add_carry_out_factor_name])
+ 
+-        add_edge_between(variables[full_add_output_name], factors[add_output_factor_name])
++        add_edge_between(variables[carry_in_variable_name], factors[add_output_factor_name])
++        add_edge_between(variables[input_a_name], factors[add_output_factor_name])
++        add_edge_between(variables[input_b_name], factors[add_output_factor_name])
+         add_edge_between(variables[output_name], factors[add_output_factor_name])
+     end
+ 
+@@ -334,8 +362,8 @@ function chacha_factor_graph!(variables::Dict{String,Variable{Factor}},
+     number_of_operations = Dict("xor" => 0, "add" => 0, "rot" => 0)
+     precalculated_prob_tables = Dict("xor_cluster" => make_xor_prob_table(number_of_bits_per_cluster),
+         "full_add_cluster" => make_add_including_carry_prob_array(number_of_bits_per_cluster),
+-        "add_full_to_output_cluster" => take_bottom_bits_prob_array(number_of_bits_per_cluster + 1),
+-        "add_full_to_carry_cluster" => take_top_bit_prob_array(number_of_bits_per_cluster + 1)
++        "add_full_to_output_cluster" => make_add_output(number_of_bits_per_cluster), #take_bottom_bits_prob_array(number_of_bits_per_cluster + 1),
++        "add_full_to_carry_cluster" => make_add_carry(number_of_bits_per_cluster) #take_top_bit_prob_array(number_of_bits_per_cluster + 1)
+     )
+ 
+     for j in [16, 12, 8, 7]
+diff --git a/src/Julia/tests/chacha_factor_graph/chacha_factor_graph_test_vecs.jl b/src/Julia/tests/chacha_factor_graph/chacha_factor_graph_test_vecs.jl
+index 80159c5..7026d24 100644
+--- a/src/Julia/tests/chacha_factor_graph/chacha_factor_graph_test_vecs.jl
++++ b/src/Julia/tests/chacha_factor_graph/chacha_factor_graph_test_vecs.jl
+@@ -35,10 +35,10 @@ function belief_propogate_through_graph_forwards(variables::Dict{String,Variable
+                     # println(variable_name)
+                     variable_to_factor_messages(variables[variable_name])
+                 end
+-                for add_num in adds_by_round[i]
+-                    # println(add_num)
+-                    belief_propagate_through_add(variables, factors, bits_per_cluster, add_num, 1)
+-                end
++                # for add_num in adds_by_round[i]
++                #     # println(add_num)
++                #     belief_propagate_through_add(variables, factors, bits_per_cluster, add_num, 1)
++                # end
+             end
+             update_all_entropies(variables, all_variables)
+             println("Total entropy after round ", total_entropy_of_graph(variables))
+@@ -63,8 +63,8 @@ function test_quarter_round()
+     number_of_operations = Dict("xor" => 0, "add" => 0, "rot" => 0)
+     precalculated_prob_tables = Dict("xor_cluster" => make_xor_prob_table(bits_per_cluster),
+         "full_add_cluster" => make_add_including_carry_prob_array(bits_per_cluster),
+-        "add_full_to_output_cluster" => take_bottom_bits_prob_array(bits_per_cluster + 1),
+-        "add_full_to_carry_cluster" => take_top_bit_prob_array(bits_per_cluster + 1)
++        "add_full_to_output_cluster" => make_add_output(bits_per_cluster), #take_bottom_bits_prob_array(bits_per_cluster + 1),
++        "add_full_to_carry_cluster" => make_add_carry(bits_per_cluster) #take_top_bit_prob_array(bits_per_cluster + 1)
+     )
+ 
+ 

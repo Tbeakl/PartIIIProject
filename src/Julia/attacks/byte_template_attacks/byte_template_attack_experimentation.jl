@@ -13,7 +13,7 @@ number_of_bits::Int64 = 2
 number_of_encryption_traces::Int64 = 1
 
 dimensions::Int64 = 8
-signal_to_noise_ratio::Float64 = 3.
+signal_to_noise_ratio::Float64 = 1.4
 key::Vector{UInt32} = generate_random_key()
 nonce::Vector{UInt32} = generate_random_nonce()
 counter::UInt32 = generate_random_counter()
@@ -85,11 +85,11 @@ tot_entropy_over_time::Vector{Float64} = []
 # There is some issue with the passing of the probabilities in this because they are all going to zeros
 # which is a major problem, not really sure where it is coming from because of the need 
 
-for fact_name in all_factors
+Threads.@threads for fact_name in all_factors
     factor_to_variable_messages(factors[fact_name])
 end
 
-for var_name in all_variables
+Threads.@threads for var_name in all_variables
     variable_to_factor_messages(variables[var_name])
 end
 
