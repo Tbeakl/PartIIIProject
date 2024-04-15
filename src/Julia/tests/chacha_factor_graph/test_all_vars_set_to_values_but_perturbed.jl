@@ -12,8 +12,8 @@ function all_zeros_single_bit_clusters_perturbed_output()
     encryption_trace = encrypt_collect_trace_full_values(key, nonce, counter)
     
     number_of_bits = 1
-    variables = Dict{String, Variable{Factor}}()
-    factors = Dict{String, Factor{Variable}}()
+    variables = Dict{String, AbsVariable}()
+    factors = Dict{String, AbsFactor}()
     variables_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
     factors_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
     adds_by_round::Vector{Set{Int64}} = [Set{Int64}() for _ in 1:21]
@@ -46,8 +46,8 @@ function all_zeros_2_bit_clusters_perturbed_output()
     encryption_trace = encrypt_collect_trace_full_values(key, nonce, counter)
     
     number_of_bits = 2
-    variables = Dict{String, Variable{Factor}}()
-    factors = Dict{String, Factor{Variable}}()
+    variables = Dict{String, AbsVariable}()
+    factors = Dict{String, AbsFactor}()
     variables_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
     factors_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
     adds_by_round::Vector{Set{Int64}} = [Set{Int64}() for _ in 1:21]
@@ -80,8 +80,8 @@ function all_zeros_4_bit_clusters_perturbed_output()
     encryption_trace = encrypt_collect_trace_full_values(key, nonce, counter)
     
     number_of_bits = 4
-    variables = Dict{String, Variable{Factor}}()
-    factors = Dict{String, Factor{Variable}}()
+    variables = Dict{String, AbsVariable}()
+    factors = Dict{String, AbsFactor}()
     variables_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
     factors_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
     adds_by_round::Vector{Set{Int64}} = [Set{Int64}() for _ in 1:21]

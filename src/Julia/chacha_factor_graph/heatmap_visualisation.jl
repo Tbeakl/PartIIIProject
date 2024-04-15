@@ -203,13 +203,13 @@ function make_positions_to_var_names(number_of_bits_per_cluster::Int64, run_numb
     return locations_to_variable_names, xs, ys
 end
 
-function plot_current_entropy(variables::Dict{String, Variable{Factor}})
+function plot_current_entropy(variables::Dict{String, AbsVariable})
     return function plotting_func(var_name::String)
         return variables[var_name].current_entropy
     end
 end
 
-function plot_change_in_entropy(variables::Dict{String, Variable{Factor}})
+function plot_change_in_entropy(variables::Dict{String, AbsVariable})
     return function plotting_func(var_name::String)
         return abs(variables[var_name].current_entropy - variables[var_name].previous_entropy)
     end

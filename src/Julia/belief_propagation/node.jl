@@ -3,7 +3,11 @@ struct LabelledArray
     axes_labels
 end
 
-mutable struct Variable{T}
+abstract type AbsVariable end
+
+abstract type AbsFactor end
+
+mutable struct Variable{T} <: AbsVariable
     name::String
     neighbours::Vector{T}
     incoming_messages::Matrix{Float64}
@@ -19,7 +23,7 @@ mutable struct Variable{T}
     end
 end
 
-mutable struct Factor{T}
+mutable struct Factor{T} <: AbsFactor
     name::String
     neighbours::Vector{T}
     data::LabelledArray
@@ -28,5 +32,16 @@ mutable struct Factor{T}
 
     function Factor{T}(name::String, data::LabelledArray) where {T}
         return new(name, Vector{T}[], data, Vector{Vector{Float64}}[], Vector{Int64}[])
+    end
+end
+
+mutable struct XorFactor{T} <: AbsFactor
+    name::String
+    neighbours::Vector{T}
+    incoming_messages::Vector{Vector{Float64}}
+    index_in_neighbours_neighbour::Vector{Int64}
+
+    function XorFactor{T}(name::String) where {T}
+        return new(name, Vector{T}[], Vector{Vector{Float64}}[], Vector{Int64}[])
     end
 end

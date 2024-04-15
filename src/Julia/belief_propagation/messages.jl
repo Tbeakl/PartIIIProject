@@ -1,4 +1,4 @@
-using NaNMath, Base.Threads
+using NaNMath, Base.Threads, Hadamard
 include("node.jl")
 
 calculate_entropy(prob_dist) = -NaNMath.sum(prob_dist .* log2.(prob_dist))
@@ -35,20 +35,23 @@ function other_axes_from_labeled_axes(labelled_array::LabelledArray, axis_label:
     return [i for i in 1:length(labelled_array.axes_labels) if labelled_array.axes_labels[i] != axis_label]
 end
 
-function variable_to_factor_messages(variable::Variable{Factor}, damping_factor::Float64 = 1.)
+function variable_to_factor_messages(variable::Variable{AbsFactor}, damping_factor::Float64=1.0)
     # This needs to update the messsages in the factors from this variable
     # We need to make sure that the dist is the last factor added onto each variable
     # so that all values above them are discarded allowing us to have lots of different
     # for a variable without needing to specify that we don't need to send data to each one
     neighbours_to_include = ones(Bool, size(variable.incoming_messages)[1])
     for (i, neighbour) in enumerate(variable.neighbours)
-
+        # println("Help")
+        # println(i)
+        # println(variable.neighbour_index_to_avoid)
         if variable.neighbour_index_to_avoid <= 0 || i < variable.neighbour_index_to_avoid
             # The i message needs to be excluded from the calculation
             neighbours_to_include[i] = false
             new_message = prod(variable.incoming_messages[neighbours_to_include, :], dims=1)[1, :]
             # Here normalise the output to be a prob dist.
             new_message ./= sum(new_message)
+            # println("Setting output: ", i, " ", new_message)
             neighbour.incoming_messages[variable.index_in_neighbours_neighbour[i]] = (damping_factor * new_message) .+ ((1 - damping_factor) * neighbour.incoming_messages[variable.index_in_neighbours_neighbour[i]])
             neighbour.incoming_messages[variable.index_in_neighbours_neighbour[i]] ./= sum(neighbour.incoming_messages[variable.index_in_neighbours_neighbour[i]])
             neighbours_to_include[i] = true
@@ -56,9 +59,10 @@ function variable_to_factor_messages(variable::Variable{Factor}, damping_factor:
     end
 end
 
-function factor_to_variable_messages(factor::Factor{Variable}, damping_factor::Float64 = 1.)
+function factor_to_variable_messages(factor::Factor{AbsVariable}, damping_factor::Float64=1.0)
     # This needs to update all the incoming messages of the connected variables
     tiled_incoming_messages = [tile_to_other_dist_along_axis_name(LabelledArray(factor.incoming_messages[i], [neighbour.name]), factor.data).array for (i, neighbour) in enumerate(factor.neighbours)]
+    # println("None XOR")
     for (i, neighbour) in enumerate(factor.neighbours)
         factor_dist = copy(factor.data.array)
         for (j, tiled_incoming_message) in enumerate(tiled_incoming_messages)
@@ -80,8 +84,39 @@ function factor_to_variable_messages(factor::Factor{Variable}, damping_factor::F
     end
 end
 
-function marginal(variable::Variable{Factor})
-    unnorm_p = prod(variable.incoming_messages, dims=1)[1,:]
+function factor_to_variable_messages(factor::XorFactor{AbsVariable}, damping_factor::Float64=1.0)
+    # This needs to update all the incoming messages of the connected variables
+    # This can make use of th fast walsh hadamard transform to be able to more efficiently compute the xor
+    # println("XOR running")
+    expected_size = 1 << factor.neighbours[1].number_of_bits
+    transformed_incoming_messages = ones(length(factor.incoming_messages), expected_size)
+    for i in eachindex(factor.incoming_messages)
+        if length(factor.incoming_messages[i]) == expected_size
+            transformed_incoming_messages[i, :] = fwht(factor.incoming_messages[i])
+        else
+            transformed_incoming_messages[i, :] = fwht(transformed_incoming_messages[i, :])
+        end
+    end
+    neighbours_to_include = ones(Bool, size(factor.incoming_messages)[1])
+    for (i, neighbour) in enumerate(factor.neighbours)
+        neighbours_to_include[i] = false
+        # The max with 0 is to ensure that we do not end up with any negative values beign passed around which can cause
+        # issues in other places the negative value are all incredibly small when they start out anyway
+        message_out = max.(0, fwht(prod(transformed_incoming_messages[neighbours_to_include, :], dims=1)[1, :]))
+        message_out ./= sum(message_out)
+        neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] = message_out
+        if length(neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i]]) != length(message_out)
+            neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] = message_out
+        else
+            neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] = (damping_factor * message_out) .+ ((1 - damping_factor) * neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i]])
+        end
+        neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] ./= sum(neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :])
+        neighbours_to_include[i] = true
+    end
+end
+
+function marginal(variable::AbsVariable)
+    unnorm_p = prod(variable.incoming_messages, dims=1)[1, :]
     total_unorm_p = NaNMath.sum(unnorm_p)
     if isnan(total_unorm_p)
         return zeros(length(unnorm_p))
@@ -89,26 +124,26 @@ function marginal(variable::Variable{Factor})
     return total_unorm_p > 0 ? unnorm_p ./ total_unorm_p : unnorm_p
 end
 
-function add_edge_between(variable::Variable{Factor}, factor::Factor{Variable})
+function add_edge_between(variable::AbsVariable, factor::AbsFactor)
     push!(variable.neighbours, factor)
     push!(factor.neighbours, variable)
-    
-    push!(factor.incoming_messages, [1.])
+
+    push!(factor.incoming_messages, [1.0])
     variable.incoming_messages = ones(size(variable.incoming_messages)[1] + 1, 1 << variable.number_of_bits) ./ 1 << variable.number_of_bits
     # push!(variable.incoming_messages, [1.])
-    
+
     push!(factor.index_in_neighbours_neighbour, length(variable.neighbours))
     push!(variable.index_in_neighbours_neighbour, length(factor.neighbours))
 end
 
 
-function set_variable_to_value(variables::Dict{String, Variable{Factor}},
-    factors::Dict{String, Factor{Variable}},
+function set_variable_to_value(variables::Dict{String,AbsVariable},
+    factors::Dict{String,AbsFactor},
     variable_name_with_version::String,
     value::UInt32,
     number_of_bits_per_cluster::Int64,
     run_number::Int64
-    )
+)
     number_of_clusters = Int64(ceil(32 / number_of_bits_per_cluster))
     for i in 1:number_of_clusters
         cur_var_name = string(variable_name_with_version, "_", i, "_", run_number)
@@ -116,14 +151,14 @@ function set_variable_to_value(variables::Dict{String, Variable{Factor}},
         dist_table = zeros(1 << number_of_bits_per_cluster)
         # Calculate what value these bits should have
         cur_cluster_value = (value & (((1 << number_of_bits_per_cluster) - 1)) << (number_of_bits_per_cluster * (i - 1))) >> (number_of_bits_per_cluster * (i - 1))
-        dist_table[cur_cluster_value + 1] = 1.
-        factors[cur_dist_name] = Factor{Variable}(cur_dist_name, LabelledArray(dist_table, [cur_var_name]))
+        dist_table[cur_cluster_value+1] = 1.0
+        factors[cur_dist_name] = Factor{AbsVariable}(cur_dist_name, LabelledArray(dist_table, [cur_var_name]))
         add_edge_between(variables[cur_var_name], factors[cur_dist_name])
         variables[cur_var_name].neighbour_index_to_avoid = length(variables[cur_var_name].neighbours)
     end
 end
 
-function read_most_likely_value_from_variable(variables::Dict{String, Variable{Factor}},
+function read_most_likely_value_from_variable(variables::Dict{String,AbsVariable},
     variable_name_with_version::String,
     number_of_bits_per_cluster::Int64,
     run_number::Int64)
@@ -139,28 +174,28 @@ function read_most_likely_value_from_variable(variables::Dict{String, Variable{F
     return value
 end
 
-function update_all_entropies(variables::Dict{String, Variable{Factor}},
+function update_all_entropies(variables::Dict{String,AbsVariable},
     all_var_names::Vector{String})
     Threads.@threads for var_name in all_var_names
         update_variable_entropy(variables[var_name])
     end
 end
 
-function update_variable_entropy(variable::Variable{Factor})
+function update_variable_entropy(variable::AbsVariable)
     variable.previous_entropy = variable.current_entropy
     variable.current_entropy = calculate_entropy(marginal(variable))
 end
 
-function total_entropy_of_graph(variables::Dict{String, Variable{Factor}})
-    tot_ent = 0.
-    for (i,j) in variables
+function total_entropy_of_graph(variables::Dict{String,AbsVariable})
+    tot_ent = 0.0
+    for (i, j) in variables
         tot_ent += j.current_entropy
     end
     return tot_ent
 end
 
-function belief_propagate_forwards_and_back_through_graph(variables::Dict{String, Variable{Factor}},
-    factors::Dict{String, Factor{Variable}},
+function belief_propagate_forwards_and_back_through_graph(variables::Dict{String,AbsVariable},
+    factors::Dict{String,AbsFactor},
     variables_by_round::Vector{Set{String}},
     factors_by_round::Vector{Set{String}},
     times_per_round::Int64)

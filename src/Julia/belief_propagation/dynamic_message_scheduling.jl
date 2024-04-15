@@ -4,7 +4,7 @@ using NaNMath
 include("node.jl")
 include("messages.jl")
 
-function populate_with_variables_two_away(variables::Dict{String, Variable{Factor}})
+function populate_with_variables_two_away(variables::Dict{String, AbsVariable})
     for (var_name, variable) in variables
         all_vars_two_away = Set{String}()
         for factor in variable.neighbours
@@ -14,7 +14,7 @@ function populate_with_variables_two_away(variables::Dict{String, Variable{Facto
     end
 end
 
-function update_variable_priority(variable::Variable{Factor},
+function update_variable_priority(variable::AbsVariable,
     priority_queue::PriorityQueue{String, Float64})
     prob_dist = marginal(variable)
     new_entropy = calculate_entropy(prob_dist) 
@@ -27,7 +27,7 @@ function update_variable_priority(variable::Variable{Factor},
     end
 end
 
-function variable_to_factor_messages_dynamic_scheduling(variables::Dict{String, Variable{Factor}},
+function variable_to_factor_messages_dynamic_scheduling(variables::Dict{String, AbsVariable},
     priority_queue::PriorityQueue{String, Float64})
     variable_name_to_update = peek(priority_queue)[1]
     variables[variable_name_to_update].previous_entropy = calculate_entropy(marginal(variables[variable_name_to_update]))
@@ -41,8 +41,8 @@ function variable_to_factor_messages_dynamic_scheduling(variables::Dict{String, 
     end
 end
 
-function dynamic_belief_propogate_through_graph(variables::Dict{String, Variable{Factor}},
-    factors::Dict{String, Factor{Variable}},
+function dynamic_belief_propogate_through_graph(variables::Dict{String, AbsVariable},
+    factors::Dict{String, AbsFactor},
     max_number_of_updates::Int64
     )
     populate_with_variables_two_away(variables)

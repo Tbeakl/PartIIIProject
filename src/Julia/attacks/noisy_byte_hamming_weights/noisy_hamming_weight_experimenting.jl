@@ -24,8 +24,8 @@ encryption_trace = encrypt_collect_trace(key, nonce, counter, leakage_function)
 encryption_output = encrypt(key, nonce, counter)
 add_noisy_byte_hamming_weight_to_variable = noisy_byte_hamming_weight_value_to_function(hamming_position_table, noise)
 
-variables = Dict{String, Variable{Factor}}()
-factors = Dict{String, Factor{Variable}}()
+variables = Dict{String, AbsVariable}()
+factors = Dict{String, AbsFactor}()
 variables_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
 factors_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
 adds_by_round::Vector{Set{Int64}} = [Set{Int64}() for _ in 1:21]

@@ -15,7 +15,7 @@ key = [0x03020100, 0x07060504, 0x0b0a0908, 0x0f0e0d0c, 0x13121110, 0x17161514, 0
 nonce = [0x09000000, 0x4a000000, 0x00000000]
 counter::UInt32 = 1
 
-number_of_bits = 4
+number_of_bits = 2
 
 # key = generate_random_key()
 # nonce = generate_random_nonce()
@@ -23,8 +23,8 @@ number_of_bits = 4
 
 encryption_output = encrypt(key, nonce, counter)
 
-variables = Dict{String,Variable{Factor}}()
-factors = Dict{String,Factor{Variable}}()
+variables = Dict{String, AbsVariable}()
+factors = Dict{String,AbsFactor}()
 variables_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
 factors_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
 adds_by_round::Vector{Set{Int64}} = [Set{Int64}() for _ in 1:21]
@@ -53,7 +53,7 @@ tot_entropy_over_time::Vector{Float64} = []
 # There is some issue with the passing of the probabilities in this because they are all going to zeros
 # which is a major problem, not really sure where it is coming from because of the need 
 
-Threads.@threads for fact_name in all_factors
+for fact_name in all_factors
     factor_to_variable_messages(factors[fact_name])
 end
 
@@ -81,10 +81,10 @@ initial_number_of_iterations = 250
 
 for i in 1:initial_number_of_iterations
     println(i)
-    Threads.@threads for var_name in internal_variables
+    for var_name in internal_variables
         variable_to_factor_messages(variables[var_name])
     end
-    Threads.@threads for fact_name in internal_factors
+    for fact_name in internal_factors
         factor_to_variable_messages(factors[fact_name])
     end
     update_all_entropies(variables, all_variables)
@@ -97,14 +97,20 @@ for i in 1:initial_number_of_iterations
     end
 end
 
-@benchmark begin
-    for var_name in internal_variables
-        variable_to_factor_messages(variables[var_name])
-    end
-    for fact_name in internal_factors
-        factor_to_variable_messages(factors[fact_name])
+for var_name in all_variables
+    if any(marginal(variables[var_name]) .< 0)
+        println(var_name)
     end
 end
+
+# @benchmark begin
+#     for var_name in internal_variables
+#         variable_to_factor_messages(variables[var_name])
+#     end
+#     for fact_name in internal_factors
+#         factor_to_variable_messages(factors[fact_name])
+#     end
+# end
 
 anim = @animate for i in eachindex(visualisation_of_entropy)
     heatmap(visualisation_of_entropy[i]; title=string("Round ", i - 1, " entropy of variables"), clim=(0, number_of_bits)) # 

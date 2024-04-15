@@ -33,8 +33,8 @@ add_byte_intermediate_rot_template_to_variable = byte_template_value_to_function
 # add_byte_intermediate_add_template_to_variable = byte_template_path_to_function(base_path_intermediate_add_mean_vectors, noise, 40)
 # add_byte_intermediate_rot_template_to_variable = byte_template_path_to_function(base_path_intermediate_rot_mean_vectors, noise, 40)
 
-variables = Dict{String,Variable{Factor}}()
-factors = Dict{String,Factor{Variable}}()
+variables = Dict{String,AbsVariable}()
+factors = Dict{String,AbsFactor}()
 variables_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
 factors_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
 adds_by_round::Vector{Set{Int64}} = [Set{Int64}() for _ in 1:21]

@@ -19,8 +19,8 @@ function encrypt_collect_trace_full_values(key::Vector{UInt32}, nonce::Vector{UI
 end
 
 function add_value_from_position_in_trace(trace::Vector{Any},
-    variables::Dict{String, Variable{Factor}},
-    factors::Dict{String, Factor{Variable}},
+    variables::Dict{String, AbsVariable},
+    factors::Dict{String, AbsFactor},
     bits_per_cluster::Int64,
     location_execution_counts::Vector{Int64},
     variable::Int64,
@@ -34,8 +34,8 @@ function add_value_from_position_in_trace(trace::Vector{Any},
 end
 
 function add_qr_trace(trace::Vector{Any},
-    variables::Dict{String, Variable{Factor}},
-    factors::Dict{String, Factor{Variable}},
+    variables::Dict{String, AbsVariable},
+    factors::Dict{String, AbsFactor},
     bits_per_cluster::Int64,
     a::Int64,
     b::Int64,
@@ -89,8 +89,8 @@ function add_qr_trace(trace::Vector{Any},
 end
 
 function add_trace_to_factor_graph(trace::Vector{Any},
-    variables::Dict{String, Variable{Factor}},
-    factors::Dict{String, Factor{Variable}},
+    variables::Dict{String, AbsVariable},
+    factors::Dict{String, AbsFactor},
     bits_per_cluster::Int64,
     run_number::Int64
     )

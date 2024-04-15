@@ -42,8 +42,8 @@ end
 
 function byte_template_value_to_function(mean_vectors::AbstractMatrix{Float64}, noise::Distribution)
     return function add_byte_template_to_variable(value,
-        variables::Dict{String,Variable{Factor}},
-        factors::Dict{String,Factor{Variable}},
+        variables::Dict{String,AbsVariable},
+        factors::Dict{String,AbsFactor},
         bits_per_cluster::Int64,
         variable_and_count::String,
         run_number::Int64,
@@ -57,7 +57,7 @@ function byte_template_value_to_function(mean_vectors::AbstractMatrix{Float64}, 
                 cur_dist_name = string("f_", variable_and_count, "_", (i - 1) * clusters_per_leakage_weight + j, "_", run_number, "_dist")
                 # Marginalise out the prob dist for this particular cluster, where cluster 1 is the LSB
                 marginalised_dist = marginalise_prob_dist(prob_dist_for_byte, (j - 1) * bits_per_cluster, bits_per_cluster)
-                factors[cur_dist_name] = Factor{Variable}(cur_dist_name, LabelledArray(marginalised_dist, [cur_var_name]))
+                factors[cur_dist_name] = Factor{AbsVariable}(cur_dist_name, LabelledArray(marginalised_dist, [cur_var_name]))
                 add_edge_between(variables[cur_var_name], factors[cur_dist_name])
                 variables[cur_var_name].neighbour_index_to_avoid = length(variables[cur_var_name].neighbours)
             end
@@ -67,8 +67,8 @@ end
 
 function byte_template_path_to_function(base_path::String, noise::Distribution, number_of_templates::Int64)
     return function add_byte_template_to_variable(value,
-        variables::Dict{String,Variable{Factor}},
-        factors::Dict{String,Factor{Variable}},
+        variables::Dict{String,AbsVariable},
+        factors::Dict{String,AbsFactor},
         bits_per_cluster::Int64,
         variable_and_count::String,
         run_number::Int64,
@@ -82,7 +82,7 @@ function byte_template_path_to_function(base_path::String, noise::Distribution, 
                 cur_dist_name = string("f_", variable_and_count, "_", (i - 1) * clusters_per_leakage_weight + j, "_", run_number, "_dist")
                 # Marginalise out the prob dist for this particular cluster, where cluster 1 is the LSB
                 marginalised_dist = marginalise_prob_dist(prob_dist_for_byte, (j - 1) * bits_per_cluster, bits_per_cluster)
-                factors[cur_dist_name] = Factor{Variable}(cur_dist_name, LabelledArray(marginalised_dist, [cur_var_name]))
+                factors[cur_dist_name] = Factor{AbsVariable}(cur_dist_name, LabelledArray(marginalised_dist, [cur_var_name]))
                 add_edge_between(variables[cur_var_name], factors[cur_dist_name])
                 variables[cur_var_name].neighbour_index_to_avoid = length(variables[cur_var_name].neighbours)
             end
@@ -102,8 +102,8 @@ function real_byte_template_path_to_function(base_path::String)
     end
     return function add_byte_template_to_variable(trace::Vector{Float32},
         position_in_trace::Int64,
-        variables::Dict{String,Variable{Factor}},
-        factors::Dict{String,Factor{Variable}},
+        variables::Dict{String,AbsVariable},
+        factors::Dict{String,AbsFactor},
         bits_per_cluster::Int64,
         variable_and_count::String,
         run_number::Int64)
@@ -128,7 +128,7 @@ function real_byte_template_path_to_function(base_path::String)
                 cur_dist_name = string("f_", cur_var_name, "_dist")
                 # Marginalise out the prob dist for this particular cluster, where cluster 1 is the LSB
                 marginalised_dist = marginalise_prob_dist(prob_dist_for_byte, (j - 1) * bits_per_cluster, bits_per_cluster)
-                factors[cur_dist_name] = Factor{Variable}(cur_dist_name, LabelledArray(marginalised_dist, [cur_var_name]))
+                factors[cur_dist_name] = Factor{AbsVariable}(cur_dist_name, LabelledArray(marginalised_dist, [cur_var_name]))
                 add_edge_between(variables[cur_var_name], factors[cur_dist_name])
                 variables[cur_var_name].neighbour_index_to_avoid = length(variables[cur_var_name].neighbours)
             end
@@ -137,8 +137,8 @@ function real_byte_template_path_to_function(base_path::String)
 end
 
 function add_initial_key_distribution_from_leakage_trace(trace::Vector{Float32},
-    variables::Dict{String,Variable{Factor}},
-    factors::Dict{String,Factor{Variable}},
+    variables::Dict{String,AbsVariable},
+    factors::Dict{String,AbsFactor},
     bits_per_cluster::Int64,
     run_number::Int64,
     base_path::String
@@ -160,7 +160,7 @@ function add_initial_key_distribution_from_leakage_trace(trace::Vector{Float32},
                 cur_dist_name = string("f_", cur_var_name, "_dist")
                 # Marginalise out the prob dist for this particular cluster, where cluster 1 is the LSB
                 marginalised_dist = prob_dist_for_byte # marginalise_prob_dist(prob_dist_for_byte, (j - 1) * bits_per_cluster, bits_per_cluster)
-                factors[cur_dist_name] = Factor{Variable}(cur_dist_name, LabelledArray(marginalised_dist, [cur_var_name]))
+                factors[cur_dist_name] = Factor{AbsVariable}(cur_dist_name, LabelledArray(marginalised_dist, [cur_var_name]))
                 add_edge_between(variables[cur_var_name], factors[cur_dist_name])
                 variables[cur_var_name].neighbour_index_to_avoid = length(variables[cur_var_name].neighbours)
             end
@@ -169,8 +169,8 @@ function add_initial_key_distribution_from_leakage_trace(trace::Vector{Float32},
 end
 
 function add_initial_key_distribution_from_simulated_leakage(key_values::Vector,
-    variables::Dict{String,Variable{Factor}},
-    factors::Dict{String,Factor{Variable}},
+    variables::Dict{String,AbsVariable},
+    factors::Dict{String,AbsFactor},
     bits_per_cluster::Int64,
     run_number::Int64,
     base_path::String,
@@ -193,7 +193,7 @@ function add_initial_key_distribution_from_simulated_leakage(key_values::Vector,
                 cur_dist_name = string("f_", cur_var_name, "_dist")
                 # Marginalise out the prob dist for this particular cluster, where cluster 1 is the LSB
                 marginalised_dist = prob_dist_for_byte #marginalise_prob_dist(prob_dist_for_byte, (j - 1) * bits_per_cluster, bits_per_cluster)
-                factors[cur_dist_name] = Factor{Variable}(cur_dist_name, LabelledArray(marginalised_dist, [cur_var_name]))
+                factors[cur_dist_name] = Factor{AbsVariable}(cur_dist_name, LabelledArray(marginalised_dist, [cur_var_name]))
                 add_edge_between(variables[cur_var_name], factors[cur_dist_name])
                 variables[cur_var_name].neighbour_index_to_avoid = length(variables[cur_var_name].neighbours)
             end

@@ -3,18 +3,26 @@ include("../attacks/byte_template_attacks/template_attack_traces.jl")
 include("../encryption/leakage_functions.jl")
 
 
-fid = h5open("D:\\ChaChaData\\attack_profiling\\downsampled_50_traces_validation.hdf5", "r")
-
+fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/downsampled_50_traces_validation.hdf5", "r")
 all_intermediate_values = read(fid["intermediate_values"])
-downsampled_matrix = read(fid["downsampled_matrix"])
+downsampled_matrix_mean = read(fid["downsampled_matrix"])
+close(fid)
+
+# fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/downsampled_50_traces_minimum_validation.hdf5", "r")
+# downsampled_matrix_min = read(fid["downsampled_matrix"])
+# close(fid)
+
+# fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/downsampled_50_traces_maximum_validation.hdf5", "r")
+# downsampled_matrix_max = read(fid["downsampled_matrix"])
+# close(fid)
+
 number_of_templates = 2672
 
-for dilation_amount in 0:2:16
-
+for dilation_amount in 0:4
     all_correct_counts = zeros(Int64, number_of_templates)
-    Threads.@threads for template_number in 1:number_of_templates
+    for template_number in 1:number_of_templates
         # println(template_number)
-        template_path = string("D:\\ChaChaData\\attack_profiling\\initial_templates_infront_50_", dilation_amount, "\\", template_number, "_template.hdf5")
+        template_path = string("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/initial_templates_after_", dilation_amount, "/", template_number, "_template.hdf5")
         intermediate_value_vector = all_intermediate_values[:, template_number]
         fid = h5open(template_path, "r")
         sample_bitmask = read(fid["downsampled_sample_bitmask"])
@@ -22,7 +30,8 @@ for dilation_amount in 0:2:16
         mean_vectors = read(fid["class_means"])
         cov_matrix = read(fid["covariance_matrix"])
         close(fid)
-        projected_vectors = downsampled_matrix[:, sample_bitmask] * template_projection
+
+        projected_vectors = downsampled_matrix_mean[:, sample_bitmask] * template_projection #hcat(, downsampled_matrix_min[:, sample_bitmask], downsampled_matrix_max[:, sample_bitmask])
         noise_distribution = noise_distribution_given_covaraince_matrix(cov_matrix)
         # val = 12
         # cur_dist = get_prob_dist_of_vector(mean_vectors', noise_distribution, projected_vectors[val, :])
@@ -39,10 +48,9 @@ for dilation_amount in 0:2:16
     # Need to create the output of the success rates as probabilties
     success_rate_percentages = all_correct_counts ./ 10
     # average_percentage_success_rates = success_rate_percentages[begin + 3:4:end]
-    average_percentage_success_rates = round.(collect(Iterators.map(mean, Iterators.partition(success_rate_percentages, 4))), digits=2)
-    println(dilation_amount, " ", mean(average_percentage_success_rates))
+    # average_percentage_success_rates = round.(collect(Iterators.map(mean, Iterators.partition(success_rate_percentages, 4))), digits=2)
+    println(dilation_amount, ": ", mean(success_rate_percentages))
 end
-
 # key_success_rates = average_percentage_success_rates[1:8]
 # intermediate_value_success_rates = average_percentage_success_rates[29:end]
 

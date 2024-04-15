@@ -3,8 +3,8 @@ include("../../belief_propagation/node.jl")
 include("../../belief_propagation/messages.jl")
 include("../../chacha_factor_graph/chacha_factor_graph.jl")
 
-function belief_propogate_through_graph_forwards(variables::Dict{String,Variable{Factor}},
-    factors::Dict{String,Factor{Variable}},
+function belief_propogate_through_graph_forwards(variables::Dict{String,AbsVariable},
+    factors::Dict{String,AbsFactor},
     variables_by_round::Vector{Set{String}},
     factors_by_round::Vector{Set{String}},
     adds_by_round::Vector{Set{Int64}},
@@ -51,13 +51,12 @@ function test_quarter_round()
     bits_per_cluster = 2
     number_of_clusters = Int64(ceil(32 / bits_per_cluster))
     initial_state = [0x879531e0, 0xc5ecf37d, 0x516461b1, 0xc9a62f8a, 0x44c20ef3, 0x3390af7f, 0xd9fc690b, 0x2a5f714c, 0x53372767, 0xb00a5631, 0x974c541a, 0x359e9963, 0x5c971061, 0x3d631689, 0x2098d9d6, 0x91dbd320]
-    variables = Dict{String,Variable{Factor}}()
-    factors = Dict{String,Factor{Variable}}()
+    variables = Dict{String,AbsVariable}()
+    factors = Dict{String,AbsFactor}()
     for i in 1:16
         for j in 1:number_of_clusters
-            variables[string(i, "_0_", j, "_1")] = Variable{Factor}(string(i, "_0_", j, "_1"), bits_per_cluster)
+            variables[string(i, "_0_", j, "_1")] = Variable{AbsFactor}(string(i, "_0_", j, "_1"), bits_per_cluster)
         end
-        set_variable_to_value(variables, factors, string(i, "_0"), initial_state[i], bits_per_cluster, 1)
     end
     location_execution_counts = zeros(Int64, 16)
     number_of_operations = Dict("xor" => 0, "add" => 0, "rot" => 0)
@@ -78,6 +77,10 @@ function test_quarter_round()
     round_factors = Set{String}()
     chacha_quarter_round_factor_graph!(variables, factors, 3, 8, 9, 14, bits_per_cluster, location_execution_counts, number_of_operations, precalculated_prob_tables,
         round_variables, round_factors, 1)
+
+    for i in 1:16
+        set_variable_to_value(variables, factors, string(i, "_0"), initial_state[i], bits_per_cluster, 1)
+    end
 
     println("Total number of nodes for one quarter round ", length(variables) + length(factors))
     # Iterate the message passing lots of times to pass data through the graph to hopefully have coverged to the correct values
@@ -104,8 +107,8 @@ function test_vec_sec_2_full_encryption()
     counter::UInt32 = 1
 
     bits_per_cluster = 2
-    variables = Dict{String,Variable{Factor}}()
-    factors = Dict{String,Factor{Variable}}()
+    variables = Dict{String,AbsVariable}()
+    factors = Dict{String,AbsFactor}()
     variables_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
     factors_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
     adds_by_round::Vector{Set{Int64}} = [Set{Int64}() for _ in 1:21]
@@ -135,8 +138,8 @@ function test_vec_1_full_encryption()
     counter::UInt32 = 0
 
     bits_per_cluster = 1
-    variables = Dict{String,Variable{Factor}}()
-    factors = Dict{String,Factor{Variable}}()
+    variables = Dict{String,AbsVariable}()
+    factors = Dict{String,AbsFactor}()
     variables_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
     factors_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
     adds_by_round::Vector{Set{Int64}} = [Set{Int64}() for _ in 1:21]
@@ -163,8 +166,8 @@ function test_vec_2_full_encryption()
     counter::UInt32 = 1
 
     bits_per_cluster = 4
-    variables = Dict{String,Variable{Factor}}()
-    factors = Dict{String,Factor{Variable}}()
+    variables = Dict{String,AbsVariable}()
+    factors = Dict{String,AbsFactor}()
     variables_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
     factors_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
     adds_by_round::Vector{Set{Int64}} = [Set{Int64}() for _ in 1:21]
@@ -192,8 +195,8 @@ function test_vec_3_full_encryption()
     counter::UInt32 = 1
 
     bits_per_cluster = 2
-    variables = Dict{String,Variable{Factor}}()
-    factors = Dict{String,Factor{Variable}}()
+    variables = Dict{String,AbsVariable}()
+    factors = Dict{String,AbsFactor}()
     variables_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
     factors_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
     adds_by_round::Vector{Set{Int64}} = [Set{Int64}() for _ in 1:21]
@@ -221,8 +224,8 @@ function test_vec_4_full_encryption()
     counter::UInt32 = 2
 
     bits_per_cluster = 2
-    variables = Dict{String,Variable{Factor}}()
-    factors = Dict{String,Factor{Variable}}()
+    variables = Dict{String,AbsVariable}()
+    factors = Dict{String,AbsFactor}()
     variables_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
     factors_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
     adds_by_round::Vector{Set{Int64}} = [Set{Int64}() for _ in 1:21]
@@ -250,8 +253,8 @@ function test_vec_5_full_encryption()
     counter::UInt32 = 0
 
     bits_per_cluster = 2
-    variables = Dict{String,Variable{Factor}}()
-    factors = Dict{String,Factor{Variable}}()
+    variables = Dict{String,AbsVariable}()
+    factors = Dict{String,AbsFactor}()
     variables_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
     factors_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
     adds_by_round::Vector{Set{Int64}} = [Set{Int64}() for _ in 1:21]

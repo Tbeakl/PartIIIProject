@@ -33,8 +33,8 @@ for number_of_bits in [1, 2, 4]
     file_to_write_to_name = string("evaluation\\loopy_adds_seed_42_damping_0_8_key_A_add_C_rot_B_runs_bits_", number_of_bits, ".csv")
     fileFileIOStream = open(file_to_write_to_name, "a")
 
-    variables = Dict{String,Variable{Factor}}()
-    factors = Dict{String,Factor{Variable}}()
+    variables = Dict{String,AbsVariable}()
+    factors = Dict{String,AbsFactor}()
     variables_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
     factors_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
     adds_by_round::Vector{Set{Int64}} = [Set{Int64}() for _ in 1:21]

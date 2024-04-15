@@ -3,7 +3,7 @@ using DSP, StatsBase
 include("../belief_propagation/node.jl")
 include("../belief_propagation/messages.jl")
 
-function make_log_likelihood_tables_for_key(variables::Dict{String,Variable{Factor}},
+function make_log_likelihood_tables_for_key(variables::Dict{String,AbsVariable},
     bits_per_cluster::Int64)
     tables::Vector{Vector{Float64}} = []
     number_of_cluster_per_word = Int64(ceil(32 / bits_per_cluster))

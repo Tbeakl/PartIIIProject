@@ -2,8 +2,8 @@ include("../belief_propagation/node.jl")
 
 # Currently need the clusters to fall exactly along with the leakages
 function add_distribution_from_position_in_trace(trace::Vector{Any},
-    variables::Dict{String, Variable{Factor}},
-    factors::Dict{String, Factor{Variable}},
+    variables::Dict{String, AbsVariable},
+    factors::Dict{String, AbsFactor},
     bits_per_cluster::Int64,
     location_execution_counts::Vector{Int64},
     variable::Int64,
@@ -19,8 +19,8 @@ function add_distribution_from_position_in_trace(trace::Vector{Any},
 end
 
 function add_qr_trace(trace::Vector{Any},
-    variables::Dict{String, Variable{Factor}},
-    factors::Dict{String, Factor{Variable}},
+    variables::Dict{String, AbsVariable},
+    factors::Dict{String, AbsFactor},
     bits_per_cluster::Int64,
     a::Int64,
     b::Int64,
@@ -67,8 +67,8 @@ function add_qr_trace(trace::Vector{Any},
 end
 
 function add_trace_to_factor_graph(trace::Vector{Any},
-    variables::Dict{String, Variable{Factor}},
-    factors::Dict{String, Factor{Variable}},
+    variables::Dict{String, AbsVariable},
+    factors::Dict{String, AbsFactor},
     bits_per_cluster::Int64,
     run_number::Int64,
     trace_value_to_graph_function_add_output,
@@ -94,8 +94,8 @@ end
 
 # Currently need the clusters to fall exactly along with the leakages
 function add_distribution_from_leakage_to_point(trace::Vector{Float32},
-    variables::Dict{String, Variable{Factor}},
-    factors::Dict{String, Factor{Variable}},
+    variables::Dict{String, AbsVariable},
+    factors::Dict{String, AbsFactor},
     bits_per_cluster::Int64,
     location_execution_counts::Vector{Int64},
     variable::Int64,
@@ -111,8 +111,8 @@ function add_distribution_from_leakage_to_point(trace::Vector{Float32},
 end
 
 function add_qr_leakage(trace::Vector{Float32},
-    variables::Dict{String, Variable{Factor}},
-    factors::Dict{String, Factor{Variable}},
+    variables::Dict{String, AbsVariable},
+    factors::Dict{String, AbsFactor},
     bits_per_cluster::Int64,
     a::Int64,
     b::Int64,
@@ -158,8 +158,8 @@ function add_qr_leakage(trace::Vector{Float32},
 end
 
 function add_leakage_trace_to_factor_graph(trace::Vector{Float32},
-    variables::Dict{String, Variable{Factor}},
-    factors::Dict{String, Factor{Variable}},
+    variables::Dict{String, AbsVariable},
+    factors::Dict{String, AbsFactor},
     bits_per_cluster::Int64,
     run_number::Int64,
     trace_value_to_graph
@@ -182,8 +182,8 @@ function add_leakage_trace_to_factor_graph(trace::Vector{Float32},
     # we assume that we have access to those actual values (or at least a better leakage) compared to just their leakage values
 end
 
-function add_initial_key_dist(variables::Dict{String, Variable{Factor}},
-    factors::Dict{String, Factor{Variable}},
+function add_initial_key_dist(variables::Dict{String, AbsVariable},
+    factors::Dict{String, AbsFactor},
     bits_per_cluster::Int64,
     key_leakage::Vector,
     run_number::Int64,
@@ -193,8 +193,8 @@ function add_initial_key_dist(variables::Dict{String, Variable{Factor}},
     end
 end
 
-function add_initial_nonce_and_counter_dist(variables::Dict{String, Variable{Factor}},
-    factors::Dict{String, Factor{Variable}},
+function add_initial_nonce_and_counter_dist(variables::Dict{String, AbsVariable},
+    factors::Dict{String, AbsFactor},
     number_of_bits_per_cluster::Int64,
     nonce_leakage::Vector, 
     counter_leakage,

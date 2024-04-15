@@ -2,7 +2,7 @@
 
 julia_version = "1.10.2"
 manifest_format = "2.0"
-project_hash = "87bb266ed6ad3bd4fc6fa40d031d58cd1a734264"
+project_hash = "2161a49973d607cd9a200d2c436961ba213bbaff"
 
 [[deps.ANSIColoredPrinters]]
 git-tree-sha1 = "574baf8110975760d391c710b6341da1afa48d8c"
@@ -594,6 +594,12 @@ deps = ["Base64", "CodecZlib", "ConcurrentUtilities", "Dates", "ExceptionUnwrapp
 git-tree-sha1 = "8e59b47b9dc525b70550ca082ce85bcd7f5477cd"
 uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 version = "1.10.5"
+
+[[deps.Hadamard]]
+deps = ["AbstractFFTs", "FFTW", "LinearAlgebra"]
+git-tree-sha1 = "0d4bf3dc43ca0b6fa73c34136a8fe52d3b436cc5"
+uuid = "4a05ff16-5f95-55f4-bb53-bb3f467c689a"
+version = "1.5.0"
 
 [[deps.HarfBuzz_jll]]
 deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "Graphite2_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Pkg"]

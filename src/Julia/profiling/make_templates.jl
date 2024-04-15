@@ -100,11 +100,12 @@ number_of_output_dimensions = 8
 number_of_bits_per_template = 8
 number_of_templates_per_intermediate_byte = 8 ÷ number_of_bits_per_template
 
-bitmask_path = "D:\\ChaChaData\\attack_profiling\\clock_cycles_bitmasks_no_dilation.hdf5"
-data_path = "D:\\ChaChaData\\attack_profiling\\downsampled_50_traces_profiling.hdf5"
-data_path_min = "D:\\ChaChaData\\attack_profiling\\downsampled_50_traces_minimum_profiling.hdf5"
-data_path_max = "D:\\ChaChaData\\attack_profiling\\downsampled_50_traces_maximum_profiling.hdf5"
-path_to_templates = "D:\\ChaChaData\\attack_profiling\\initial_templates_infront_4_behind_2_min_max_50_"
+bitmask_path = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/clock_cycles_bitmasks_no_dilation.hdf5"
+data_path = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/downsampled_50_traces_profiling.hdf5"
+data_path_min = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/downsampled_50_traces_minimum_profiling.hdf5"
+data_path_max = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/downsampled_50_traces_maximum_profiling.hdf5"
+# data_path = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/downsampled_50_traces_maximum_profiling.hdf5"
+path_to_templates = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/initial_templates_mean_min_together/"
 # intermediate_value_index = 1
 
 # function calculate_within_class_scatter(data_samples, labels, means)
@@ -119,32 +120,36 @@ path_to_templates = "D:\\ChaChaData\\attack_profiling\\initial_templates_infront
 # intermediate_value_index = 2
 # intermediate_value_index = 1001
 # dilation_amount = 0
-for dilation_amount in 4:4#0:2:16
-    Threads.@threads for intermediate_value_index in 1:number_of_intermediate_values 
+
+data_fid = h5open(data_path, "r")
+
+dset_intermediate_values = data_fid["intermediate_values"]
+if HDF5.ismmappable(dset_intermediate_values)
+    dset_intermediate_values = HDF5.readmmap(dset_intermediate_values)
+end
+
+dset = data_fid["downsampled_matrix"]
+if HDF5.ismmappable(dset)
+    dset = HDF5.readmmap(dset)
+end
+
+for intermediate_value_index in 1:number_of_intermediate_values  # Threads.@threads
+    if !ispath(string(path_to_templates, intermediate_value_index, "_template.hdf5"))
         println(intermediate_value_index)
         bitmask_fid = h5open(bitmask_path, "r")
-        cycle_bitmask = dilate_after(read(bitmask_fid[string("bitmask_", intermediate_value_index)]), 2)
-        cycle_bitmask = dilate_infront(cycle_bitmask, dilation_amount)
+        cycle_bitmask = dilate_after(read(bitmask_fid[string("bitmask_", intermediate_value_index)]), 3)
+        cycle_bitmask = dilate_infront(cycle_bitmask, 4)
         # cycle_bitmask = read(bitmask_fid[string("bitmask_", intermediate_value_index)])
         close(bitmask_fid)
 
         sample_bitmask = repeat(cycle_bitmask, inner=number_of_samples_per_cycle)[1:final_number_of_samples]
-        data_fid = h5open(data_path, "r")
-        intermediate_value_vector = read(data_fid["intermediate_values"])[:, intermediate_value_index]
-        dset = data_fid["downsampled_matrix"]
-        if HDF5.ismmappable(dset)
-            dset = HDF5.readmmap(dset)
-        end
 
         # fid = h5open("D:\\ChaChaData\\attack_profiling\\original_1002_values.hdf5", "r")
         # intermediate_value_vector = read(fid["intermediate_values"])
         # original_matrix_of_current_data = fid["downsampled_matrix"][:, 1:3100]'
         # close(fid)
-
-
+        intermediate_value_vector = dset_intermediate_values[:, intermediate_value_index]
         original_matrix_of_current_data_mean = dset[:, sample_bitmask]'
-        close(data_fid)
-        
         data_fid = h5open(data_path_min, "r")
         dset = data_fid["downsampled_matrix"]
         if HDF5.ismmappable(dset)
@@ -152,15 +157,15 @@ for dilation_amount in 4:4#0:2:16
         end
         original_matrix_of_current_data_min = dset[:, sample_bitmask]'
         close(data_fid)
-        
-        data_fid = h5open(data_path_max, "r")
-        dset = data_fid["downsampled_matrix"]
-        if HDF5.ismmappable(dset)
-            dset = HDF5.readmmap(dset)
-        end
-        original_matrix_of_current_data_max = dset[:, sample_bitmask]'
-        close(data_fid)
-        original_matrix_of_current_data = vcat(original_matrix_of_current_data_mean, original_matrix_of_current_data_min, original_matrix_of_current_data_max)
+
+        # data_fid = h5open(data_path_max, "r")
+        # dset = data_fid["downsampled_matrix"]
+        # if HDF5.ismmappable(dset)
+        #     dset = HDF5.readmmap(dset)
+        # end
+        # original_matrix_of_current_data_max = dset[:, sample_bitmask]'
+        # close(data_fid)
+        original_matrix_of_current_data = hcat(original_matrix_of_current_data_mean, original_matrix_of_current_data_min) #vcat(original_matrix_of_current_data_mean, original_matrix_of_current_data_min, original_matrix_of_current_data_max)
         # println(size(original_matrix_of_current_data))
         template_number = 1
         # for template_number in 1:number_of_templates_per_intermediate_byte
@@ -224,10 +229,10 @@ for dilation_amount in 4:4#0:2:16
         # scatter!(p, [current_mean[dim_1] * sqrt(64_000)], [current_mean[dim_2] * sqrt(64_000)], markersize=10, label="Current class mean")
 
         # noise_distribution_given_covaraince_matrix()
-        if !isdir(string(path_to_templates, dilation_amount))
-            mkpath(string(path_to_templates, dilation_amount))
+        if !isdir(string(path_to_templates))
+            mkpath(string(path_to_templates))
         end
-        fid = h5open(string(path_to_templates, dilation_amount, "\\", intermediate_value_index, "_template.hdf5"), "w")
+        fid = h5open(string(path_to_templates, intermediate_value_index, "_template.hdf5"), "w")
         fid["projection"] = projection_to_subspace .* sqrt(64_000)
         fid["class_means"] = projected_class_means .* sqrt(64_000)
         fid["covariance_matrix"] = projected_within_class_scatter
@@ -235,7 +240,9 @@ for dilation_amount in 4:4#0:2:16
         close(fid)
     end
 end
+close(data_fid)
 # fid = h5open("D:\\ChaChaData\\attack_profiling\\downsampled_10_traces_validation.hdf5", "r")
+
 
 # validation_intermediate_values = read(fid["intermediate_values"])[:, intermediate_value_index]
 # dset = fid["downsampled_matrix"]

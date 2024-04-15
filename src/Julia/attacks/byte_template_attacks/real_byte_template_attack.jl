@@ -17,8 +17,8 @@ add_byte_template_function = real_byte_template_path_to_function(base_path_templ
 
 base_key_templates = "D:\\ChaChaData\\attack_profiling\\initial_templates_two_bits\\"
 
-variables = Dict{String,Variable{Factor}}()
-factors = Dict{String,Factor{Variable}}()
+variables = Dict{String,AbsVariable}()
+factors = Dict{String,AbsFactor}()
 variables_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
 factors_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
 adds_by_round::Vector{Set{Int64}} = [Set{Int64}() for _ in 1:21]
