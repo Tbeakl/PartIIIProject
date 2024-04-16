@@ -8,14 +8,14 @@ include("../../encryption/leakage_functions.jl")
 include("../../encryption/chacha.jl")
 include("template_attack_traces.jl")
 
-number_of_bits::Int64 = 2
+number_of_bits::Int64 = 8
 number_of_encryption_traces::Int64 = 1
-number_of_values_averaged_over_key_leakage = 20
+number_of_values_averaged_over_key_leakage = 40
 
-base_path_templates = "D:\\ChaChaData\\attack_profiling\\initial_templates\\"
+base_path_templates = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/initial_templates/"
 add_byte_template_function = real_byte_template_path_to_function(base_path_templates)
 
-base_key_templates = "D:\\ChaChaData\\attack_profiling\\initial_templates_two_bits\\"
+base_key_templates = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/initial_templates/"
 
 variables = Dict{String,AbsVariable}()
 factors = Dict{String,AbsFactor}()
@@ -104,7 +104,7 @@ println(tot_entropy_over_time[end])
 internal_factors = [union(additional_factors, factors_by_round[:]...)...]
 internal_variables = [union(additional_variables, variables_by_round[:]...)...]
 
-initial_number_of_iterations = 1
+initial_number_of_iterations = 100
 
 for i in 1:initial_number_of_iterations
     println(i)
@@ -124,27 +124,27 @@ for i in 1:initial_number_of_iterations
     end
 end
 
-number_of_iterations_of_ends = 200
-rounds_for_ends = 2
-variables_at_ends = [union(additional_variables, variables_by_round[begin:rounds_for_ends]..., variables_by_round[end-rounds_for_ends-1:end]...)...]
-factors_at_ends = [union(additional_factors, factors_by_round[begin:rounds_for_ends]..., factors_by_round[end-rounds_for_ends-1:end]...)...]
-for i in 1:number_of_iterations_of_ends
-    println(i)
-    Threads.@threads for var_name in variables_at_ends
-        variable_to_factor_messages(variables[var_name], .8)
-    end
-    Threads.@threads for fact_name in factors_at_ends
-        factor_to_variable_messages(factors[fact_name], .8)
-    end
-    update_all_entropies(variables, variables_at_ends)
-    push!(visualisation_of_entropy, variables_to_heatmap_matrix(visualisation_variables, heatmap_plotting_function))
+# number_of_iterations_of_ends = 200
+# rounds_for_ends = 2
+# variables_at_ends = [union(additional_variables, variables_by_round[begin:rounds_for_ends]..., variables_by_round[end-rounds_for_ends-1:end]...)...]
+# factors_at_ends = [union(additional_factors, factors_by_round[begin:rounds_for_ends]..., factors_by_round[end-rounds_for_ends-1:end]...)...]
+# for i in 1:number_of_iterations_of_ends
+#     println(i)
+#     Threads.@threads for var_name in variables_at_ends
+#         variable_to_factor_messages(variables[var_name], .8)
+#     end
+#     Threads.@threads for fact_name in factors_at_ends
+#         factor_to_variable_messages(factors[fact_name], .8)
+#     end
+#     update_all_entropies(variables, variables_at_ends)
+#     push!(visualisation_of_entropy, variables_to_heatmap_matrix(visualisation_variables, heatmap_plotting_function))
 
-    push!(tot_entropy_over_time, total_entropy_of_graph(variables))
-    println(tot_entropy_over_time[end])
-    if tot_entropy_over_time[end] < 1e-6 || abs(tot_entropy_over_time[end] - tot_entropy_over_time[end-1]) <= 1e-6
-        break
-    end
-end
+#     push!(tot_entropy_over_time, total_entropy_of_graph(variables))
+#     println(tot_entropy_over_time[end])
+#     if tot_entropy_over_time[end] < 1e-6 || abs(tot_entropy_over_time[end] - tot_entropy_over_time[end-1]) <= 1e-6
+#         break
+#     end
+# end
 
 
 read_off_key = [read_most_likely_value_from_variable(variables, string(i + 4, "_0"), number_of_bits, 1) for i in 1:8]
@@ -154,8 +154,8 @@ end
 
 plot(tot_entropy_over_time)
 
-# anim = @animate for i in eachindex(visualisation_of_entropy)
-#     heatmap(visualisation_of_entropy[i]; title=string("Round ", i - 1, " entropy of variables"), clim=(0, number_of_bits)) # 
-# end
-# # heatmap(visualisation_of_entropy[1]; title=string("Round ", 0, " entropy of variables")) # clim=(0, number_of_bits),
-# gif(anim, "test.gif", fps=50)
+anim = @animate for i in eachindex(visualisation_of_entropy)
+    heatmap(visualisation_of_entropy[i]; title=string("Round ", i - 1, " entropy of variables"), clim=(0, number_of_bits)) # 
+end
+# heatmap(visualisation_of_entropy[1]; title=string("Round ", 0, " entropy of variables")) # clim=(0, number_of_bits),
+gif(anim, "test.gif", fps=10)

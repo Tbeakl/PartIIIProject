@@ -13,7 +13,7 @@ number_of_bits::Int64 = 8
 number_of_encryption_traces::Int64 = 1
 
 dimensions::Int64 = 8
-signal_to_noise_ratio::Float64 = 1.4
+signal_to_noise_ratio::Float64 = .6
 key::Vector{UInt32} = generate_random_key()
 nonce::Vector{UInt32} = generate_random_nonce()
 counter::UInt32 = generate_random_counter()
@@ -21,17 +21,17 @@ counter::UInt32 = generate_random_counter()
 # The factor graph has clearly been broken because the adds are not working around the graph
 
 noise = noise_distribution_fixed_standard_dev(1.0, dimensions)
-mean_vectors = generate_mean_vectors(noise, signal_to_noise_ratio, 255)
-add_byte_key_template_to_variable = byte_template_value_to_function(mean_vectors, noise)
-add_byte_intermediate_add_template_to_variable = byte_template_value_to_function(mean_vectors, noise)
-add_byte_intermediate_rot_template_to_variable = byte_template_value_to_function(mean_vectors, noise)
+# mean_vectors = generate_mean_vectors(noise, signal_to_noise_ratio, 255)
+# add_byte_key_template_to_variable = byte_template_value_to_function(mean_vectors, noise)
+# add_byte_intermediate_add_template_to_variable = byte_template_value_to_function(mean_vectors, noise)
+# add_byte_intermediate_rot_template_to_variable = byte_template_value_to_function(mean_vectors, noise)
 
-# base_path_key_mean_vectors =              "D:\\ChaChaData\\ChaCha_Simulation\\templates_Keccak\\templateLDA_B_ID\\template_A00\\template_expect_b"
-# base_path_intermediate_add_mean_vectors = "D:\\ChaChaData\\ChaCha_Simulation\\templates_Keccak\\templateLDA_B_ID\\template_B00\\template_expect_b"
-# base_path_intermediate_rot_mean_vectors = "D:\\ChaChaData\\ChaCha_Simulation\\templates_Keccak\\templateLDA_B_ID\\template_B00\\template_expect_b"
-# add_byte_key_template_to_variable = byte_template_path_to_function(base_path_key_mean_vectors, noise, 200)
-# add_byte_intermediate_add_template_to_variable = byte_template_path_to_function(base_path_intermediate_add_mean_vectors, noise, 40)
-# add_byte_intermediate_rot_template_to_variable = byte_template_path_to_function(base_path_intermediate_rot_mean_vectors, noise, 40)
+base_path_key_mean_vectors =              "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/ChaCha_Simulation/templates_Keccak/templateLDA_B_ID/template_B00/template_expect_b"
+base_path_intermediate_add_mean_vectors = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/ChaCha_Simulation/templates_Keccak/templateLDA_B_ID/template_C00/template_expect_b"
+base_path_intermediate_rot_mean_vectors = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/ChaCha_Simulation/templates_Keccak/templateLDA_B_ID/template_C00/template_expect_b"
+add_byte_key_template_to_variable = byte_template_path_to_function(base_path_key_mean_vectors, noise, 200)
+add_byte_intermediate_add_template_to_variable = byte_template_path_to_function(base_path_intermediate_add_mean_vectors, noise, 40)
+add_byte_intermediate_rot_template_to_variable = byte_template_path_to_function(base_path_intermediate_rot_mean_vectors, noise, 40)
 
 variables = Dict{String,AbsVariable}()
 factors = Dict{String,AbsFactor}()
@@ -46,14 +46,14 @@ for encryption_run_number in 1:number_of_encryption_traces
     if encryption_run_number == 1
         add_starting_constant_values(variables, factors, number_of_bits, encryption_run_number)
     end
-    # add_values_of_initial_nonce_and_counter(variables, factors, number_of_bits, nonce, counter, 1)
-    add_initial_nonce_and_counter_dist(variables, factors, number_of_bits, byte_values_for_input.(nonce), byte_values_for_input(counter), encryption_run_number, add_byte_key_template_to_variable)
+    add_values_of_initial_nonce_and_counter(variables, factors, number_of_bits, nonce, counter, 1)
+    # add_initial_nonce_and_counter_dist(variables, factors, number_of_bits, byte_values_for_input.(nonce), byte_values_for_input(counter), encryption_run_number, add_byte_key_template_to_variable)
     add_initial_key_dist(variables, factors, number_of_bits, byte_values_for_input.(key), encryption_run_number, add_byte_key_template_to_variable)
     # Need to add some noisy distributions to the initial values for the counters to see how that does
 
     for i in 1:16
-        add_byte_key_template_to_variable(byte_values_for_input(encryption_output[i]), variables, factors, number_of_bits, string(i, "_", location_execution_counts[i]), encryption_run_number)
-        # set_variable_to_value(variables, factors, string(i, "_", location_execution_counts[i]), encryption_output[i], number_of_bits, 1)
+        # add_byte_key_template_to_variable(byte_values_for_input(encryption_output[i]), variables, factors, number_of_bits, string(i, "_", location_execution_counts[i]), encryption_run_number)
+        set_variable_to_value(variables, factors, string(i, "_", location_execution_counts[i]), encryption_output[i], number_of_bits, 1)
     end
     println("Starting to add the factors for the trace")
     add_trace_to_factor_graph(encryption_trace, variables, factors, number_of_bits, encryption_run_number, add_byte_intermediate_add_template_to_variable, add_byte_intermediate_rot_template_to_variable)

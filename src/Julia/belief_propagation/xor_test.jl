@@ -11,7 +11,7 @@ function make_xor_prob_table(num_of_bits::Int64)
     return output
 end
 
-number_of_bits = 16
+number_of_bits = 8
 
 tab_a = zeros(1 << number_of_bits)
 tab_a[1] = 0.8
@@ -35,7 +35,7 @@ p_c = LabelledArray(
     tab_c, ["c"]
 )
 
-# xor_table = make_xor_prob_table(number_of_bits)
+xor_table = make_xor_prob_table(number_of_bits)
 
 p_xor = LabelledArray(xor_table, ["a", "b", "c"])
 

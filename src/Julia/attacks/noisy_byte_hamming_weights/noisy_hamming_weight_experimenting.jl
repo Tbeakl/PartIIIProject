@@ -13,8 +13,8 @@ key = [0x03020100, 0x07060504, 0x0b0a0908, 0x0f0e0d0c, 0x13121110, 0x17161514, 0
 nonce = [0x09000000, 0x4a000000, 0x00000000]
 counter::UInt32 = 1
 
-standard_deviation = 0.7
-number_of_bits = 2
+standard_deviation = 0.8
+number_of_bits = 8
 hamming_position_table = table_for_hamming_values(number_of_bits)
 noise = Normal(0, standard_deviation)
 
@@ -63,7 +63,7 @@ all_variables = [keys(variables)...]
 
 for i in 1:100
     println(i)
-    belief_propagate_forwards_and_back_through_graph(variables, factors, variables_by_round, factors_by_round, 1)
+    belief_propagate_forwards_and_back_through_graph(variables, factors, variables_by_round, factors_by_round, 1, 1.)
     update_all_entropies(variables, all_variables)
     push!(tot_entropy_over_time, total_entropy_of_graph(variables))
     println(tot_entropy_over_time[end])
@@ -72,6 +72,7 @@ for i in 1:100
     end
 end
 
+read_off_key = [read_most_likely_value_from_variable(variables, string(i + 4, "_0"), number_of_bits, 1) for i in 1:8]
 for i in 1:8
     println(string(read_most_likely_value_from_variable(variables, string(i + 4, "_0"), number_of_bits, 1), base=16))
 end
