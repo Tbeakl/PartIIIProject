@@ -1,4 +1,4 @@
-using NaNMath, Base.Threads, Hadamard
+using NaNMath, Base.Threads, Hadamard, FFTW
 include("node.jl")
 
 calculate_entropy(prob_dist) = -NaNMath.sum(prob_dist .* log2.(prob_dist))
@@ -59,6 +59,15 @@ function variable_to_factor_messages(variable::Variable{AbsFactor}, damping_fact
     end
 end
 
+function update_with_damping(variable::AbsVariable, damping_factor::Float64, message::Vector{Float64}, index_in_neighbours::Int64)
+    if length(variable.incoming_messages[index_in_neighbours]) != length(message)
+        variable.incoming_messages[index_in_neighbours, :] = message
+    else
+        variable.incoming_messages[index_in_neighbours, :] = (damping_factor * message) .+ ((1 - damping_factor) * variable.incoming_messages[index_in_neighbours])
+        variable.incoming_messages[factor.index_in_neighbours_neighbour[i], :] ./= sum(variable.incoming_messages[index_in_neighbours, :])
+    end
+end
+
 function factor_to_variable_messages(factor::Factor{AbsVariable}, damping_factor::Float64=1.0)
     # This needs to update all the incoming messages of the connected variables
     tiled_incoming_messages = [tile_to_other_dist_along_axis_name(LabelledArray(factor.incoming_messages[i], [neighbour.name]), factor.data).array for (i, neighbour) in enumerate(factor.neighbours)]
@@ -74,13 +83,8 @@ function factor_to_variable_messages(factor::Factor{AbsVariable}, damping_factor
         value_to_squeeze = sum(factor_dist; dims=other_axes)
         message_out = dropdims(value_to_squeeze; dims=Tuple(other_axes))
         message_out ./= sum(message_out)
-        neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] = message_out
-        if length(neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i]]) != length(message_out)
-            neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] = message_out
-        else
-            neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] = (damping_factor * message_out) .+ ((1 - damping_factor) * neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i]])
-        end
-        neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] ./= sum(neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :])
+        # neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] = message_out
+        update_with_damping(neighbour, damping_factor, message_out, factor.index_in_neighbours_neighbour[i])
     end
 end
 
@@ -104,15 +108,90 @@ function factor_to_variable_messages(factor::XorFactor{AbsVariable}, damping_fac
         # issues in other places the negative value are all incredibly small when they start out anyway
         message_out = max.(0, fwht(prod(transformed_incoming_messages[neighbours_to_include, :], dims=1)[1, :]))
         message_out ./= sum(message_out)
-        neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] = message_out
-        if length(neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i]]) != length(message_out)
-            neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] = message_out
-        else
-            neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] = (damping_factor * message_out) .+ ((1 - damping_factor) * neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i]])
-        end
-        neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] ./= sum(neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :])
+        # neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] = message_out
+        update_with_damping(neighbour, damping_factor, message_out, factor.index_in_neighbours_neighbour[i])
         neighbours_to_include[i] = true
     end
+end
+
+function factor_to_variable_messages(factor::AddFactor{AbsVariable}, damping_factor::Float64=1.0)
+    # This relies on making the updates to the incoming messages based on what we know about them
+    # They need to be ordered as carry_in, a, b, output and then we can make use of a series of 
+    # fourier transforms and theorems from that to produce the correct set of results for a particular
+    # way of doing it
+
+    # First enlarge all the messages to be the same size
+    # println(factor.neighbours[4].number_of_bits)
+    size_of_variables = 1 << (factor.neighbours[4].number_of_bits)
+    size_of_incoming_variables = size_of_variables ÷ 2
+    carry_in_message = zeros(size_of_variables)
+    if length(factor.incoming_messages[1]) == 1
+        carry_in_message[1:2] .= 1.
+    else
+        # println(factor.incoming_messages[1])
+        carry_in_message[1:2] = factor.incoming_messages[1]
+    end
+    
+    a_message = zeros(size_of_variables)
+    if length(factor.incoming_messages[2]) == 1
+        a_message[1:size_of_incoming_variables] .= 1.
+    else
+        a_message[1:size_of_incoming_variables] = factor.incoming_messages[2]
+    end
+
+    b_message = zeros(size_of_variables)
+    if length(factor.incoming_messages[3]) == 1
+        b_message[1:size_of_incoming_variables] .= 1.
+    else
+        b_message[1:size_of_incoming_variables] = factor.incoming_messages[3]
+    end
+
+    out_message = zeros(size_of_variables)
+    if length(factor.incoming_messages[4]) == 1
+        out_message[:] .= 1.
+    else
+        out_message = factor.incoming_messages[4]
+    end
+
+    # println(carry_in_message)
+    # println(a_message)
+    # println(b_message)
+    # println(out_message)
+
+    C_IN = fft(carry_in_message)
+    A = fft(a_message)
+    B = fft(b_message)
+    OUT = fft(out_message)
+
+    t_c_in = real(ifft(conj.(A .* B) .* OUT))
+    # t_c_in = real(ifft(conj.(A) .* conj(B) .* OUT))
+    t_c_in = max.(0., t_c_in[1:2])
+    t_c_in ./= sum(t_c_in)
+    # println(t_c_in)
+
+
+    t_a = real(ifft(conj.(C_IN .* B) .* OUT))
+    # t_a = real(ifft(conj.(C_IN) .* conj(B) .* OUT))
+    t_a = max.(0., t_a[1:size_of_incoming_variables])
+    t_a ./= sum(t_a)
+    # println(t_a)
+
+    t_b = real(ifft(conj.(A .* C_IN) .* OUT))
+    # t_b = real(ifft(conj.(A) .* conj(C_IN) .* OUT))
+    t_b = max.(0., t_b[1:size_of_incoming_variables])
+    t_b ./= sum(t_b)
+    # println(t_b)
+
+
+    t_out = max.(0., real(ifft(A .* B .* C_IN)))
+    t_out ./= sum(t_out)
+    # println(t_out)
+
+    # Need to update the messages going out of from this factor to what has just come so shrink them and normalise them
+    update_with_damping(factor.neighbours[1], damping_factor, t_c_in, factor.index_in_neighbours_neighbour[1])
+    update_with_damping(factor.neighbours[2], damping_factor, t_a, factor.index_in_neighbours_neighbour[2])
+    update_with_damping(factor.neighbours[3], damping_factor, t_b, factor.index_in_neighbours_neighbour[3])
+    update_with_damping(factor.neighbours[4], damping_factor, t_out, factor.index_in_neighbours_neighbour[4])
 end
 
 function marginal(variable::AbsVariable)

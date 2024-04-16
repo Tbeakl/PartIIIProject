@@ -45,3 +45,14 @@ mutable struct XorFactor{T} <: AbsFactor
         return new(name, Vector{T}[], Vector{Vector{Float64}}[], Vector{Int64}[])
     end
 end
+
+mutable struct AddFactor{T} <: AbsFactor
+    name::String
+    neighbours::Vector{T}
+    incoming_messages::Vector{Vector{Float64}}
+    index_in_neighbours_neighbour::Vector{Int64}
+
+    function AddFactor{T}(name::String) where {T}
+        return new(name, Vector{T}[], Vector{Vector{Float64}}[], Vector{Int64}[])
+    end
+end

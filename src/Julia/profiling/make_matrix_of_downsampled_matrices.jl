@@ -13,11 +13,11 @@ mean_arg_min = argmin(mean_trace)
 close(fid)
 
 trace_range_per_file = 0:249
-# file_range = 73:328
-file_range = 329:332
+file_range = 73:328
+# file_range = 329:332
 # file_range = 181:
 
-number_of_samples_to_average_over = 50
+number_of_samples_to_average_over = 25
 number_of_downsampled_samples_per_clock_cycle = 500 ÷ number_of_samples_to_average_over
 
 all_intermediate_values = zeros(UInt8, length(trace_range_per_file) * length(file_range), number_of_intermediate_values)
@@ -27,7 +27,7 @@ all_intermediate_values = zeros(UInt8, length(trace_range_per_file) * length(fil
 # close(bitmask_fid)
 # sample_bitmask = BitVector(repeat(cycle_bitmask, inner=500)[1:749401])
 # downsampled_matrix = zeros(Float32, length(trace_range_per_file) * length(file_range), sum(sample_bitmask))
-downsampled_matrix = zeros(Float32, length(trace_range_per_file) * length(file_range), 14989)
+downsampled_matrix = zeros(Float32, length(trace_range_per_file) * length(file_range), 29977)
 # Threads.@threads 
 for i in file_range
     println(i)
@@ -43,12 +43,12 @@ for i in file_range
         difference_between_mean_and_power = argmin(raw_trace) - mean_arg_min
         trimmed_raw_trace = raw_trace[50+difference_between_mean_and_power:end-(50-difference_between_mean_and_power)]
         trimmed_raw_trace = trimmed_raw_trace[clock_cycle_sample_number:(end-(500-clock_cycle_sample_number)-1)]
-        downsampled_trace = collect(Iterators.map(minimum, Iterators.partition(trimmed_raw_trace, number_of_samples_to_average_over)))
+        downsampled_trace = collect(Iterators.map(mean, Iterators.partition(trimmed_raw_trace, number_of_samples_to_average_over)))
         downsampled_matrix[(i-file_range[1])*length(trace_range_per_file)+j+1, :] = downsampled_trace
     end
     close(fid)
 end
-fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/downsampled_50_traces_minimum_validation.hdf5", "w")
+fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/downsampled_25_traces_profiling.hdf5", "w")
 fid["intermediate_values"] = all_intermediate_values
 fid["downsampled_matrix"] = downsampled_matrix
 close(fid)

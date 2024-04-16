@@ -43,7 +43,8 @@ function make_32_bit_adder(number_of_bits_per_cluster::Int64, variables, factors
         variables[string("output_temp_", i)] = Variable{AbsFactor}(string("output_temp_", i), number_of_bits_per_cluster + 1)
         variables[string("output_", i)] = Variable{AbsFactor}(string("output_", i), number_of_bits_per_cluster)
 
-        factors[string("f_add_", i)] = Factor{AbsVariable}(string("f_add_", i), LabelledArray(full_add_dist, [string("carry_", i-1), string("input_a_", i), string("input_b_", i), string("output_temp_", i)]))
+        # factors[string("f_add_", i)] = Factor{AbsVariable}(string("f_add_", i), LabelledArray(full_add_dist, [string("carry_", i-1), string("input_a_", i), string("input_b_", i), string("output_temp_", i)]))
+        factors[string("f_add_", i)] = AddFactor{AbsVariable}(string("f_add_", i))
         factors[string("f_add_output_", i)] = Factor{AbsVariable}(string("f_add_output_", i), LabelledArray(full_add_to_output_dist, [string("output_temp_", i), string("output_", i)]))
         factors[string("f_add_carry_", i)] = Factor{AbsVariable}(string("f_add_carry_", i), LabelledArray(full_add_carry_dist, [string("output_temp_", i), string("carry_", i)]))
     end
@@ -108,7 +109,7 @@ end
 variables = Dict{String, AbsVariable}()
 factors = Dict{String, AbsFactor}()
 
-number_of_bits = 2
+number_of_bits = 8
 
 make_32_bit_adder(number_of_bits, variables, factors)
 add_base_probabilities(number_of_bits, variables, factors)

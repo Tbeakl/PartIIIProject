@@ -7,15 +7,15 @@ include("../../chacha_factor_graph/heatmap_visualisation.jl")
 include("../../encryption/leakage_functions.jl")
 include("../../encryption/chacha.jl")
 
-# key = zeros(UInt32, 8)
-# nonce = zeros(UInt32, 3)
-# counter::UInt32 = 0
-
-key = [0x03020100, 0x07060504, 0x0b0a0908, 0x0f0e0d0c, 0x13121110, 0x17161514, 0x1b1a1918, 0x1f1e1d1c]
-nonce = [0x09000000, 0x4a000000, 0x00000000]
+key = zeros(UInt32, 8)
+nonce = zeros(UInt32, 3)
 counter::UInt32 = 1
 
-number_of_bits = 2
+# key = [0x03020100, 0x07060504, 0x0b0a0908, 0x0f0e0d0c, 0x13121110, 0x17161514, 0x1b1a1918, 0x1f1e1d1c]
+# nonce = [0x09000000, 0x4a000000, 0x00000000]
+# counter::UInt32 = 1
+
+number_of_bits = 4
 
 # key = generate_random_key()
 # nonce = generate_random_nonce()
@@ -23,7 +23,7 @@ number_of_bits = 2
 
 encryption_output = encrypt(key, nonce, counter)
 
-variables = Dict{String, AbsVariable}()
+variables = Dict{String,AbsVariable}()
 factors = Dict{String,AbsFactor}()
 variables_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
 factors_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
@@ -33,9 +33,9 @@ chacha_factor_graph!(variables, factors, number_of_bits, variables_by_round, fac
 add_starting_constant_values(variables, factors, number_of_bits, 1)
 add_distribution_of_initial_values(variables, factors, number_of_bits, key, nonce, counter, 1)
 
-for i in 1:16
-    set_variable_to_value(variables, factors, string(i, "_", location_execution_counts[i]), encryption_output[i], number_of_bits, 1)
-end
+# for i in 1:16
+#     set_variable_to_value(variables, factors, string(i, "_", location_execution_counts[i]), encryption_output[i], number_of_bits, 1)
+# end
 
 all_variables = [keys(variables)...]
 all_factors = [keys(factors)...]
@@ -77,19 +77,56 @@ println(tot_entropy_over_time[end])
 internal_factors = [union(factors_by_round[:]...)...]
 internal_variables = [union(variables_by_round[:]...)...]
 
-initial_number_of_iterations = 250
+all_variables = [keys(variables)...]
+update_all_entropies(variables, all_variables)
+for (i, j) in factors
+    # println(i)
+    factor_to_variable_messages(j)
+end
+for (i, j) in variables
+    # println(i)
+    variable_to_factor_messages(j)
+end
+update_all_entropies(variables, all_variables)
+for passes_through_graph in 1:1
+    println("On iteration ", passes_through_graph)
+    for i in eachindex(variables_by_round)
+        println("Round ", i)
+        for round_iter in 1:10
+            println(round_iter)
+            for factor_name in factors_by_round[i]
+                # println(factor_name)
+                factor_to_variable_messages(factors[factor_name])
+            end
+            for variable_name in variables_by_round[i]
+                # println(variable_name)
+                variable_to_factor_messages(variables[variable_name])
+            end
+            for add_num in adds_by_round[i]
+                # println(add_num)
+                belief_propagate_through_add(variables, factors, number_of_bits, add_num, 1)
+            end
+            update_all_entropies(variables, all_variables)
+            push!(visualisation_of_entropy, variables_to_heatmap_matrix(visualisation_variables, heatmap_plotting_function))
+        end
+        println("Total entropy after round ", total_entropy_of_graph(variables))
+    end
+    println("Total entropy after pass ", total_entropy_of_graph(variables))
+end
+
+initial_number_of_iterations = 10
 
 for i in 1:initial_number_of_iterations
     println(i)
-    for var_name in internal_variables
+    for var_name in keys(variables)
         variable_to_factor_messages(variables[var_name])
     end
-    for fact_name in internal_factors
+    for fact_name in keys(factors)
         factor_to_variable_messages(factors[fact_name])
     end
     update_all_entropies(variables, all_variables)
     push!(visualisation_of_entropy, variables_to_heatmap_matrix(visualisation_variables, heatmap_plotting_function))
-    
+
     push!(tot_entropy_over_time, total_entropy_of_graph(variables))
     println(tot_entropy_over_time[end])
     if tot_entropy_over_time[end] == 0
@@ -97,11 +134,11 @@ for i in 1:initial_number_of_iterations
     end
 end
 
-for var_name in all_variables
-    if any(marginal(variables[var_name]) .< 0)
-        println(var_name)
-    end
-end
+# for var_name in all_variables
+#     if any(marginal(variables[var_name]) .< 0)
+#         println(var_name)
+#     end
+# end
 
 # @benchmark begin
 #     for var_name in internal_variables
@@ -117,4 +154,4 @@ anim = @animate for i in eachindex(visualisation_of_entropy)
 end
 
 # heatmap(visualisation_of_entropy[1]; title=string("Round ", 0, " entropy of variables")) # clim=(0, number_of_bits),
-gif(anim, string("test_test_", number_of_bits, ".gif"), fps=10)
+gif(anim, string("test_test_", number_of_bits, ".gif"), fps=50)

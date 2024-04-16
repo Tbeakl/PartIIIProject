@@ -226,7 +226,8 @@ function add_factor_graph!(variables::Dict{String,AbsVariable},
         variables[output_name] = Variable{AbsFactor}(output_name, number_of_bits_per_cluster)
         variables[full_add_output_name] = Variable{AbsFactor}(full_add_output_name, number_of_bits_per_cluster + 1)
 
-        factors[full_add_factor_name] = Factor{AbsVariable}(full_add_factor_name, LabelledArray(full_add_dist, [carry_in_variable_name, input_a_name, input_b_name, full_add_output_name]))
+        # factors[full_add_factor_name] = Factor{AbsVariable}(full_add_factor_name, LabelledArray(full_add_dist, [carry_in_variable_name, input_a_name, input_b_name, full_add_output_name]))
+        factors[full_add_factor_name] = AddFactor{AbsVariable}(full_add_factor_name)
         factors[add_carry_out_factor_name] = Factor{AbsVariable}(add_carry_out_factor_name, LabelledArray(add_full_to_carry, [full_add_output_name, carry_out_variable_name]))
         factors[add_output_factor_name] = Factor{AbsVariable}(add_output_factor_name, LabelledArray(add_full_to_output, [full_add_output_name, output_name]))
 
@@ -500,7 +501,8 @@ function add_adds_between_counters(variables::Dict{String,AbsVariable},
             variables[carry_out_variable_name] = Variable{AbsFactor}(carry_out_variable_name, 1)
             variables[full_add_output_name] = Variable{AbsFactor}(full_add_output_name, number_of_bits_per_cluster + 1)
 
-            factors[full_add_factor_name] = Factor{AbsVariable}(full_add_factor_name, LabelledArray(full_add_dist, [carry_in_variable_name, input_a_name, input_b_name, full_add_output_name]))
+            # factors[full_add_factor_name] = Factor{AbsVariable}(full_add_factor_name, LabelledArray(full_add_dist, [carry_in_variable_name, input_a_name, input_b_name, full_add_output_name]))
+            factors[full_add_factor_name] = AddFactor{AbsVariable}(full_add_factor_name)
             factors[add_carry_out_factor_name] = Factor{AbsVariable}(add_carry_out_factor_name, LabelledArray(add_full_to_carry, [full_add_output_name, carry_out_variable_name]))
             factors[add_output_factor_name] = Factor{AbsVariable}(add_output_factor_name, LabelledArray(add_full_to_output, [full_add_output_name, output_name]))
 
