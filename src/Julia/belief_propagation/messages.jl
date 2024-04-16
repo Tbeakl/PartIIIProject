@@ -126,29 +126,29 @@ function factor_to_variable_messages(factor::AddFactor{AbsVariable}, damping_fac
     size_of_incoming_variables = size_of_variables ÷ 2
     carry_in_message = zeros(size_of_variables)
     if length(factor.incoming_messages[1]) == 1
-        carry_in_message[1:2] .= 1.
+        carry_in_message[1:2] .= 1.0
     else
         # println(factor.incoming_messages[1])
         carry_in_message[1:2] = factor.incoming_messages[1]
     end
-    
+
     a_message = zeros(size_of_variables)
     if length(factor.incoming_messages[2]) == 1
-        a_message[1:size_of_incoming_variables] .= 1.
+        a_message[1:size_of_incoming_variables] .= 1.0
     else
         a_message[1:size_of_incoming_variables] = factor.incoming_messages[2]
     end
 
     b_message = zeros(size_of_variables)
     if length(factor.incoming_messages[3]) == 1
-        b_message[1:size_of_incoming_variables] .= 1.
+        b_message[1:size_of_incoming_variables] .= 1.0
     else
         b_message[1:size_of_incoming_variables] = factor.incoming_messages[3]
     end
 
     out_message = zeros(size_of_variables)
     if length(factor.incoming_messages[4]) == 1
-        out_message[:] .= 1.
+        out_message[:] .= 1.0
     else
         out_message = factor.incoming_messages[4]
     end
@@ -165,25 +165,25 @@ function factor_to_variable_messages(factor::AddFactor{AbsVariable}, damping_fac
 
     t_c_in = real(ifft(conj.(A .* B) .* OUT))
     # t_c_in = real(ifft(conj.(A) .* conj(B) .* OUT))
-    t_c_in = max.(0., t_c_in[1:2])
+    t_c_in = max.(0.0, t_c_in[1:2])
     t_c_in ./= sum(t_c_in)
     # println(t_c_in)
 
 
     t_a = real(ifft(conj.(C_IN .* B) .* OUT))
     # t_a = real(ifft(conj.(C_IN) .* conj(B) .* OUT))
-    t_a = max.(0., t_a[1:size_of_incoming_variables])
+    t_a = max.(0.0, t_a[1:size_of_incoming_variables])
     t_a ./= sum(t_a)
     # println(t_a)
 
     t_b = real(ifft(conj.(A .* C_IN) .* OUT))
     # t_b = real(ifft(conj.(A) .* conj(C_IN) .* OUT))
-    t_b = max.(0., t_b[1:size_of_incoming_variables])
+    t_b = max.(0.0, t_b[1:size_of_incoming_variables])
     t_b ./= sum(t_b)
     # println(t_b)
 
 
-    t_out = max.(0., real(ifft(A .* B .* C_IN)))
+    t_out = max.(0.0, real(ifft(A .* B .* C_IN)))
     t_out ./= sum(t_out)
     # println(t_out)
 
@@ -192,6 +192,115 @@ function factor_to_variable_messages(factor::AddFactor{AbsVariable}, damping_fac
     update_with_damping(factor.neighbours[2], damping_factor, t_a, factor.index_in_neighbours_neighbour[2])
     update_with_damping(factor.neighbours[3], damping_factor, t_b, factor.index_in_neighbours_neighbour[3])
     update_with_damping(factor.neighbours[4], damping_factor, t_out, factor.index_in_neighbours_neighbour[4])
+end
+
+function factor_to_variable_messages(factor::MarginaliseTopBitsFactor{AbsVariable}, damping_factor::Float64=1.0)
+    # The first neighbour is the larger version and the second neighbour the smaller
+    # println("Top bits")
+    number_of_bits_large_variable = factor.neighbours[1].number_of_bits
+    number_of_bits_smaller_variable = factor.neighbours[2].number_of_bits
+    size_of_small_in_large = 1 << (number_of_bits_large_variable - number_of_bits_smaller_variable)
+    # println(number_of_bits_large_variable)
+    # println(number_of_bits_smaller_variable)
+    # println(size_of_small_in_large)
+
+    # We only need to consider the other neighbours incoming message for the out going message
+    if length(factor.incoming_messages[1]) == 1
+        small_outgoing_message = ones(1 << number_of_bits_smaller_variable) ./ (1 << number_of_bits_smaller_variable)
+    else
+        small_outgoing_message = collect(Iterators.map(sum, Iterators.partition(factor.incoming_messages[1], size_of_small_in_large)))
+    end
+    if length(factor.incoming_messages[2]) == 1
+        large_outgoing_message = ones(1 << number_of_bits_large_variable)
+    else
+        large_outgoing_message = repeat(factor.incoming_messages[2], inner=size_of_small_in_large)
+    end
+    large_outgoing_message ./= sum(large_outgoing_message)
+
+    # Need to update the messages going out of from this factor to what has just come so shrink them and normalise them
+    update_with_damping(factor.neighbours[1], damping_factor, large_outgoing_message, factor.index_in_neighbours_neighbour[1])
+    update_with_damping(factor.neighbours[2], damping_factor, small_outgoing_message, factor.index_in_neighbours_neighbour[2])
+end
+
+function marginalise_bottom(values::Vector{Float64}, number_of_values::Int64)
+    output = zeros(number_of_values)
+    for i in 1:number_of_values
+        output[i] = sum(values[i:number_of_values:end])
+    end
+    return output
+end
+
+function factor_to_variable_messages(factor::MarginaliseBottomBitsFactor{AbsVariable}, damping_factor::Float64=1.0)
+    # The first neighbour is the larger version and the second neighbour the smaller
+    # println("Bottom bits")
+    number_of_bits_large_variable = factor.neighbours[1].number_of_bits
+    number_of_bits_smaller_variable = factor.neighbours[2].number_of_bits
+    size_of_small_in_large = 1 << (number_of_bits_large_variable - number_of_bits_smaller_variable)
+    # println(number_of_bits_large_variable)
+    # println(number_of_bits_smaller_variable)
+    # println(size_of_small_in_large)
+    # We only need to consider the other neighbours incoming message for the out going message
+    if length(factor.incoming_messages[1]) == 1
+        small_outgoing_message = ones(1 << number_of_bits_smaller_variable) ./ (1 << number_of_bits_smaller_variable)
+    else
+        small_outgoing_message = marginalise_bottom(factor.incoming_messages[1], 1 << number_of_bits_smaller_variable)
+    end
+    if length(factor.incoming_messages[2]) == 1
+        large_outgoing_message = ones(1 << number_of_bits_large_variable)
+    else
+        large_outgoing_message = repeat(factor.incoming_messages[2], outer=size_of_small_in_large)
+    end
+    large_outgoing_message ./= sum(large_outgoing_message)
+
+    # Need to update the messages going out of from this factor to what has just come so shrink them and normalise them
+    update_with_damping(factor.neighbours[1], damping_factor, large_outgoing_message, factor.index_in_neighbours_neighbour[1])
+    update_with_damping(factor.neighbours[2], damping_factor, small_outgoing_message, factor.index_in_neighbours_neighbour[2])
+end
+
+function factor_to_variable_messages(factor::RotateFactor{AbsVariable}, damping_factor::Float64=1.0)
+    # The first neighbour is the left, second neighbour is the right, and third is output
+    # println("Rotate")
+    number_of_bits_cluster = factor.neighbours[1].number_of_bits
+    shift_amount = factor.bits_to_rotate_by
+    # println(number_of_bits_cluster)
+    # println(shift_amount)
+
+    # We only need to consider the other neighbours incoming message for the out going message
+    if length(factor.incoming_messages[1]) == 1
+        left_incoming_message = ones(1 << number_of_bits_cluster)
+    else
+        left_incoming_message = repeat(marginalise_bottom(factor.incoming_messages[1], 1 << (number_of_bits_cluster - shift_amount)), inner=1 << shift_amount)
+    end
+    # println(left_incoming_message)
+    if length(factor.incoming_messages[2]) == 1
+        right_incoming_message = ones(1 << number_of_bits_cluster)
+    else
+        right_incoming_message = repeat(collect(Iterators.map(sum, Iterators.partition(factor.incoming_messages[2], 1 << (number_of_bits_cluster - shift_amount)))), outer=1 << (number_of_bits_cluster - shift_amount))
+    end
+    # println(right_incoming_message)
+    if length(factor.incoming_messages[3]) == 1
+        output_incoming_message = ones(1 << number_of_bits_cluster)
+    else
+        output_incoming_message = factor.incoming_messages[3]
+    end
+    # println(output_incoming_message)
+    # Think I need to marginalise out the top bits and convert to bottom bits
+    # println(collect(Iterators.map(sum, Iterators.partition(right_incoming_message .* output_incoming_message, 1 << (number_of_bits_cluster - shift_amount)))))
+    # println(repeat(collect(Iterators.map(sum, Iterators.partition(right_incoming_message .* output_incoming_message, 1 << (number_of_bits_cluster - shift_amount)))), outer=1 << shift_amount))
+    left_outgoing_message = repeat(collect(Iterators.map(sum, Iterators.partition(right_incoming_message .* output_incoming_message, 1 << shift_amount))), outer=1 << shift_amount)
+    left_outgoing_message ./= sum(left_outgoing_message)
+
+    # Similar need to marginalise the bottom bits and covert to top bits
+    right_outgoing_message = repeat(marginalise_bottom(left_incoming_message .* output_incoming_message, 1 << shift_amount), inner=1 << (number_of_bits_cluster - shift_amount))
+    right_outgoing_message ./= sum(right_outgoing_message)
+
+    output_outgoing_message = left_incoming_message .* right_incoming_message
+    output_outgoing_message ./= sum(output_outgoing_message)
+
+    # Need to update the messages going out of from this factor to what has just come so shrink them and normalise them
+    update_with_damping(factor.neighbours[1], damping_factor, left_outgoing_message, factor.index_in_neighbours_neighbour[1])
+    update_with_damping(factor.neighbours[2], damping_factor, right_outgoing_message, factor.index_in_neighbours_neighbour[2])
+    update_with_damping(factor.neighbours[3], damping_factor, output_outgoing_message, factor.index_in_neighbours_neighbour[3])
 end
 
 function marginal(variable::AbsVariable)

@@ -104,7 +104,8 @@ function bit_rotation_factor_graph!(variables::Dict{String,AbsVariable},
         push!(round_factors, factor_name)
 
         variables[output_variable_name] = Variable{AbsFactor}(output_variable_name, number_of_bits_per_cluster)
-        factors[factor_name] = Factor{AbsVariable}(factor_name, LabelledArray(rotation_cluster_prob_table, [further_left_variable_name, further_right_variable_name, output_variable_name]))
+        # factors[factor_name] = Factor{AbsVariable}(factor_name, LabelledArray(rotation_cluster_prob_table, [further_left_variable_name, further_right_variable_name, output_variable_name]))
+        factors[factor_name] = RotateFactor{AbsVariable}(factor_name, bits_to_rotate_by)
         add_edge_between(variables[further_left_variable_name], factors[factor_name])
         add_edge_between(variables[further_right_variable_name], factors[factor_name])
         add_edge_between(variables[output_variable_name], factors[factor_name])
@@ -228,8 +229,10 @@ function add_factor_graph!(variables::Dict{String,AbsVariable},
 
         # factors[full_add_factor_name] = Factor{AbsVariable}(full_add_factor_name, LabelledArray(full_add_dist, [carry_in_variable_name, input_a_name, input_b_name, full_add_output_name]))
         factors[full_add_factor_name] = AddFactor{AbsVariable}(full_add_factor_name)
-        factors[add_carry_out_factor_name] = Factor{AbsVariable}(add_carry_out_factor_name, LabelledArray(add_full_to_carry, [full_add_output_name, carry_out_variable_name]))
-        factors[add_output_factor_name] = Factor{AbsVariable}(add_output_factor_name, LabelledArray(add_full_to_output, [full_add_output_name, output_name]))
+        # factors[add_carry_out_factor_name] = Factor{AbsVariable}(add_carry_out_factor_name, LabelledArray(add_full_to_carry, [full_add_output_name, carry_out_variable_name]))
+        factors[add_carry_out_factor_name] = MarginaliseTopBitsFactor{AbsVariable}(add_carry_out_factor_name)
+        # factors[add_output_factor_name] = Factor{AbsVariable}(add_output_factor_name, LabelledArray(add_full_to_output, [full_add_output_name, output_name]))
+        factors[add_output_factor_name] = MarginaliseBottomBitsFactor{AbsVariable}(add_output_factor_name)
 
         add_edge_between(variables[carry_in_variable_name], factors[full_add_factor_name])
         add_edge_between(variables[input_a_name], factors[full_add_factor_name])
@@ -503,8 +506,10 @@ function add_adds_between_counters(variables::Dict{String,AbsVariable},
 
             # factors[full_add_factor_name] = Factor{AbsVariable}(full_add_factor_name, LabelledArray(full_add_dist, [carry_in_variable_name, input_a_name, input_b_name, full_add_output_name]))
             factors[full_add_factor_name] = AddFactor{AbsVariable}(full_add_factor_name)
-            factors[add_carry_out_factor_name] = Factor{AbsVariable}(add_carry_out_factor_name, LabelledArray(add_full_to_carry, [full_add_output_name, carry_out_variable_name]))
-            factors[add_output_factor_name] = Factor{AbsVariable}(add_output_factor_name, LabelledArray(add_full_to_output, [full_add_output_name, output_name]))
+            # factors[add_carry_out_factor_name] = Factor{AbsVariable}(add_carry_out_factor_name, LabelledArray(add_full_to_carry, [full_add_output_name, carry_out_variable_name]))
+            factors[add_carry_out_factor_name] = MarginaliseTopBitsFactor{AbsVariable}(add_carry_out_factor_name)
+            # factors[add_output_factor_name] = Factor{AbsVariable}(add_output_factor_name, LabelledArray(add_full_to_output, [full_add_output_name, output_name]))
+            factors[add_output_factor_name] = MarginaliseBottomBitsFactor{AbsVariable}(add_output_factor_name)
 
             add_edge_between(variables[carry_in_variable_name], factors[full_add_factor_name])
             add_edge_between(variables[input_a_name], factors[full_add_factor_name])

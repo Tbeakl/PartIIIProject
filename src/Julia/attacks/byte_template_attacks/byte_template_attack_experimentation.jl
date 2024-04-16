@@ -9,7 +9,7 @@ include("../../encryption/leakage_functions.jl")
 include("../../encryption/chacha.jl")
 include("template_attack_traces.jl")
 
-number_of_bits::Int64 = 2
+number_of_bits::Int64 = 8
 number_of_encryption_traces::Int64 = 1
 
 dimensions::Int64 = 8
@@ -120,10 +120,10 @@ initial_number_of_iterations = 200
 for i in 1:initial_number_of_iterations
     println(i)
     # timing_info = @timed begin
-        Threads.@threads for var_name in internal_variables
+        for var_name in internal_variables
             variable_to_factor_messages(variables[var_name], 0.8)
         end
-        Threads.@threads for fact_name in internal_factors
+        for fact_name in internal_factors
             factor_to_variable_messages(factors[fact_name], 0.8)
         end
     # end

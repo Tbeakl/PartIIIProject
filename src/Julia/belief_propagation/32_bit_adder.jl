@@ -31,9 +31,9 @@ end
 
 function make_32_bit_adder(number_of_bits_per_cluster::Int64, variables, factors)
     number_of_clusters = Int64(ceil(32 / number_of_bits_per_cluster))
-    full_add_dist = make_add_including_carry_prob_array(number_of_bits_per_cluster)
-    full_add_to_output_dist = take_bottom_bits_prob_array(number_of_bits_per_cluster + 1)
-    full_add_carry_dist = take_top_bit_prob_array(number_of_bits_per_cluster + 1)
+    # full_add_dist = make_add_including_carry_prob_array(number_of_bits_per_cluster)
+    # full_add_to_output_dist = take_bottom_bits_prob_array(number_of_bits_per_cluster + 1)
+    # full_add_carry_dist = take_top_bit_prob_array(number_of_bits_per_cluster + 1)
 
     variables["carry_0"] = Variable{AbsFactor}("carry_0", 1)
     for i in 1:number_of_clusters
@@ -45,8 +45,10 @@ function make_32_bit_adder(number_of_bits_per_cluster::Int64, variables, factors
 
         # factors[string("f_add_", i)] = Factor{AbsVariable}(string("f_add_", i), LabelledArray(full_add_dist, [string("carry_", i-1), string("input_a_", i), string("input_b_", i), string("output_temp_", i)]))
         factors[string("f_add_", i)] = AddFactor{AbsVariable}(string("f_add_", i))
-        factors[string("f_add_output_", i)] = Factor{AbsVariable}(string("f_add_output_", i), LabelledArray(full_add_to_output_dist, [string("output_temp_", i), string("output_", i)]))
-        factors[string("f_add_carry_", i)] = Factor{AbsVariable}(string("f_add_carry_", i), LabelledArray(full_add_carry_dist, [string("output_temp_", i), string("carry_", i)]))
+        # factors[string("f_add_output_", i)] = Factor{AbsVariable}(string("f_add_output_", i), LabelledArray(full_add_to_output_dist, [string("output_temp_", i), string("output_", i)]))
+        factors[string("f_add_output_", i)] = MarginaliseBottomBitsFactor{AbsVariable}(string("f_add_output_", i))
+        # factors[string("f_add_carry_", i)] = Factor{AbsVariable}(string("f_add_carry_", i), LabelledArray(full_add_carry_dist, [string("output_temp_", i), string("carry_", i)]))
+        factors[string("f_add_carry_", i)] = MarginaliseTopBitsFactor{AbsVariable}(string("f_add_carry_", i))
     end
 
     for i in 1:number_of_clusters
@@ -109,7 +111,7 @@ end
 variables = Dict{String, AbsVariable}()
 factors = Dict{String, AbsFactor}()
 
-number_of_bits = 8
+number_of_bits = 16
 
 make_32_bit_adder(number_of_bits, variables, factors)
 add_base_probabilities(number_of_bits, variables, factors)
@@ -122,6 +124,14 @@ for (i,j) in variables
     variable_to_factor_messages(j)
 end
 
-for i in 1:Int64(ceil(32 / number_of_bits))
-    println("Output ",i, ": ", marginal(variables[string("output_", i)]))
-end
+# for i in 1:Int64(ceil(32 / number_of_bits))
+#     println("Input A ",i, ": ", marginal(variables[string("input_a_", i)]))
+# end
+
+# for i in 1:Int64(ceil(32 / number_of_bits))
+#     println("Input B ",i, ": ", marginal(variables[string("input_b_", i)]))
+# end
+
+# for i in 1:Int64(ceil(32 / number_of_bits))
+#     println("Output ",i, ": ", marginal(variables[string("output_", i)]))
+# end

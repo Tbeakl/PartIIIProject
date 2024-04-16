@@ -56,3 +56,37 @@ mutable struct AddFactor{T} <: AbsFactor
         return new(name, Vector{T}[], Vector{Vector{Float64}}[], Vector{Int64}[])
     end
 end
+
+mutable struct MarginaliseTopBitsFactor{T} <: AbsFactor
+    name::String
+    neighbours::Vector{T}
+    incoming_messages::Vector{Vector{Float64}}
+    index_in_neighbours_neighbour::Vector{Int64}
+
+    function MarginaliseTopBitsFactor{T}(name::String) where {T}
+        return new(name, Vector{T}[], Vector{Vector{Float64}}[], Vector{Int64}[])
+    end
+end
+
+mutable struct MarginaliseBottomBitsFactor{T} <: AbsFactor
+    name::String
+    neighbours::Vector{T}
+    incoming_messages::Vector{Vector{Float64}}
+    index_in_neighbours_neighbour::Vector{Int64}
+
+    function MarginaliseBottomBitsFactor{T}(name::String) where {T}
+        return new(name, Vector{T}[], Vector{Vector{Float64}}[], Vector{Int64}[])
+    end
+end
+
+mutable struct RotateFactor{T} <: AbsFactor
+    name::String
+    neighbours::Vector{T}
+    incoming_messages::Vector{Vector{Float64}}
+    index_in_neighbours_neighbour::Vector{Int64}
+    bits_to_rotate_by::Int64
+
+    function RotateFactor{T}(name::String, bits_to_rotate_by::Int64) where {T}
+        return new(name, Vector{T}[], Vector{Vector{Float64}}[], Vector{Int64}[], bits_to_rotate_by)
+    end
+end
