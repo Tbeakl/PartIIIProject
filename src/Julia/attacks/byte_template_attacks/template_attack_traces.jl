@@ -180,7 +180,7 @@ function add_initial_key_distribution_from_simulated_leakage(key_values::Vector,
     for word_number in 5:12
         for i in 1:4
             for j in 1:clusters_per_leakage_weight
-                fid = h5open(string(base_path, (word_number - 5) * 4 + i, "_", j, "_template.hdf5"), "r")
+                fid = h5open(string(base_path, (word_number - 5) * 4 + i, "_template.hdf5"), "r")
                 mean_vectors = read(fid["class_means"])
                 covaraince_matrix = read(fid["covariance_matrix"])
                 close(fid)
@@ -210,7 +210,7 @@ function load_attack_trace(trace_number::Int64, encryption_run_number::Int64)
     clock_cycle_sample_number = 405
     number_of_samples_to_average_over = 10
 
-    fid = h5open(string("D:\\ChaChaData\\captures\\ChaChaRecordings\\recording_attack_", file_number, ".hdf5"), "r")
+    fid = h5open(string("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/captures/ChaChaRecordings/recording_attack_", file_number, ".hdf5"), "r")
     base_trace_data = fid[string("power_", trace_number_in_file, "_", encryption_run_number)]
     key = UInt32.(read(base_trace_data["key"]))
     nonce = UInt32.(read(base_trace_data["nonce"]))
@@ -219,7 +219,7 @@ function load_attack_trace(trace_number::Int64, encryption_run_number::Int64)
     raw_trace = read(base_trace_data)
     close(fid)
     # Need to downsample and align this trace to the mean
-    fid = h5open("D:\\ChaChaData\\attack_profiling\\mean_trace.hdf5", "r")
+    fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/mean_trace.hdf5", "r")
     mean_trace = read(fid["mean_trace"])
     mean_arg_min = argmin(mean_trace)
     close(fid)

@@ -8,15 +8,16 @@ function noisy_byte_hamming_weight_value_to_function(hamming_position_table::Mat
         factors::Dict{String,AbsFactor},
         bits_per_cluster::Int64,
         variable_and_count::String,
-        run_number::Int64)
+        run_number::Int64,
+        version_to_add_include::Int64=run_number)
 
         clusters_per_leakage_weight = Int64(ceil(8 / bits_per_cluster))
         for i in eachindex(value)
             hamming_value_likelihoods = likelihoods_of_hamming_values(noise_distribution, 8, bits_per_cluster, value[i])
             prob_dist_for_cluster = make_prob_distribution_from_hamming_likelihoods(hamming_value_likelihoods, hamming_position_table, bits_per_cluster)
             for j in 1:clusters_per_leakage_weight
-                cur_var_name = string(variable_and_count, "_", (i - 1) * clusters_per_leakage_weight + j, "_", run_number)
-                cur_dist_name = string("f_", cur_var_name, "_dist")
+                cur_var_name = string(variable_and_count, "_", (i - 1) * clusters_per_leakage_weight + j, "_", version_to_add_include)
+                cur_dist_name = string("f_", variable_and_count, "_", (i - 1) * clusters_per_leakage_weight + j, "_", run_number, "_dist")
                 factors[cur_dist_name] = Factor{AbsVariable}(cur_dist_name, LabelledArray(prob_dist_for_cluster, [cur_var_name]))
                 add_edge_between(variables[cur_var_name], factors[cur_dist_name])
                 variables[cur_var_name].neighbour_index_to_avoid = length(variables[cur_var_name].neighbours)

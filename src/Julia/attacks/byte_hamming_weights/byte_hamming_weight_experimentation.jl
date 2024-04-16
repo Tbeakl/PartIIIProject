@@ -18,11 +18,11 @@ counter::UInt32 = 1
 
 encryption_trace = encrypt_collect_trace(key, nonce, counter, byte_hamming_weight_for_value)
 encryption_output = encrypt(key, nonce, counter)
-number_of_bits = 4
+number_of_bits = 8
 hamming_position_table = table_for_hamming_values(number_of_bits)
-add_byte_hamming_weight_to_variable = byte_hamming_weight_value_to_function(hamming_position_table )
-variables = Dict{String, AbsVariable}()
-factors = Dict{String, AbsFactor}()
+add_byte_hamming_weight_to_variable = byte_hamming_weight_value_to_function(hamming_position_table)
+variables = Dict{String,AbsVariable}()
+factors = Dict{String,AbsFactor}()
 variables_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
 factors_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
 adds_by_round::Vector{Set{Int64}} = [Set{Int64}() for _ in 1:21]
@@ -71,14 +71,14 @@ entropy_in_graph::Vector{Float64} = Vector{Float64}()
 all_variables = [keys(variables)...]
 # With 4 bits per cluster approximately 9/10 per minute (after optimisations about 17 rounds a minute)
 # With 2 bits per cluster approximately 28.6 iterations per minute (after some optimisations around 75 a minute maybe slightly more because time taken to make graph included in that)
-for i in 1:80
+for i in 1:50
     println(i)
     # I think it is slightly better to go forwards and backwards through the graph
     # compared to just doing at random but it does not seem to be a big help
     # and it does not appear that helping to speed up going through adds is massicvely useful
-    belief_propagate_forwards_and_back_through_graph(variables, factors, variables_by_round, factors_by_round, 1)
+    belief_propagate_forwards_and_back_through_graph(variables, factors, variables_by_round, factors_by_round, 1, 1.0)
     update_all_entropies(variables, all_variables)
-    
+
     push!(entropy_in_graph, total_entropy_of_graph(variables))
     println(entropy_in_graph[end])
 end
@@ -86,3 +86,9 @@ end
 plot(entropy_in_graph)
 #31425.174177981593
 #31572.453308735967
+
+
+read_off_key = [read_most_likely_value_from_variable(variables, string(i + 4, "_0"), number_of_bits, 1) for i in 1:8]
+for i in 1:8
+    println(string(read_most_likely_value_from_variable(variables, string(i + 4, "_0"), number_of_bits, 1), base=16))
+end

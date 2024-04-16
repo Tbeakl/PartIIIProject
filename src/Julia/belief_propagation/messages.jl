@@ -106,8 +106,12 @@ function factor_to_variable_messages(factor::XorFactor{AbsVariable}, damping_fac
         neighbours_to_include[i] = false
         # The max with 0 is to ensure that we do not end up with any negative values beign passed around which can cause
         # issues in other places the negative value are all incredibly small when they start out anyway
-        message_out = max.(0, fwht(prod(transformed_incoming_messages[neighbours_to_include, :], dims=1)[1, :]))
+        message_out = max.(0., ifwht(prod(transformed_incoming_messages[neighbours_to_include, :], dims=1)[1, :]))
+        # if sum(message_out) < 0.125
+        #     println("Possible problem")
+        # end
         message_out ./= sum(message_out)
+        message_out .+= 1e-12
         # neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] = message_out
         update_with_damping(neighbour, damping_factor, message_out, factor.index_in_neighbours_neighbour[i])
         neighbours_to_include[i] = true
@@ -167,6 +171,7 @@ function factor_to_variable_messages(factor::AddFactor{AbsVariable}, damping_fac
     # t_c_in = real(ifft(conj.(A) .* conj(B) .* OUT))
     t_c_in = max.(0.0, t_c_in[1:2])
     t_c_in ./= sum(t_c_in)
+    t_c_in .+= 1e-12
     # println(t_c_in)
 
 
@@ -174,17 +179,20 @@ function factor_to_variable_messages(factor::AddFactor{AbsVariable}, damping_fac
     # t_a = real(ifft(conj.(C_IN) .* conj(B) .* OUT))
     t_a = max.(0.0, t_a[1:size_of_incoming_variables])
     t_a ./= sum(t_a)
+    t_a .+= 1e-12
     # println(t_a)
 
     t_b = real(ifft(conj.(A .* C_IN) .* OUT))
     # t_b = real(ifft(conj.(A) .* conj(C_IN) .* OUT))
     t_b = max.(0.0, t_b[1:size_of_incoming_variables])
     t_b ./= sum(t_b)
+    t_b .+= 1e-12
     # println(t_b)
 
 
     t_out = max.(0.0, real(ifft(A .* B .* C_IN)))
     t_out ./= sum(t_out)
+    t_out .+= 1e-12
     # println(t_out)
 
     # Need to update the messages going out of from this factor to what has just come so shrink them and normalise them
@@ -386,29 +394,44 @@ function belief_propagate_forwards_and_back_through_graph(variables::Dict{String
     factors::Dict{String,AbsFactor},
     variables_by_round::Vector{Set{String}},
     factors_by_round::Vector{Set{String}},
-    times_per_round::Int64)
+    times_per_round::Int64,
+    damping_factor::Float64)
     # GO forward first
     for (i, vars_for_round) in enumerate(variables_by_round)
         for j in 1:times_per_round
             for var_name in vars_for_round
-                variable_to_factor_messages(variables[var_name])
+                variable_to_factor_messages(variables[var_name], damping_factor)
             end
             for fact_name in factors_by_round[i]
-                factor_to_variable_messages(factors[fact_name])
+                factor_to_variable_messages(factors[fact_name], damping_factor)
             end
         end
     end
+
+    # # Search for a variable which has an invalid distribution to see what we end up with
+    # for var in keys(variables)
+    #     if abs(sum(marginal(variables[var])) - 1) >= 1e-2
+    #         println(var)
+    #     end
+    # end
+
     # Then go backwards
     for i in length(variables_by_round):-1:1
         for j in 1:times_per_round
             for var_name in variables_by_round[i]
-                variable_to_factor_messages(variables[var_name])
+                variable_to_factor_messages(variables[var_name], damping_factor)
             end
             for fact_name in factors_by_round[i]
-                factor_to_variable_messages(factors[fact_name])
+                factor_to_variable_messages(factors[fact_name], damping_factor)
             end
         end
     end
+
+    # for var in keys(variables)
+    #     if abs(sum(marginal(variables[var])) - 1) >= 1e-2
+    #         println(var)
+    #     end
+    # end
 end
 
 # From looking at a few of the animations of how entropy is changing in the graph over time

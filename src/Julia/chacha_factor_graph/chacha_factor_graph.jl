@@ -149,6 +149,8 @@ function xor_with_cluster_shift_factor_graph!(variables::Dict{String,AbsVariable
         push!(round_variables, output_name)
         push!(round_factors, cur_factor_name)
 
+        # factors[cur_factor_name] = Factor{AbsVariable}(cur_factor_name, LabelledArray(xor_cluster_prob_table,
+        #     [input_a_name, input_b_name, output_name]))
         factors[cur_factor_name] = XorFactor{AbsVariable}(cur_factor_name)
         variables[output_name] = Variable{AbsFactor}(output_name, number_of_bits_per_cluster)
 

@@ -92,6 +92,6 @@ end
 
 likelihood_tables = make_log_likelihood_tables_for_key(variables, number_of_bits)
 sorted_likelihood_matrix, sorted_values = make_matrices_of_values(likelihood_tables)
-key_by_cluster = turn_key_into_cluster_values(key, 2)
-calculate_log_likelihood_of_key(key, likelihood_tables, 2)
+key_by_cluster = turn_key_into_cluster_values(key, 8)
+calculate_log_likelihood_of_key(key, likelihood_tables, 8)
 actual_rank = key_enumerate(sorted_likelihood_matrix, sorted_values, key_by_cluster, 1 << 20)
