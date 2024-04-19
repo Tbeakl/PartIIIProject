@@ -10,12 +10,13 @@ include("template_attack_traces.jl")
 
 number_of_bits::Int64 = 8
 number_of_encryption_traces::Int64 = 1
-number_of_values_averaged_over_key_leakage = 40
+number_of_values_averaged_over_key_leakage = 20
+number_of_values_trace_averaged_over = 2
 
-base_path_templates = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/initial_templates/"
-add_byte_template_function = real_byte_template_path_to_function(base_path_templates)
-
+base_path_templates = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/all_second_templates/"
 base_key_templates = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/initial_templates/"
+path_for_locations = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/second_template_set_best_templates.hdf5"
+set_of_downsampling = [20, 50, 100, 250, 500]
 
 variables = Dict{String,AbsVariable}()
 factors = Dict{String,AbsFactor}()
@@ -25,13 +26,28 @@ adds_by_round::Vector{Set{Int64}} = [Set{Int64}() for _ in 1:21]
 
 key_number = 10
 key, nonce, counter, encryption_trace = load_attack_trace(key_number, 1)
+
+# all_encryption_traces::Vector{Vector{Float32}} = []
+# for encryption_run_number in 1:number_of_values_averaged_over_key_leakage
+#     _, _, _, trace = load_attack_trace(key_number, encryption_run_number - 1)
+#     push!(all_encryption_traces, collect(Iterators.map(mean, Iterators.partition(trace, 10))))
+# end
+
 for encryption_run_number in 1:number_of_encryption_traces
     key, nonce, counter, encryption_trace = load_attack_trace(key_number, encryption_run_number - 1)
     encryption_output = encrypt(key, nonce, counter)
     location_execution_counts = zeros(Int64, 16)
     chacha_factor_graph!(variables, factors, number_of_bits, variables_by_round, factors_by_round, adds_by_round, location_execution_counts, encryption_run_number)
     add_starting_constant_values(variables, factors, number_of_bits, encryption_run_number)
+    intermediate_value_trace = encrypt_collect_trace(key, nonce, counter, byte_values_for_input)
 
+    # Make some downsampled traces for the current trace which can then be used in the templates we want
+    all_downsampled_traces::Vector{Vector{Float32}} = []
+    for downsampling_factor in set_of_downsampling
+        push!(all_downsampled_traces, collect(Iterators.map(mean, Iterators.partition(encryption_trace, downsampling_factor))))
+    end
+    println("Here")
+    add_byte_template_function = set_real_byte_template_path_to_function(base_path_templates, path_for_locations, set_of_downsampling, all_downsampled_traces)
     # Here we are assuming that we have known nonce and counter
     add_values_of_initial_nonce_and_counter(variables, factors, number_of_bits, nonce, counter, 1)
 
@@ -41,6 +57,8 @@ for encryption_run_number in 1:number_of_encryption_traces
     println("Starting adding key distribution")
     # add_initial_key_distribution_from_leakage_trace(encryption_trace, variables, factors, number_of_bits, encryption_run_number, base_key_templates)
     add_initial_key_distribution_from_simulated_leakage(byte_values_for_input.(key), variables, factors, number_of_bits, encryption_run_number, base_key_templates, number_of_values_averaged_over_key_leakage)
+
+    # add_initial_key_distribution_from_leakage_traces(all_encryption_traces, variables, factors, number_of_bits, base_key_templates)
     println("Added key distribution")
 
     # Also want to add in the known outputs of the encryption as part of the model
@@ -53,8 +71,7 @@ additional_variables::Set{String} = Set{String}()
 additional_factors::Set{String} = Set{String}()
 
 if number_of_encryption_traces > 1
-    # Add equality constraint between all the encryption runs and the add constraint between the counters
-    add_equality_between_keys_and_nonces(variables, factors, number_of_bits, number_of_encryption_traces, additional_factors)
+    # Add the add constraint between the counters
     add_adds_between_counters(variables, factors, number_of_bits, number_of_encryption_traces, additional_factors, additional_variables)
 end
 
@@ -124,17 +141,17 @@ for i in 1:initial_number_of_iterations
     end
 end
 
-# number_of_iterations_of_ends = 200
+# number_of_iterations_of_ends = 100
 # rounds_for_ends = 2
 # variables_at_ends = [union(additional_variables, variables_by_round[begin:rounds_for_ends]..., variables_by_round[end-rounds_for_ends-1:end]...)...]
 # factors_at_ends = [union(additional_factors, factors_by_round[begin:rounds_for_ends]..., factors_by_round[end-rounds_for_ends-1:end]...)...]
 # for i in 1:number_of_iterations_of_ends
 #     println(i)
 #     Threads.@threads for var_name in variables_at_ends
-#         variable_to_factor_messages(variables[var_name], .8)
+#         variable_to_factor_messages(variables[var_name], .99)
 #     end
 #     Threads.@threads for fact_name in factors_at_ends
-#         factor_to_variable_messages(factors[fact_name], .8)
+#         factor_to_variable_messages(factors[fact_name], .99)
 #     end
 #     update_all_entropies(variables, variables_at_ends)
 #     push!(visualisation_of_entropy, variables_to_heatmap_matrix(visualisation_variables, heatmap_plotting_function))
@@ -152,10 +169,10 @@ for i in 1:8
     println(string(read_most_likely_value_from_variable(variables, string(i + 4, "_0"), number_of_bits, 1), base=16))
 end
 
-plot(tot_entropy_over_time)
+Plots.plot(tot_entropy_over_time)
 
 anim = @animate for i in eachindex(visualisation_of_entropy)
-    heatmap(visualisation_of_entropy[i]; title=string("Round ", i - 1, " entropy of variables"), clim=(0, number_of_bits)) # 
+    Plots.heatmap(visualisation_of_entropy[i]; title=string("Round ", i - 1, " entropy of variables"), clim=(0, number_of_bits)) # 
 end
 # heatmap(visualisation_of_entropy[1]; title=string("Round ", 0, " entropy of variables")) # clim=(0, number_of_bits),
 gif(anim, "test.gif", fps=10)

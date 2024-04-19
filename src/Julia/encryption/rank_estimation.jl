@@ -9,7 +9,7 @@ function make_log_likelihood_tables_for_key(variables::Dict{String,AbsVariable},
     number_of_cluster_per_word = Int64(ceil(32 / bits_per_cluster))
     for i in 1:8
         for cluster_num in 1:number_of_cluster_per_word
-            push!(tables, log2.(marginal(variables[string(i + 4, "_0_", cluster_num, "_1")])))
+            push!(tables, max.(-800, log2.(marginal(variables[string(i + 4, "_0_", cluster_num, "_1")]))))
         end
     end
     return tables
@@ -99,4 +99,5 @@ end
 # Pretty sure the bin midpoints are incorrect
 
 likelihood_tables = make_log_likelihood_tables_for_key(variables, number_of_bits)
+# Replace all the -Inf with like -800 because of the issues associated with expoentiatation
 estimated_rank = rank_estimate_key(key, likelihood_tables, 500, number_of_bits)

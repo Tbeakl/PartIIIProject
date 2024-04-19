@@ -2,7 +2,7 @@
 
 julia_version = "1.10.2"
 manifest_format = "2.0"
-project_hash = "f026578d9b588131c3b3a274fbef7f881a1baf09"
+project_hash = "dd2024f9e42a1422c51fc76fda3009d4f5bf43f0"
 
 [[deps.ANSIColoredPrinters]]
 git-tree-sha1 = "574baf8110975760d391c710b6341da1afa48d8c"
@@ -511,6 +511,12 @@ deps = ["Artifacts", "Base64", "DelimitedFiles", "Downloads", "GR_jll", "HTTP", 
 git-tree-sha1 = "27442171f28c952804dede8ff72828a96f2bfc1f"
 uuid = "28b8d3ca-fb5f-59d9-8090-bfdbd6d07a71"
 version = "0.72.10"
+
+[[deps.GRUtils]]
+deps = ["GR", "LinearAlgebra"]
+git-tree-sha1 = "0876d7062657f39a6f698f29134c7d4a51fe03b6"
+uuid = "0337cf30-a0fd-11e9-31db-a79914c9d7ac"
+version = "0.8.4"
 
 [[deps.GR_jll]]
 deps = ["Artifacts", "Bzip2_jll", "Cairo_jll", "FFMPEG_jll", "Fontconfig_jll", "FreeType2_jll", "GLFW_jll", "JLLWrappers", "JpegTurbo_jll", "Libdl", "Libtiff_jll", "Pixman_jll", "Qt6Base_jll", "Zlib_jll", "libpng_jll"]

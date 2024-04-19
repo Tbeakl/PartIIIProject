@@ -13,18 +13,20 @@ mean_arg_min = argmin(mean_trace)
 close(fid)
 
 trace_range_per_file = 0:249
-# file_range = 73:328
-file_range = 329:332
-# file_range = 181:
+file_range = 9:72
 
-number_of_samples_to_average_over = 20
+number_of_samples_to_average_over = 25
+number_of_downsampled_samples_per_clock_cycle = 500 ÷ number_of_samples_to_average_over
 
 all_intermediate_values = zeros(UInt8, length(trace_range_per_file) * length(file_range), number_of_intermediate_values)
-
-downsampled_matrix_20 = zeros(Float32, length(trace_range_per_file) * length(file_range), 1499)
-# downsampled_matrix_100 = zeros(Float32, length(trace_range_per_file) * length(file_range), 7495)
-# downsampled_matrix_250 = zeros(Float32, length(trace_range_per_file) * length(file_range), 2998)
-
+# bitmask_path = "D:\\ChaChaData\\attack_profiling\\clock_cycles_bitmasks_no_dilation.hdf5"
+# bitmask_fid = h5open(bitmask_path, "r")
+# cycle_bitmask = dilate(read(bitmask_fid[string("bitmask_", intermediate_value_index)]); r=5)
+# close(bitmask_fid)
+# sample_bitmask = BitVector(repeat(cycle_bitmask, inner=500)[1:749401])
+# downsampled_matrix = zeros(Float32, length(trace_range_per_file) * length(file_range), sum(sample_bitmask))
+downsampled_matrix = zeros(Int16, length(trace_range_per_file) * length(file_range), 749401)
+# Threads.@threads 
 for i in file_range
     println(i)
     fid = h5open(string(intermediate_values_base_path, i, ".hdf5"))
@@ -39,30 +41,14 @@ for i in file_range
         difference_between_mean_and_power = argmin(raw_trace) - mean_arg_min
         trimmed_raw_trace = raw_trace[50+difference_between_mean_and_power:end-(50-difference_between_mean_and_power)]
         trimmed_raw_trace = trimmed_raw_trace[clock_cycle_sample_number:(end-(500-clock_cycle_sample_number)-1)]
-        downsampled_trace_20 = collect(Iterators.map(mean, Iterators.partition(trimmed_raw_trace, 500)))
-        # downsampled_trace_100 = collect(Iterators.map(mean, Iterators.partition(downsampled_trace_20, 5)))
-        # downsampled_trace_250 = collect(Iterators.map(mean, Iterators.partition(trimmed_raw_trace, 250)))
-        downsampled_matrix_20[(i-file_range[1])*length(trace_range_per_file)+j+1, :] = downsampled_trace_20
-        # downsampled_matrix_100[(i-file_range[1])*length(trace_range_per_file)+j+1, :] = downsampled_trace_100
-        # downsampled_matrix_250[(i-file_range[1])*length(trace_range_per_file)+j+1, :] = downsampled_trace_250
+        downsampled_matrix[(i-file_range[1])*length(trace_range_per_file)+j+1, :] = trimmed_raw_trace
     end
     close(fid)
 end
-
-fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/downsampled_500_traces_validation.hdf5", "w")
+fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/detection_matrix.hdf5", "w")
 fid["intermediate_values"] = all_intermediate_values
-fid["downsampled_matrix"] = downsampled_matrix_20
+fid["downsampled_matrix"] = downsampled_matrix
 close(fid)
-
-# fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/downsampled_100_traces_validation.hdf5", "w")
-# fid["intermediate_values"] = all_intermediate_values
-# fid["downsampled_matrix"] = downsampled_matrix_100
-# close(fid)
-
-# fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/downsampled_250_traces_validation.hdf5", "w")
-# fid["intermediate_values"] = all_intermediate_values
-# fid["downsampled_matrix"] = downsampled_matrix_250
-# close(fid)
 
 # trace_range_per_file = 0:249
 # file_range = 329:332

@@ -1,7 +1,7 @@
-using Plots, HDF5, DSP, StatsBase, Statistics, DataStructures, GR
+using HDF5, DSP, StatsBase, Statistics, DataStructures, GR, GRUtils # Plots, 
 # plotly()
 # gr()
-usecolorscheme(2)
+usecolorscheme(1)
 file_to_plot = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\captures\\ChaChaRecordings\\recording_profiling_156.hdf5"
 fid = h5open(file_to_plot, "r")
 
@@ -20,7 +20,16 @@ trace_num_to_plot = 204
 power_trace = read(fid[string("power_", trace_num_to_plot)])
 power_offset = read(fid[string("power_", trace_num_to_plot)]["offset"])
 power_gain = read(fid[string("power_", trace_num_to_plot)]["gain"])
+close(fid)
 
+# p = plot(power_trace .* power_gain .+ power_offset, size=(1500,500), ylabel="V", xlabel="Sample number",
+#  xlim=(0,750_000), bottom_margin=10Plots.mm, left_margin=8Plots.mm, right_margin=6Plots.mm, label=false,
+#  title="Raw trace")
+# vspan!(p, [42_000, 532_000], label="Main rounds", alpha=.3)
+# vspan!(p, [550_000, 630_000], label="Add initial state", alpha=.3)
+# vspan!(p, [630_000, 730_000], label="Xor plaintext", alpha=.3)
+# savefig("./plots/raw_trace_different_parts_highlighted.svg")
+# savefig("./plots/raw_trace_different_parts_highlighted.pdf")
 # power_trace = collect(Iterators.map(mean, Iterators.partition(power_trace, number_of_samples_to_average_over)))
 # power_trace = read(fid[string("power_", trace_num_to_plot, "_1")])
 # power_offset = read(fid[string("power_", trace_num_to_plot, "_1")]["offset"])
@@ -33,8 +42,17 @@ power_gain = read(fid[string("power_", trace_num_to_plot)]["gain"])
 
 # p = plot([(trimmed_power_trace .* power_gain) .+ power_offset], label="Current trace", size=(1200,800), dpi=500)
 # plot!(p, [(trimmed_mean_trace .* mean_gain) .+ mean_offset], label="Mean trace")
+# p = plot(size=(1500,200))
+# colorscheme(1)
 
-p = shade((power_trace .* power_gain) .+ power_offset, colormap=GR.COLORMAP_BLUESCALE, size=(1500, 500), dpi=300)
+x = collect(1:length(power_trace)) ./ 2_500_000_000
+y = (power_trace .* power_gain) .+ power_offset
+p = GRUtils.Figure((1500,500))
+p = GRUtils.shade!(p, x, y; xlabel="Time (s)", ylabel="V", title="Raw trace", colormap=-GR.COLORMAP_BLUESCALE, figsize=(1500,500))
+# GRUtils.savefig("test.png", p)
+# p = shade(x, y, colormap=-GR.COLORMAP_BLUESCALE, size=(1500, 500), dpi=300, ylabel="V", xlabel="Time (s)",
+# xlim=(0, 750_000), title="Raw trace")
+# GRUtils.savefig("test.png", p)
 # savefig(p, "testing.png")
 # savefig(p, "testing_plot.png")
 
@@ -49,5 +67,4 @@ p = shade((power_trace .* power_gain) .+ power_offset, colormap=GR.COLORMAP_BLUE
 # end
 # println(counter(best_lags))
 # println(minimum(correlations))
-close(fid)
 p

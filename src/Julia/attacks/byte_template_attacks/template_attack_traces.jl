@@ -26,6 +26,11 @@ function get_prob_dist_of_vector(mean_vectors, noise, current_vector)
     return likelihood_of_values ./ sum(likelihood_of_values)
 end
 
+function get_log_likelihoods_dist_of_vector(mean_vectors, noise, current_vector)
+    likelihood_of_values = logpdf(noise, mean_vectors' .- current_vector)
+    return likelihood_of_values
+end
+
 function make_prob_dist_for_byte(mean_vectors::AbstractMatrix{Float64}, noise::Distribution, value::Int64)
     likelihood_of_values = pdf(noise, mean_vectors .- put_value_into_noisy_space(mean_vectors, noise, value))
     return likelihood_of_values ./ sum(likelihood_of_values)
@@ -136,30 +141,155 @@ function real_byte_template_path_to_function(base_path::String)
     end
 end
 
-function add_initial_key_distribution_from_leakage_trace(trace::Vector{Float32},
+function simulated_real_byte_template_path_to_function(base_path::String, number_of_reads::Int64, intermediate_value_trace::Vector)
+    # Need mapping from the positions in the theoertical trace to template number
+    val = 1 + 112 # Need to add on the base of the 
+    trace_mapping = zeros(Int64, 1600)
+    for i in 1:5:1600
+        trace_mapping[i] = val
+        val += 4
+        trace_mapping[i+4] = val
+        val += 4
+    end
+    return function add_byte_template_to_variable(trace::Vector{Float32},
+        position_in_trace::Int64,
+        variables::Dict{String,AbsVariable},
+        factors::Dict{String,AbsFactor},
+        bits_per_cluster::Int64,
+        variable_and_count::String,
+        run_number::Int64)
+        clusters_per_leakage_weight = Int64(ceil(8 / bits_per_cluster))
+        for i in 1:4
+            fid = h5open(string(base_path, trace_mapping[position_in_trace] + i - 1, "_template.hdf5"), "r")
+            mean_vectors = read(fid["class_means"])
+            covaraince_matrix = read(fid["covariance_matrix"])
+            close(fid)
+            noise = noise_distribution_given_covaraince_matrix(covaraince_matrix)
+
+            # println("Mean Vectors")
+            # println(size(mean_vectors))
+            # println("Projected Values")
+            # println(size(trace[sample_bitmask]' * projection_matrix))
+            value = intermediate_value_trace[position_in_trace][i]
+            prob_dist_for_byte = zeros(1 << bits_per_cluster)
+            for i in 1:number_of_reads
+                prob_dist_for_byte .+= get_log_likelihoods_dist_of_vector(mean_vectors, noise, mean_vectors[value + 1, :] .+ rand(noise))
+            end
+
+            # First bring up the max value to zero then exponentiate it
+            prob_dist_for_byte .-= maximum(prob_dist_for_byte)
+            prob_dist_for_byte = exp.(prob_dist_for_byte)
+            prob_dist_for_byte ./= sum(prob_dist_for_byte)
+            for j in 1:clusters_per_leakage_weight
+                cur_var_name = string(variable_and_count, "_", (i - 1) * clusters_per_leakage_weight + j, "_", run_number)
+                cur_dist_name = string("f_", cur_var_name, "_dist")
+                # Marginalise out the prob dist for this particular cluster, where cluster 1 is the LSB
+                marginalised_dist = marginalise_prob_dist(prob_dist_for_byte, (j - 1) * bits_per_cluster, bits_per_cluster)
+                factors[cur_dist_name] = Factor{AbsVariable}(cur_dist_name, LabelledArray(marginalised_dist, [cur_var_name]))
+                add_edge_between(variables[cur_var_name], factors[cur_dist_name])
+                variables[cur_var_name].neighbour_index_to_avoid = length(variables[cur_var_name].neighbours)
+            end
+        end
+    end
+end
+
+
+function set_real_byte_template_path_to_function(base_path::String, path_to_locations::String, downsampling_amounts::Vector{Int64}, downsampled_trace::Vector{Vector{Float32}})
+    sparse_indices::Vector{Int64} = zeros(Int64, 2672)
+    detailed_indices::Vector{Int64} = zeros(Int64, 2672)
+    location_fid = h5open(path_to_locations, "r")
+    for i in 1:2672
+        sparse_indices[i] = read(location_fid[string("sparse_", i)])
+        detailed_indices[i] = read(location_fid[string("detailed_", i)])
+    end
+    close(location_fid)
+    # Need mapping from the positions in the theoertical trace to template number
+    val = 1 + 112 # Need to add on the base of the 
+    trace_mapping = zeros(Int64, 1600)
+    for i in 1:5:1600
+        trace_mapping[i] = val
+        val += 4
+        trace_mapping[i+4] = val
+        val += 4
+    end
+    return function add_byte_template_to_variable(trace::Vector,
+        position_in_trace::Int64,
+        variables::Dict{String,AbsVariable},
+        factors::Dict{String,AbsFactor},
+        bits_per_cluster::Int64,
+        variable_and_count::String,
+        run_number::Int64)
+        clusters_per_leakage_weight = Int64(ceil(8 / bits_per_cluster))
+        for i in 1:4
+            intermediate_location = trace_mapping[position_in_trace] + i - 1
+            println(intermediate_location)
+            sparse_index = sparse_indices[intermediate_location]
+            detailed_index = detailed_indices[intermediate_location]
+            fid = h5open(string(base_path, "sparse_", downsampling_amounts[sparse_index], "_detailed_", downsampling_amounts[detailed_index], "/", intermediate_location, "_template.hdf5"), "r")
+            projection_matrix = read(fid["projection"])
+            mean_vectors = read(fid["class_means"])
+            covaraince_matrix = read(fid["covariance_matrix"])
+            sparse_bitmask = read(fid["sparse_sample_bitmask"])
+            detailed_bitmask = read(fid["detailed_sample_bitmask"])
+            close(fid)
+            noise = noise_distribution_given_covaraince_matrix(covaraince_matrix)
+
+            # println("Mean Vectors")
+            # println(size(mean_vectors))
+            # println("Projected Values")
+            # println(size(trace[sample_bitmask]' * projection_matrix))
+            values = vcat(downsampled_trace[detailed_index][detailed_bitmask], downsampled_trace[sparse_index][sparse_bitmask])
+
+            prob_dist_for_byte = get_prob_dist_of_vector(mean_vectors, noise, (values'*projection_matrix)[1, :])
+            for j in 1:clusters_per_leakage_weight
+                cur_var_name = string(variable_and_count, "_", (i - 1) * clusters_per_leakage_weight + j, "_", run_number)
+                cur_dist_name = string("f_", cur_var_name, "_dist")
+                # Marginalise out the prob dist for this particular cluster, where cluster 1 is the LSB
+                marginalised_dist = marginalise_prob_dist(prob_dist_for_byte, (j - 1) * bits_per_cluster, bits_per_cluster)
+                factors[cur_dist_name] = Factor{AbsVariable}(cur_dist_name, LabelledArray(marginalised_dist, [cur_var_name]))
+                add_edge_between(variables[cur_var_name], factors[cur_dist_name])
+                variables[cur_var_name].neighbour_index_to_avoid = length(variables[cur_var_name].neighbours)
+            end
+        end
+    end
+end
+
+function add_initial_key_distribution_from_leakage_traces(traces::Vector{Vector{Float32}},
     variables::Dict{String,AbsVariable},
     factors::Dict{String,AbsFactor},
     bits_per_cluster::Int64,
-    run_number::Int64,
     base_path::String
     )
     clusters_per_leakage_weight = Int64(ceil(8 / bits_per_cluster))
     for word_number in 5:12
         for i in 1:4
-            for j in 1:clusters_per_leakage_weight
-                fid = h5open(string(base_path, (word_number - 5) * 4 + i, "_", j, "_template.hdf5"), "r")
-                projection_matrix = read(fid["projection"])
-                mean_vectors = read(fid["class_means"])
-                covaraince_matrix = read(fid["covariance_matrix"])
-                sample_bitmask = read(fid["downsampled_sample_bitmask"])
-                close(fid)
-                noise = noise_distribution_given_covaraince_matrix(covaraince_matrix)
-                prob_dist_for_byte = get_prob_dist_of_vector(mean_vectors, noise, (trace[sample_bitmask]'*projection_matrix)[1, :])
+            fid = h5open(string(base_path, (word_number - 5) * 4 + i, "_template.hdf5"), "r")
+            projection_matrix = read(fid["projection"])
+            mean_vectors = read(fid["class_means"])
+            covaraince_matrix = read(fid["covariance_matrix"])
+            sample_bitmask = read(fid["downsampled_sample_bitmask"])
+            close(fid)
+            noise = noise_distribution_given_covaraince_matrix(covaraince_matrix)
+            # prob_dist_for_byte = zeros(1 << bits_per_cluster)
+            # for i in eachindex(traces)
+            #     prob_dist_for_byte .+= get_log_likelihoods_dist_of_vector(mean_vectors, noise, (traces[i][sample_bitmask]' * projection_matrix)[1, :])
+            # end
+            position = zeros(Float32, 1, 8)
+            for i in eachindex(traces)
+                position .+= traces[i][sample_bitmask]' * projection_matrix
+            end
+            position ./= length(traces)
+            prob_dist_for_byte = get_log_likelihoods_dist_of_vector(mean_vectors, noise, position[1, :])
+            # First bring up the max value to zero then exponentiate it
+            prob_dist_for_byte .-= maximum(prob_dist_for_byte)
+            prob_dist_for_byte = exp.(prob_dist_for_byte)
+            prob_dist_for_byte ./= sum(prob_dist_for_byte)
 
-                cur_var_name = string(word_number, "_0_", (i - 1) * clusters_per_leakage_weight + j, "_", run_number)
+            for j in 1:clusters_per_leakage_weight
+                cur_var_name = string(word_number, "_0_", (i - 1) * clusters_per_leakage_weight + j, "_1")
                 cur_dist_name = string("f_", cur_var_name, "_dist")
                 # Marginalise out the prob dist for this particular cluster, where cluster 1 is the LSB
-                marginalised_dist = prob_dist_for_byte # marginalise_prob_dist(prob_dist_for_byte, (j - 1) * bits_per_cluster, bits_per_cluster)
+                marginalised_dist = marginalise_prob_dist(prob_dist_for_byte, (j - 1) * bits_per_cluster, bits_per_cluster)
                 factors[cur_dist_name] = Factor{AbsVariable}(cur_dist_name, LabelledArray(marginalised_dist, [cur_var_name]))
                 add_edge_between(variables[cur_var_name], factors[cur_dist_name])
                 variables[cur_var_name].neighbour_index_to_avoid = length(variables[cur_var_name].neighbours)
@@ -179,20 +309,27 @@ function add_initial_key_distribution_from_simulated_leakage(key_values::Vector,
     clusters_per_leakage_weight = Int64(ceil(8 / bits_per_cluster))
     for word_number in 5:12
         for i in 1:4
+            fid = h5open(string(base_path, (word_number - 5) * 4 + i, "_template.hdf5"), "r")
+            mean_vectors = read(fid["class_means"])
+            covaraince_matrix = read(fid["covariance_matrix"])
+            close(fid)
+            noise = noise_distribution_given_covaraince_matrix(covaraince_matrix)
+            value = key_values[word_number - 4][i]
+            prob_dist_for_byte = zeros(1 << bits_per_cluster)
+            for i in 1:number_of_reads
+                prob_dist_for_byte .+= get_log_likelihoods_dist_of_vector(mean_vectors, noise, mean_vectors[value + 1, :] .+ rand(noise))
+            end
+
+            # First bring up the max value to zero then exponentiate it
+            prob_dist_for_byte .-= maximum(prob_dist_for_byte)
+            prob_dist_for_byte = exp.(prob_dist_for_byte)
+            prob_dist_for_byte ./= sum(prob_dist_for_byte)
             for j in 1:clusters_per_leakage_weight
-                fid = h5open(string(base_path, (word_number - 5) * 4 + i, "_template.hdf5"), "r")
-                mean_vectors = read(fid["class_means"])
-                covaraince_matrix = read(fid["covariance_matrix"])
-                close(fid)
-                noise = noise_distribution_given_covaraince_matrix(covaraince_matrix)
-                value = (key_values[word_number - 4][i] .>> (bits_per_cluster * (j - 1))) .& ((1 << bits_per_cluster) - 1)
-                leakage_output = mean(rand(noise, number_of_reads) .+ mean_vectors[value + 1, :], dims=2)
-                noise_of_means = noise_distribution_given_covaraince_matrix(covaraince_matrix ./ number_of_reads)
-                prob_dist_for_byte = get_prob_dist_of_vector(mean_vectors, noise_of_means, leakage_output)
+
                 cur_var_name = string(word_number, "_0_", (i - 1) * clusters_per_leakage_weight + j, "_", run_number)
                 cur_dist_name = string("f_", cur_var_name, "_dist")
                 # Marginalise out the prob dist for this particular cluster, where cluster 1 is the LSB
-                marginalised_dist = prob_dist_for_byte #marginalise_prob_dist(prob_dist_for_byte, (j - 1) * bits_per_cluster, bits_per_cluster)
+                marginalised_dist = marginalise_prob_dist(prob_dist_for_byte, (j - 1) * bits_per_cluster, bits_per_cluster)
                 factors[cur_dist_name] = Factor{AbsVariable}(cur_dist_name, LabelledArray(marginalised_dist, [cur_var_name]))
                 add_edge_between(variables[cur_var_name], factors[cur_dist_name])
                 variables[cur_var_name].neighbour_index_to_avoid = length(variables[cur_var_name].neighbours)
@@ -227,6 +364,6 @@ function load_attack_trace(trace_number::Int64, encryption_run_number::Int64)
     difference_between_mean_and_power = argmin(raw_trace) - mean_arg_min
     trimmed_raw_trace = raw_trace[50+difference_between_mean_and_power:end-(50-difference_between_mean_and_power)]
     trimmed_raw_trace = trimmed_raw_trace[clock_cycle_sample_number:(end-(500-clock_cycle_sample_number)-1)]
-    downsampled_trace = Float32.(collect(Iterators.map(mean, Iterators.partition(trimmed_raw_trace, number_of_samples_to_average_over))))
-    return (key, nonce, counter, downsampled_trace)
+    # downsampled_trace = Float32.(collect(Iterators.map(mean, Iterators.partition(trimmed_raw_trace, number_of_samples_to_average_over))))
+    return (key, nonce, counter, trimmed_raw_trace)
 end

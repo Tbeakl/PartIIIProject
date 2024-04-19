@@ -93,7 +93,7 @@ function add_trace_to_factor_graph(trace::Vector{Any},
 end
 
 # Currently need the clusters to fall exactly along with the leakages
-function add_distribution_from_leakage_to_point(trace::Vector{Float32},
+function add_distribution_from_leakage_to_point(trace::Vector,
     variables::Dict{String, AbsVariable},
     factors::Dict{String, AbsFactor},
     bits_per_cluster::Int64,
@@ -110,7 +110,7 @@ function add_distribution_from_leakage_to_point(trace::Vector{Float32},
     location_execution_counts[variable] += 1
 end
 
-function add_qr_leakage(trace::Vector{Float32},
+function add_qr_leakage(trace::Vector,
     variables::Dict{String, AbsVariable},
     factors::Dict{String, AbsFactor},
     bits_per_cluster::Int64,
@@ -157,7 +157,7 @@ function add_qr_leakage(trace::Vector{Float32},
     add_distribution_from_leakage_to_point(trace, variables, factors, bits_per_cluster, location_execution_counts, b, run_number, trace_value_to_graph)
 end
 
-function add_leakage_trace_to_factor_graph(trace::Vector{Float32},
+function add_leakage_trace_to_factor_graph(trace::Vector,
     variables::Dict{String, AbsVariable},
     factors::Dict{String, AbsFactor},
     bits_per_cluster::Int64,
