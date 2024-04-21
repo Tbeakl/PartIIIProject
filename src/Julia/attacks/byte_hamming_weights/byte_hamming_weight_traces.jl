@@ -1,17 +1,17 @@
 include("../../belief_propagation/node.jl")
 include("../../encryption/hamming_weight_probability_calculations.jl")
 
-function byte_hamming_weight_value_to_function(hamming_position_table::Matrix{Bool})
-    return function add_byte_hamming_weight_to_variable(value,
+function word_hamming_weight_value_to_function(hamming_position_table::Matrix{Bool}, word_size::Int64)
+    return function add_word_hamming_weight_to_variable(value,
         variables::Dict{String,AbsVariable},
         factors::Dict{String,AbsFactor},
         bits_per_cluster::Int64,
         variable_and_count::String,
         run_number::Int64,
         version_to_add_include::Int64=run_number)
-        clusters_per_leakage_weight = Int64(ceil(8 / bits_per_cluster))
+        clusters_per_leakage_weight = Int64(ceil(word_size / bits_per_cluster))
         for i in eachindex(value)
-            hamming_value_likelihoods = likelihood_of_hamming_values_no_noise(8, bits_per_cluster, value[i])
+            hamming_value_likelihoods = likelihood_of_hamming_values_no_noise(word_size, bits_per_cluster, value[i])
             prob_dist_for_cluster = make_prob_distribution_from_hamming_likelihoods(hamming_value_likelihoods, hamming_position_table, bits_per_cluster)
             # prob_dist_for_cluster ./= sum(prob_dist_for_cluster)
             for j in 1:clusters_per_leakage_weight

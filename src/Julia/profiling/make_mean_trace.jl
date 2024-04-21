@@ -4,9 +4,9 @@ using HDF5, StatsBase
 
 samples_per_trace = 750_000
 number_of_samples_to_average_over = 10
-base_path = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\captures\\ChaChaRecordings\\recording_profiling_"
+base_path = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\captures\\ChaChaRecordings_2\\recording_profiling_"
 
-summed_trace = zeros(Float32, samples_per_trace ÷ number_of_samples_to_average_over)
+summed_trace = zeros(Float32, samples_per_trace)
 all_gains::Vector{Float64} = []
 all_offsets::Vector{Float64} = []
 
@@ -23,11 +23,11 @@ all_offsets::Vector{Float64} = []
 end
 
 
-for i in 1:6
+for i in 0:1
     fid = h5open(string(base_path, i, ".hdf5"))
-    for j in 0:249
+    for j in 0:999
         println(i, " ", j)
-        summed_trace[:] .+= collect(Iterators.map(mean, Iterators.partition(read(fid[string("power_", j)]), number_of_samples_to_average_over)))
+        summed_trace[:] .+= read(fid[string("power_", j)]) #collect(Iterators.map(mean, Iterators.partition(read(fid[string("power_", j)]), number_of_samples_to_average_over)))
         push!(all_gains, read(fid[string("power_", j)]["gain"]))
         push!(all_offsets, read(fid[string("power_", j)]["offset"]))
     end
@@ -36,7 +36,7 @@ end
 
 all_gains
 
-fid = h5open("D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\attack_profiling\\mean_trace_downsampled.hdf5", "w")
+fid = h5open("D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\attack_profiling\\mean_trace_2.hdf5", "w")
 @assert allequal(all_gains)
 @assert allequal(all_offsets)
 

@@ -95,7 +95,7 @@ for i in 1:initial_number_of_iterations
 
     push!(tot_entropy_over_time, total_entropy_of_graph(variables))
     println(tot_entropy_over_time[end])
-    if tot_entropy_over_time[end] < 1e-5
+    if tot_entropy_over_time[end] < 1
         break
     end
 end

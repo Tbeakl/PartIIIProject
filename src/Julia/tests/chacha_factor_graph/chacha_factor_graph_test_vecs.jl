@@ -194,7 +194,7 @@ function test_vec_3_full_encryption()
     nonce = zeros(UInt32, 3)
     counter::UInt32 = 1
 
-    bits_per_cluster = 2
+    bits_per_cluster = 8
     variables = Dict{String,AbsVariable}()
     factors = Dict{String,AbsFactor}()
     variables_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]

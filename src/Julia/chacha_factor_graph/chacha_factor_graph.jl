@@ -91,7 +91,7 @@ function bit_rotation_factor_graph!(variables::Dict{String,AbsVariable},
     # lower cluster and (number_of_bits_per_cluster - bits_to_rotate_by) bottom bits of the higher cluster (e.g. further to the left)
     # this is handled inside of the probability table of the rotation currently
 
-    rotation_cluster_prob_table = precalculated_prob_tables[string("rotation_cluster_", bits_to_rotate_by)]
+    # rotation_cluster_prob_table = precalculated_prob_tables[string("rotation_cluster_", bits_to_rotate_by)]
     number_of_clusters = Int64(ceil(32 / number_of_bits_per_cluster))
     for i in 1:number_of_clusters
         further_left_variable_name = string(input, "_", location_execution_counts[input], "_", i, "_", run_number)
@@ -129,7 +129,7 @@ function xor_with_cluster_shift_factor_graph!(variables::Dict{String,AbsVariable
     round_factors::Set{String},
     run_number::Int64)
 
-    xor_cluster_prob_table = precalculated_prob_tables["xor_cluster"]
+    # xor_cluster_prob_table = precalculated_prob_tables["xor_cluster"]
     number_of_clusters = Int64(ceil(32 / number_of_bits_per_cluster))
     for i in 1:number_of_clusters
         cur_factor_name = string("f_xor_", number_of_operations["xor"], "_", i, "_", run_number)
@@ -179,9 +179,9 @@ function add_factor_graph!(variables::Dict{String,AbsVariable},
     run_number::Int64)
 
     number_of_clusters = Int64(ceil(32 / number_of_bits_per_cluster))
-    full_add_dist = precalculated_prob_tables["full_add_cluster"]
-    add_full_to_output = precalculated_prob_tables["add_full_to_output_cluster"]
-    add_full_to_carry = precalculated_prob_tables["add_full_to_carry_cluster"]
+    # full_add_dist = precalculated_prob_tables["full_add_cluster"]
+    # add_full_to_output = precalculated_prob_tables["add_full_to_output_cluster"]
+    # add_full_to_carry = precalculated_prob_tables["add_full_to_carry_cluster"]
 
     # Could technically make this shared across all the adds but initially for simplicity
     # each will have a seperate one
@@ -337,17 +337,18 @@ function chacha_factor_graph!(variables::Dict{String, AbsVariable},
         end
     end
     number_of_operations = Dict("xor" => 0, "add" => 0, "rot" => 0)
-    precalculated_prob_tables = Dict("xor_cluster" => make_xor_prob_table(number_of_bits_per_cluster),
-        "full_add_cluster" => make_add_including_carry_prob_array(number_of_bits_per_cluster),
-        "add_full_to_output_cluster" => take_bottom_bits_prob_array(number_of_bits_per_cluster + 1),
-        "add_full_to_carry_cluster" => take_top_bit_prob_array(number_of_bits_per_cluster + 1)
-    )
+    precalculated_prob_tables = Dict{String, Array{Float64}}()
+    # precalculated_prob_tables = Dict("xor_cluster" => make_xor_prob_table(number_of_bits_per_cluster),
+    #     "full_add_cluster" => make_add_including_carry_prob_array(number_of_bits_per_cluster),
+    #     "add_full_to_output_cluster" => take_bottom_bits_prob_array(number_of_bits_per_cluster + 1),
+    #     "add_full_to_carry_cluster" => take_top_bit_prob_array(number_of_bits_per_cluster + 1)
+    # )
 
-    for j in [16, 12, 8, 7]
-        if j % number_of_bits_per_cluster != 0
-            precalculated_prob_tables[string("rotation_cluster_", j % number_of_bits_per_cluster)] = make_rotation_prob_table(number_of_bits_per_cluster, j % number_of_bits_per_cluster)
-        end
-    end
+    # for j in [16, 12, 8, 7]
+    #     if j % number_of_bits_per_cluster != 0
+    #         precalculated_prob_tables[string("rotation_cluster_", j % number_of_bits_per_cluster)] = make_rotation_prob_table(number_of_bits_per_cluster, j % number_of_bits_per_cluster)
+    #     end
+    # end
 
     for i in 1:10
         cur_round_variables = Set{String}()

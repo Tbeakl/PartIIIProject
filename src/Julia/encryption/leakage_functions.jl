@@ -10,6 +10,13 @@ function byte_hamming_weight_for_value(value)
     return output
 end
 
+function sixteen_bit_hamming_weight_for_value(value)
+    output = zeros(Int64, 2)
+    output[1] = Base.count_ones(value & 0xFFFF)
+    output[2] = Base.count_ones((value >> 16) & 0xFFFF)
+    return output
+end
+
 function byte_values_for_input(value)
     output = zeros(Int64, 4)
     output[1] = value & 0xFF
@@ -20,6 +27,8 @@ function byte_values_for_input(value)
 end
 
 full_value(value) = value
+
+full_word_hamming_weight(value) = Base.count_ones(value)
 
 # Think I should probably add on some other factor for determining how the noise should be shaped
 # but it might not matter because of the fact that we set the signal to noise ratio when generating the
@@ -46,7 +55,6 @@ function encrypt_collect_trace(key::Vector{UInt32}, nonce::Vector{UInt32}, count
     global trace
     trace = []
     closure = () -> trace
-    noise_dist_closure(x) = noise_distribution
     key_logging = map(x -> Logging.SingleFunctionLog(x, closure, leakage_function), key)
     nonce_logging = map(x -> Logging.SingleFunctionLog(x, closure, leakage_function), nonce)
     counter_logging = Logging.SingleFunctionLog(counter, closure, leakage_function)

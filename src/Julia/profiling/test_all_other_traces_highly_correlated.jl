@@ -1,6 +1,6 @@
 using HDF5
 
-base_path = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\captures\\ChaChaRecordings\\recording_attack_counter_from_one_"
+base_path = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\captures\\ChaChaRecordings\\recording_profiling_"
 correlation_threshold = 0.98
 number_of_samples_to_average_over = 10
 
@@ -12,34 +12,37 @@ close(fid)
 
 all_traces_to_exclude::Vector{String} = []
 all_correlations_excluded::Vector{Float64} = []
-for file_number in 7:360
+all_correlations::Vector{Float64} = []
+for file_number in 1:84
     fid = h5open(string(base_path, file_number, ".hdf5"), "r")
-    # for i in 0:249
-    #     # power_trace = collect(Iterators.map(mean, Iterators.partition(read(fid[string("power_", i)]), number_of_samples_to_average_over)))
-    #     power_trace = read(fid[string("power_", i)])
-    #     difference_between_mean_and_power = argmin(power_trace) - mean_arg_min
-    #     trimmed_power_trace = power_trace[50 + difference_between_mean_and_power:end-(50 - difference_between_mean_and_power)]
+    println(file_number)
+    for i in 0:249
+        # power_trace = collect(Iterators.map(mean, Iterators.partition(read(fid[string("power_", i)]), number_of_samples_to_average_over)))
+        power_trace = read(fid[string("power_", i)])
+        difference_between_mean_and_power = argmin(power_trace) - mean_arg_min
+        trimmed_power_trace = power_trace[50 + difference_between_mean_and_power:end-(50 - difference_between_mean_and_power)]
 
-    #     correlation = cor(trimmed_mean_trace, trimmed_power_trace)
-    #     println(file_number, " ", i, ": ", correlation)
-    #     if correlation <= correlation_threshold
-    #         push!(all_traces_to_exclude, string(file_number, "_", i))
-    #         push!(all_correlations_excluded, correlation)
+        correlation = cor(trimmed_mean_trace[10000:end-10000], trimmed_power_trace[10000:end-10000])
+        println(file_number, " ", i, ": ", correlation)
+        if correlation <= correlation_threshold
+            push!(all_traces_to_exclude, string(file_number, "_", i))
+            push!(all_correlations_excluded, correlation)
+        end
+        push!(all_correlations, correlation)
+    end
+    # for i in 0:99
+    #     for j in 0:9
+    #         power_trace = read(fid[string("power_", i, "_", j)])
+    #         difference_between_mean_and_power = argmin(power_trace) - mean_arg_min
+    #         trimmed_power_trace = power_trace[50 + difference_between_mean_and_power:end-(50 - difference_between_mean_and_power)]
+    #         correlation = cor(trimmed_mean_trace, trimmed_power_trace)
+    #         println(file_number, " ", i, " ", j, ": ", correlation)
+    #         if correlation <= correlation_threshold
+    #             push!(all_traces_to_exclude, string(file_number, "_", i, "_", j))
+    #             push!(all_correlations_excluded, correlation)
+    #         end
     #     end
     # end
-    for i in 0:99
-        for j in 0:9
-            power_trace = read(fid[string("power_", i, "_", j)])
-            difference_between_mean_and_power = argmin(power_trace) - mean_arg_min
-            trimmed_power_trace = power_trace[50 + difference_between_mean_and_power:end-(50 - difference_between_mean_and_power)]
-            correlation = cor(trimmed_mean_trace, trimmed_power_trace)
-            println(file_number, " ", i, " ", j, ": ", correlation)
-            if correlation <= correlation_threshold
-                push!(all_traces_to_exclude, string(file_number, "_", i, "_", j))
-                push!(all_correlations_excluded, correlation)
-            end
-        end
-    end
     close(fid)
 end
 

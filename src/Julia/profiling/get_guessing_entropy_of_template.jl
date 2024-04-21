@@ -2,8 +2,8 @@ using HDF5, Base.Threads, StatsBase, Statistics
 include("../attacks/byte_template_attacks/template_attack_traces.jl")
 include("../encryption/leakage_functions.jl")
 
-
-fid = h5open("D:\\ChaChaData\\attack_profiling\\downsampled_10_traces_validation.hdf5", "r")
+println("Help")
+fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/downsampled_50_traces_validation.hdf5", "r")
 
 all_intermediate_values = read(fid["intermediate_values"])
 downsampled_matrix = read(fid["downsampled_matrix"])
@@ -12,7 +12,7 @@ number_of_templates = 2672
 all_correct_counts = zeros(Float64, number_of_templates)
 Threads.@threads for template_number in 1:number_of_templates
     println(template_number)
-    template_path = string("D:\\ChaChaData\\attack_profiling\\initial_templates\\", template_number, "_template.hdf5")
+    template_path = string("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/initial_templates_50/", template_number, "_template.hdf5")
     intermediate_value_vector = all_intermediate_values[:, template_number]
     fid = h5open(template_path, "r")
     sample_bitmask = read(fid["downsampled_sample_bitmask"])
@@ -27,14 +27,16 @@ Threads.@threads for template_number in 1:number_of_templates
     # println(sum(cur_dist .< cur_dist[intermediate_value_vector[val]]))
     # plot(get_prob_dist_of_vector(mean_vectors', noise_distribution, projected_vectors[val, :]))
     for j in eachindex(intermediate_value_vector)
-        cur_guess_entropy = sum(sort(get_prob_dist_of_vector(mean_vectors, noise_distribution, projected_vectors[j, :]), rev=true) .* collect(1:256))
+        permutation_of_results = sortperm(get_prob_dist_of_vector(mean_vectors, noise_distribution, projected_vectors[j, :]); rev=true)
+        cur_guess_entropy = findfirst(x->x==intermediate_value_vector[j], (0:255)[permutation_of_results])
         all_correct_counts[template_number] += cur_guess_entropy
     end
 end
 
 # Need to create the output of the success rates as probabilties
 success_rate_percentages = all_correct_counts ./ 1000
-average_percentage_success_rates = success_rate_percentages[begin+3:4:end] # round.(collect(Iterators.map(mean, Iterators.partition(success_rate_percentages, 4))), digits=2)
+# average_percentage_success_rates = success_rate_percentages[begin+3:4:end]
+average_percentage_success_rates = round.(collect(Iterators.map(mean, Iterators.partition(success_rate_percentages, 4))), digits=2)
 
 key_success_rates = average_percentage_success_rates[1:8]
 intermediate_value_success_rates = average_percentage_success_rates[29:end]
@@ -62,7 +64,7 @@ end
 intermediate_locations = make_break_down_of_values()
 
 # Need to break down the cycles into different ways of having counts
-open("fourth_byte_guessing_entropy.csv", "w") do file
+open("average_guessing_entropy.csv", "w") do file
     # First do the key
     write(file, "Key\n")
     for i in 5:12

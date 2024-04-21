@@ -87,8 +87,8 @@ function rank_estimate_key(key::Vector{UInt32},
     # Because the upper end of the bins to the left are decreasing from the original upper end of the binds at the step rate as well 
     # so to get the overestimate can look to get the upper end of the bin included instead
     bin_upper_values = (-(length(actual_histogram_values) - 1):0 .* step_size) .+ (length(histogram_bins) * max_likelihood)
-    # vector_of_bins_to_include = new_bin_mid_points .>= log_likelihood_of_key
-    vector_of_bins_to_include = bin_upper_values .>= log_likelihood_of_key
+    vector_of_bins_to_include = new_bin_mid_points .>= log_likelihood_of_key
+    # vector_of_bins_to_include = bin_upper_values .>= log_likelihood_of_key
     return sum(actual_histogram_values[vector_of_bins_to_include])
 end
 
@@ -101,3 +101,4 @@ end
 likelihood_tables = make_log_likelihood_tables_for_key(variables, number_of_bits)
 # Replace all the -Inf with like -800 because of the issues associated with expoentiatation
 estimated_rank = rank_estimate_key(key, likelihood_tables, 500, number_of_bits)
+log2(estimated_rank)

@@ -3,3 +3,4 @@
 src/Python/__pycache__/*
 data/**
 *.csv
+*.hdf5

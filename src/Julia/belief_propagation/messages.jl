@@ -51,9 +51,10 @@ function variable_to_factor_messages(variable::Variable{AbsFactor}, damping_fact
             new_message = prod(variable.incoming_messages[neighbours_to_include, :], dims=1)[1, :]
             # Here normalise the output to be a prob dist.
             new_message ./= sum(new_message)
+            new_message .*= 1e6
             # println("Setting output: ", i, " ", new_message)
             neighbour.incoming_messages[variable.index_in_neighbours_neighbour[i]] = (damping_factor * new_message) .+ ((1 - damping_factor) * neighbour.incoming_messages[variable.index_in_neighbours_neighbour[i]])
-            neighbour.incoming_messages[variable.index_in_neighbours_neighbour[i]] ./= sum(neighbour.incoming_messages[variable.index_in_neighbours_neighbour[i]])
+            # neighbour.incoming_messages[variable.index_in_neighbours_neighbour[i]] ./= sum(neighbour.incoming_messages[variable.index_in_neighbours_neighbour[i]])
             neighbours_to_include[i] = true
         end
     end
@@ -64,7 +65,7 @@ function update_with_damping(variable::AbsVariable, damping_factor::Float64, mes
         variable.incoming_messages[index_in_neighbours, :] = message
     else
         variable.incoming_messages[index_in_neighbours, :] = (damping_factor * message) .+ ((1 - damping_factor) * variable.incoming_messages[index_in_neighbours])
-        variable.incoming_messages[factor.index_in_neighbours_neighbour[i], :] ./= sum(variable.incoming_messages[index_in_neighbours, :])
+        # variable.incoming_messages[index_in_neighbours, :] ./= sum(variable.incoming_messages[index_in_neighbours, :])
     end
 end
 
@@ -82,7 +83,7 @@ function factor_to_variable_messages(factor::Factor{AbsVariable}, damping_factor
         other_axes = other_axes_from_labeled_axes(factor.data, factor.neighbours[i].name)
         value_to_squeeze = sum(factor_dist; dims=other_axes)
         message_out = dropdims(value_to_squeeze; dims=Tuple(other_axes))
-        message_out ./= sum(message_out)
+        # message_out ./= sum(message_out)
         # neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] = message_out
         update_with_damping(neighbour, damping_factor, message_out, factor.index_in_neighbours_neighbour[i])
     end
@@ -111,7 +112,8 @@ function factor_to_variable_messages(factor::XorFactor{AbsVariable}, damping_fac
         #     println("Possible problem")
         # end
         message_out ./= sum(message_out)
-        message_out .+= 1e-12
+        message_out .*= 1e6
+        message_out .+= 1e0
         # neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] = message_out
         update_with_damping(neighbour, damping_factor, message_out, factor.index_in_neighbours_neighbour[i])
         neighbours_to_include[i] = true
@@ -171,7 +173,8 @@ function factor_to_variable_messages(factor::AddFactor{AbsVariable}, damping_fac
     # t_c_in = real(ifft(conj.(A) .* conj(B) .* OUT))
     t_c_in = max.(0.0, t_c_in[1:2])
     t_c_in ./= sum(t_c_in)
-    t_c_in .+= 1e-12
+    t_c_in .*= 1e6
+    t_c_in .+= 1e0
     # println(t_c_in)
 
 
@@ -179,20 +182,23 @@ function factor_to_variable_messages(factor::AddFactor{AbsVariable}, damping_fac
     # t_a = real(ifft(conj.(C_IN) .* conj(B) .* OUT))
     t_a = max.(0.0, t_a[1:size_of_incoming_variables])
     t_a ./= sum(t_a)
-    t_a .+= 1e-12
+    t_a .*= 1e6
+    t_a .+= 1e0
     # println(t_a)
 
     t_b = real(ifft(conj.(A .* C_IN) .* OUT))
     # t_b = real(ifft(conj.(A) .* conj(C_IN) .* OUT))
     t_b = max.(0.0, t_b[1:size_of_incoming_variables])
     t_b ./= sum(t_b)
-    t_b .+= 1e-12
+    t_b .*= 1e6
+    t_b .+= 1e0
     # println(t_b)
 
 
     t_out = max.(0.0, real(ifft(A .* B .* C_IN)))
     t_out ./= sum(t_out)
-    t_out .+= 1e-12
+    t_out .*= 1e6
+    t_out .+= 1e0
     # println(t_out)
 
     # Need to update the messages going out of from this factor to what has just come so shrink them and normalise them
@@ -223,7 +229,7 @@ function factor_to_variable_messages(factor::MarginaliseTopBitsFactor{AbsVariabl
     else
         large_outgoing_message = repeat(factor.incoming_messages[2], inner=size_of_small_in_large)
     end
-    large_outgoing_message ./= sum(large_outgoing_message)
+    # large_outgoing_message ./= sum(large_outgoing_message)
 
     # Need to update the messages going out of from this factor to what has just come so shrink them and normalise them
     update_with_damping(factor.neighbours[1], damping_factor, large_outgoing_message, factor.index_in_neighbours_neighbour[1])
@@ -258,7 +264,7 @@ function factor_to_variable_messages(factor::MarginaliseBottomBitsFactor{AbsVari
     else
         large_outgoing_message = repeat(factor.incoming_messages[2], outer=size_of_small_in_large)
     end
-    large_outgoing_message ./= sum(large_outgoing_message)
+    # large_outgoing_message ./= sum(large_outgoing_message)
 
     # Need to update the messages going out of from this factor to what has just come so shrink them and normalise them
     update_with_damping(factor.neighbours[1], damping_factor, large_outgoing_message, factor.index_in_neighbours_neighbour[1])
@@ -296,14 +302,14 @@ function factor_to_variable_messages(factor::RotateFactor{AbsVariable}, damping_
     # println(collect(Iterators.map(sum, Iterators.partition(right_incoming_message .* output_incoming_message, 1 << (number_of_bits_cluster - shift_amount)))))
     # println(repeat(collect(Iterators.map(sum, Iterators.partition(right_incoming_message .* output_incoming_message, 1 << (number_of_bits_cluster - shift_amount)))), outer=1 << shift_amount))
     left_outgoing_message = repeat(collect(Iterators.map(sum, Iterators.partition(right_incoming_message .* output_incoming_message, 1 << shift_amount))), outer=1 << shift_amount)
-    left_outgoing_message ./= sum(left_outgoing_message)
+    # left_outgoing_message ./= sum(left_outgoing_message)
 
     # Similar need to marginalise the bottom bits and covert to top bits
     right_outgoing_message = repeat(marginalise_bottom(left_incoming_message .* output_incoming_message, 1 << shift_amount), inner=1 << (number_of_bits_cluster - shift_amount))
-    right_outgoing_message ./= sum(right_outgoing_message)
+    # right_outgoing_message ./= sum(right_outgoing_message)
 
     output_outgoing_message = left_incoming_message .* right_incoming_message
-    output_outgoing_message ./= sum(output_outgoing_message)
+    # output_outgoing_message ./= sum(output_outgoing_message)
 
     # Need to update the messages going out of from this factor to what has just come so shrink them and normalise them
     update_with_damping(factor.neighbours[1], damping_factor, left_outgoing_message, factor.index_in_neighbours_neighbour[1])

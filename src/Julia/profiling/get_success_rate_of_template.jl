@@ -17,8 +17,8 @@ final_number_of_samples_500 = 1499
 path_to_templates = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/all_second_templates/"
 
 
-different_detail_levels = [20, 50, 100, 250, 500] # [20,50,100,250,500]
-different_detail_number_of_samples = [final_number_of_samples_20, final_number_of_samples_50, final_number_of_samples_100, final_number_of_samples_250, final_number_of_samples_500]
+different_detail_levels = [50]#[20, 50, 100, 250, 500] # [20,50,100,250,500]
+different_detail_number_of_samples = [final_number_of_samples_50] #[final_number_of_samples_20, final_number_of_samples_50, final_number_of_samples_100, final_number_of_samples_250, final_number_of_samples_500]
 data_20_fid = h5open(data_path_20, "r")
 
 dset_intermediate_values = data_20_fid["intermediate_values"]
@@ -61,9 +61,9 @@ end
 
 datasets = [dset_20, dset_50, dset_100, dset_250, dset_500]
 
+number_of_templates = 2672
 all_correct_counts = zeros(Int64, length(datasets), length(datasets), number_of_templates)
 
-number_of_templates = 2672
 
 for detailed_level_index in eachindex(different_detail_levels)
     for sparse_level_index in detailed_level_index:length(different_detail_levels)
@@ -88,16 +88,26 @@ for detailed_level_index in eachindex(different_detail_levels)
             # println(sum(cur_dist .< cur_dist[intermediate_value_vector[val]]))
             # plot(get_prob_dist_of_vector(mean_vectors', noise_distribution, projected_vectors[val, :]))
             for j in eachindex(intermediate_value_vector)
-                most_likely_value = findmax(get_prob_dist_of_vector(mean_vectors, noise_distribution, projected_vectors[j, :]))[2] - 1
-                if intermediate_value_vector[j] == most_likely_value
-                    all_correct_counts[sparse_level_index, detailed_level_index, template_number] += 1
-                end
+                # most_likely_value = findmax(get_prob_dist_of_vector(mean_vectors, noise_distribution, projected_vectors[j, :]))[2] - 1
+                # if intermediate_value_vector[j] == most_likely_value
+                #     all_correct_counts[sparse_level_index, detailed_level_index, template_number] += 1
+                # end
+                permutation_of_results = sortperm(get_prob_dist_of_vector(mean_vectors, noise_distribution, projected_vectors[j, :]); rev=true)
+                cur_guess_entropy = findfirst(x->x==intermediate_value_vector[j], (0:255)[permutation_of_results])
+                all_correct_counts[sparse_level_index, detailed_level_index, template_number] += cur_guess_entropy
             end
         end
     end
 end
 
-max_performance = maximum(all_correct_counts, dims=[1,2])[1,1,:] ./ 10
+guessing_entropies_fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/src/Julia/profiling/guessing_entropies.hdf5", "r")
+# guessing_entropies_fid["all_results"] = all_correct_counts ./ 1000
+all_correct_counts = read(guessing_entropies_fid["all_results"])
+close(guessing_entropies_fid)
+
+all_correct_counts[all_correct_counts .== 0.] .= 10_000
+
+max_performance = minimum(all_correct_counts, dims=[1,2])[1,1,:]# ./ 1000
 
 # Need to create the output of the success rates as probabilties
 success_rate_percentages = all_correct_counts ./ 10
@@ -133,7 +143,7 @@ end
 intermediate_locations = make_break_down_of_values()
 
 # Need to break down the cycles into different ways of having counts
-open("average_success_rates_second_set_best_1.csv", "w") do file
+open("average_guessing_entropy_rates_second_set_best_1.csv", "w") do file
     # First do the key
     write(file, "Key\n")
     for i in 5:12
@@ -154,9 +164,9 @@ open("average_success_rates_second_set_best_1.csv", "w") do file
     end
 end
 
-locations_of_maxes = argmax(all_correct_counts, dims=[1,2])[1,1,:]
+locations_of_maxes = argmin(all_correct_counts, dims=[1,2])[1,1,:]
 
-best_templates_locations = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/second_template_set_best_templates.hdf5"
+best_templates_locations = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/second_template_set_best_templates_ge.hdf5"
 best_loc_fid = h5open(best_templates_locations, "w")
 for i in eachindex(locations_of_maxes)
     best_loc_fid[string("sparse_", i)] = Int64(locations_of_maxes[i][1])
