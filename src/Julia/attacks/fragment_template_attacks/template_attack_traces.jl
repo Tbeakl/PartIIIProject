@@ -49,7 +49,7 @@ function real_byte_template_path_to_function(base_path::String, bits_per_templat
             sparse_sample_bitmask = read(fid["sparse_sample_bitmask"])
             close(fid)
             # noise = noise_distribution_given_covaraince_matrix(covaraince_matrix)
-            noise = noise_distribution_given_covaraince_matrix(covaraince_matrix ./ size(traces)[1])
+            noise = noise_distribution_given_covaraince_matrix(covaraince_matrix) #  ./ size(traces)[1]
 
             position = mean(hcat(traces[:, detailed_sample_bitmask], traces[:, sparse_sample_bitmask]) * projection_matrix, dims=1)[1, :]
             prob_dist_for_template = get_dist_of_vector(mean_vectors, noise, position)
@@ -103,7 +103,7 @@ function add_initial_key_distribution_from_leakage_traces_set_of_templates(
             sparse_sample_bitmask = read(fid["sparse_sample_bitmask"])
             close(fid)
             # noise = noise_distribution_given_covaraince_matrix(covaraince_matrix)
-            noise = noise_distribution_given_covaraince_matrix(covaraince_matrix ./ size(traces)[1])
+            noise = noise_distribution_given_covaraince_matrix(covaraince_matrix) #  ./ size(traces)[1]
 
             position = mean(hcat(traces[:, detailed_sample_bitmask], traces[:, sparse_sample_bitmask]) * projection_matrix, dims=1)[1, :]
             prob_dist_for_template = get_dist_of_vector(mean_vectors, noise, position)

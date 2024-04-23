@@ -97,8 +97,3 @@ end
 # keys in the top bins I think
 
 # Pretty sure the bin midpoints are incorrect
-
-likelihood_tables = make_log_likelihood_tables_for_key(variables, number_of_bits)
-# Replace all the -Inf with like -800 because of the issues associated with expoentiatation
-estimated_rank = rank_estimate_key(key, likelihood_tables, 500, number_of_bits)
-log2(estimated_rank)
