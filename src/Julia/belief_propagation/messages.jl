@@ -3,6 +3,9 @@ include("node.jl")
 
 calculate_entropy(prob_dist) = -NaNMath.sum(prob_dist .* log2.(prob_dist))
 
+normalisation_constant::Float64 = 1e9
+addition_away_from_zero::Float64 = 1e-9
+
 function tile_to_shape_along_axis(arr::Float64, target_shape::Tuple, target_axis::Int64)
     return fill(arr, target_shape)
 end
@@ -51,7 +54,7 @@ function variable_to_factor_messages(variable::Variable{AbsFactor}, damping_fact
             new_message = prod(variable.incoming_messages[neighbours_to_include, :], dims=1)[1, :]
             # Here normalise the output to be a prob dist.
             new_message ./= sum(new_message)
-            new_message .*= 1e6
+            new_message .*= normalisation_constant
             # println("Setting output: ", i, " ", new_message)
             neighbour.incoming_messages[variable.index_in_neighbours_neighbour[i]] = (damping_factor * new_message) .+ ((1 - damping_factor) * neighbour.incoming_messages[variable.index_in_neighbours_neighbour[i]])
             # neighbour.incoming_messages[variable.index_in_neighbours_neighbour[i]] ./= sum(neighbour.incoming_messages[variable.index_in_neighbours_neighbour[i]])
@@ -112,8 +115,8 @@ function factor_to_variable_messages(factor::XorFactor{AbsVariable}, damping_fac
         #     println("Possible problem")
         # end
         message_out ./= sum(message_out)
-        message_out .*= 1e6
-        message_out .+= 1e0
+        message_out .*= normalisation_constant
+        message_out .+= addition_away_from_zero
         # neighbour.incoming_messages[factor.index_in_neighbours_neighbour[i], :] = message_out
         update_with_damping(neighbour, damping_factor, message_out, factor.index_in_neighbours_neighbour[i])
         neighbours_to_include[i] = true
@@ -173,8 +176,8 @@ function factor_to_variable_messages(factor::AddFactor{AbsVariable}, damping_fac
     # t_c_in = real(ifft(conj.(A) .* conj(B) .* OUT))
     t_c_in = max.(0.0, t_c_in[1:2])
     t_c_in ./= sum(t_c_in)
-    t_c_in .*= 1e6
-    t_c_in .+= 1e0
+    t_c_in .*= normalisation_constant
+    t_c_in .+= addition_away_from_zero
     # println(t_c_in)
 
 
@@ -182,8 +185,8 @@ function factor_to_variable_messages(factor::AddFactor{AbsVariable}, damping_fac
     # t_a = real(ifft(conj.(C_IN) .* conj(B) .* OUT))
     t_a = max.(0.0, t_a[1:size_of_incoming_variables])
     t_a ./= sum(t_a)
-    t_a .*= 1e6
-    t_a .+= 1e0
+    t_a .*= normalisation_constant
+    t_a .+= addition_away_from_zero
     # println(t_a)
 
     t_b = real(ifft(conj.(A .* C_IN) .* OUT))
@@ -197,8 +200,8 @@ function factor_to_variable_messages(factor::AddFactor{AbsVariable}, damping_fac
 
     t_out = max.(0.0, real(ifft(A .* B .* C_IN)))
     t_out ./= sum(t_out)
-    t_out .*= 1e6
-    t_out .+= 1e0
+    t_out .*= normalisation_constant
+    t_out .+= addition_away_from_zero
     # println(t_out)
 
     # Need to update the messages going out of from this factor to what has just come so shrink them and normalise them
