@@ -193,8 +193,8 @@ function factor_to_variable_messages(factor::AddFactor{AbsVariable}, damping_fac
     # t_b = real(ifft(conj.(A) .* conj(C_IN) .* OUT))
     t_b = max.(0.0, t_b[1:size_of_incoming_variables])
     t_b ./= sum(t_b)
-    t_b .*= 1e6
-    t_b .+= 1e0
+    t_b .*= normalisation_constant
+    t_b .+= addition_away_from_zero
     # println(t_b)
 
 
