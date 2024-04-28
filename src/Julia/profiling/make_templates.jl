@@ -1,4 +1,4 @@
-using HDF5, MultivariateStats, Plots, StatsBase, Statistics, LinearAlgebra
+using HDF5, MultivariateStats, Plots, StatsBase, Statistics, LinearAlgebra, FFTW
 include("../encryption/leakage_functions.jl")
 include("common_functions.jl")
 # Things which I could try would be to have seperate templats based on the min, mean and max
@@ -12,7 +12,7 @@ total_variation_to_include = 0.9
 number_of_bits_per_template = 8
 number_of_templates_per_intermediate_value = 32 ÷ number_of_bits_per_template
 
-bitmask_path = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/clock_cycles_bitmasks_dilated_by_leakage_event.hdf5"
+bitmask_path = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/clock_cycles_bitmasks_no_dilation_cor.hdf5"
 
 # data_path_20 = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/second_trace_set/profiling_20.hdf5"
 # final_number_of_samples_20 = 37471
@@ -25,7 +25,7 @@ final_number_of_samples_250 = 2998
 data_path_500 = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/second_trace_set/profiling_500.hdf5"
 final_number_of_samples_500 = 1499
 # data_path = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/downsampled_50_traces_maximum_profiling.hdf5"
-path_to_templates = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/second_trace_set/initial_templates_LR_leakage_event/"
+path_to_templates = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/second_trace_set/initial_templates_sixteen_bit_templates/"
 
 bitmask_fid = h5open(bitmask_path, "r")
 
@@ -78,9 +78,9 @@ simple_intermediate_values[:, end] .= 1
 
 # detailed_level_index = 1
 # sparse_level_index = 1
-# intermediate_value_index = 1
-# template_num = 1
-# leakage_event_number = 4
+intermediate_value_index = 1
+template_num = 1
+leakage_event_number = 1
 detailed_level_index = 1
 sparse_level_index = 1
 # for detailed_level_index in eachindex(different_detail_levels)
@@ -89,18 +89,19 @@ println("Detailed: ", detailed_level_index, " Sparse: ", sparse_level_index)
 for intermediate_value_index in 1:number_of_intermediate_values
     intermediate_value_vector = dset_intermediate_values[:, intermediate_value_index]
     for template_num in 1:number_of_templates_per_intermediate_value
-        leakage_event_number::Int64 = 1
         current_full_template_path = string(path_to_templates, "sparse_",
             different_detail_levels[sparse_level_index], "_detailed_",
             different_detail_levels[detailed_level_index], "/",
-            intermediate_value_index, "_", template_num, "_", leakage_event_number, "_template.hdf5")
-        bitmask_dataset_name = string("bitmask_", intermediate_value_index, "_", leakage_event_number)
+            intermediate_value_index, "_", template_num, "_template.hdf5")
+        bitmask_dataset_name = string("bitmask_", intermediate_value_index, "_", 1)
         template_intermediate_value_vector = (intermediate_value_vector .>> (number_of_bits_per_template * (template_num - 1))) .& ((1 << number_of_bits_per_template) - 1)
         permutation_of_intermediate_values = sortperm(template_intermediate_value_vector)
         template_intermediate_value_vector = template_intermediate_value_vector[permutation_of_intermediate_values]
         while !ispath(current_full_template_path) && haskey(bitmask_fid, bitmask_dataset_name)
-            println(intermediate_value_index, " ", template_num, " ", leakage_event_number)
+            println(intermediate_value_index, " ", template_num)
             cycle_bitmask = read(bitmask_fid[bitmask_dataset_name])
+            cycle_bitmask = dilate_infront(cycle_bitmask, 4)
+            cycle_bitmask = dilate_after(cycle_bitmask, 2)
             sample_bitmask = Bool.(repeat(cycle_bitmask, inner=500 ÷ different_detail_levels[detailed_level_index])[1:different_detail_number_of_samples[detailed_level_index]])
             original_matrix_of_current_data = datasets[detailed_level_index][:, sample_bitmask]'
             # detailed_bitmask = repeat(undilated_cycle_bitmask, inner=500 ÷ different_detail_levels[detailed_level_index])[1:different_detail_number_of_samples[detailed_level_index]]
@@ -120,25 +121,15 @@ for intermediate_value_index in 1:number_of_intermediate_values
                 original_mean_vectors[:, i] = simple_intermediate_values * β
             end
 
-            transposed_data = Matrix(matrix_of_current_data')
+            fresh_mat_current_data = Matrix(matrix_of_current_data)
 
-            # Just try a slightly different method for estimating the covariance
-
-            # Just trying a slightly different method for finding the mean vectors
-            # for i in 0:255
-            #     original_mean_vectors[i + 1, :] = mean(matrix_of_current_data[:, template_intermediate_value_vector .== i], dims=2)[:, 1]
-            # end
-
-            # original_mean_vectors = zeros(number_of_bits_per_template + 1, size(matrix_of_current_data)[1])
-            # for i in 0:number_of_bits_per_template
-            #     original_mean_vectors[i+1, :] = mean(matrix_of_current_data[:, template_intermediate_value_vector.==i], dims=2)[:, 1]
-            # end
-
-            within_class_scatter = calculate_within_class_scatter(transposed_data, template_intermediate_value_vector, original_mean_vectors)
-            between_class_scatter = calculate_between_class_scatter(matrix_of_current_data, template_intermediate_value_vector, original_mean_vectors')
+            within_class_scatter = alternative_within_class_scatter(fresh_mat_current_data, template_intermediate_value_vector, original_mean_vectors)
+            between_class_scatter = alternative_calculate_between_class_scatter(template_intermediate_value_vector, original_mean_vectors)
 
             within_class_scatter = regularize_symmat!(within_class_scatter, 1e-6)
-            E = eigen!(Symmetric(between_class_scatter), Symmetric(within_class_scatter))
+            E = eigen!(Symmetric(Float64.(between_class_scatter)), Symmetric(Float64.(within_class_scatter)))
+            # E = eigen(inv(Symmetric(within_class_scatter))*Symmetric(between_class_scatter)) # Appears to do the same except that it has not been scaled 
+            # so the noise has a identity covariance matrix in the projected space
             ord = sortperm(E.values; rev=true)
             P = E.vectors[:, ord[1:size(between_class_scatter, 1)]]
 
@@ -162,7 +153,8 @@ for intermediate_value_index in 1:number_of_intermediate_values
             projected_class_means = (original_class_means * projection_to_subspace)
 
             original_data_projected = projection_to_subspace' * matrix_of_current_data
-            projected_within_class_scatter = calculate_within_class_scatter(original_data_projected', template_intermediate_value_vector, projected_class_means) #(within_class_scatter * projection_to_subspace)' * projection_to_subspace
+            projected_within_class_scatter = alternative_within_class_scatter(Matrix(original_data_projected),template_intermediate_value_vector, projected_class_means)
+            # projected_within_class_scatter = calculate_within_class_scatter(original_data_projected', template_intermediate_value_vector, projected_class_means) #(within_class_scatter * projection_to_subspace)' * projection_to_subspace
             # projected_scatter = calculate_within_class_scatter(original_data_projected, intermediate_value_vector, projected_class_means)
 
             # Think my covaraince matrix may be quite wrong really it seems to not have the correct, it is just giving out far to large distriubtion between the
@@ -173,19 +165,19 @@ for intermediate_value_index in 1:number_of_intermediate_values
 
             # I believe the covariance matrix needs to be divided by the number of samples which made it up which in this case is 64,000, this seems to give very reasonable
             # results when actually looking at the scatter in the first couple of dimensions and means we should not see entirely uniform results out when actually doing the templates
-            # val = 0
-            # current_value_matrix = (matrix_of_current_data[:, template_intermediate_value_vector.==val]' * projection_to_subspace)
-            # current_mean = projected_class_means[val+1, :]
-            # # dist = noise_distribution_given_covaraince_matrix(projected_within_class_scatter)
-            # p = scatter(size=(1000, 1000))
-            # # randomly_generated_values_around_mean = rand(dist, 1_000) .+ (current_mean)
-            # dim_1 = 1
-            # dim_2 = 2
-            # # scatter!(p, [original_data_projected[1, :]], [original_data_projected[2, :]])
-            # scatter!(p, [current_value_matrix[:, dim_1]], [current_value_matrix[:, dim_2]], label="Actual samples of particular value")
-            # # scatter!(p, [randomly_generated_values_around_mean[1, :]], [randomly_generated_values_around_mean[2, :]], label="Generated samples of particular value")
-            # scatter!(p, [projected_class_means[:, dim_1]], [projected_class_means[:, dim_2]], label="Class Means")
-            # scatter!(p, [current_mean[dim_1]], [current_mean[dim_2]], markersize=10, label="Current class mean")
+            val = 0
+            current_value_matrix = (matrix_of_current_data[:, template_intermediate_value_vector.==val]' * projection_to_subspace)
+            current_mean = projected_class_means[val+1, :]
+            dist = noise_distribution_given_covaraince_matrix(projected_within_class_scatter)
+            p = scatter(size=(1000, 1000))
+            randomly_generated_values_around_mean = rand(dist, 1_000) .+ (current_mean)
+            dim_1 = 1
+            dim_2 = 2
+            # scatter!(p, [original_data_projected[1, :]], [original_data_projected[2, :]])
+            scatter!(p, [current_value_matrix[:, dim_1]], [current_value_matrix[:, dim_2]], label="Actual samples of particular value")
+            scatter!(p, [randomly_generated_values_around_mean[dim_1, :]], [randomly_generated_values_around_mean[dim_2, :]], label="Generated samples of particular value")
+            scatter!(p, [projected_class_means[:, dim_1]], [projected_class_means[:, dim_2]], label="Class Means")
+            scatter!(p, [current_mean[dim_1]], [current_mean[dim_2]], markersize=10, label="Current class mean")
 
             # noise_distribution_given_covaraince_matrix()
             if !isdir(string(path_to_templates, "sparse_",
@@ -201,12 +193,12 @@ for intermediate_value_index in 1:number_of_intermediate_values
             fid["covariance_matrix"] = projected_within_class_scatter
             fid["sample_bitmask"] = collect(sample_bitmask)
             close(fid)
-            leakage_event_number += 1
-            current_full_template_path = string(path_to_templates, "sparse_",
-                different_detail_levels[sparse_level_index], "_detailed_",
-                different_detail_levels[detailed_level_index], "/",
-                intermediate_value_index, "_", template_num, "_", leakage_event_number, "_template.hdf5")
-            bitmask_dataset_name = string("bitmask_", intermediate_value_index, "_", leakage_event_number)
+            # leakage_event_number += 1
+            # current_full_template_path = string(path_to_templates, "sparse_",
+            #     different_detail_levels[sparse_level_index], "_detailed_",
+            #     different_detail_levels[detailed_level_index], "/",
+            #     intermediate_value_index, "_", template_num, "_", leakage_event_number, "_template.hdf5")
+            # bitmask_dataset_name = string("bitmask_", intermediate_value_index, "_", leakage_event_number)
         end
     end
 end

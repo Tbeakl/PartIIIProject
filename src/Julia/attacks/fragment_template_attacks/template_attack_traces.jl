@@ -45,13 +45,15 @@ function real_byte_template_path_to_function(base_path::String, bits_per_templat
             projection_matrix = read(fid["projection"])[:, 1:number_of_dimensions]
             mean_vectors = read(fid["class_means"])[:, 1:number_of_dimensions]
             covaraince_matrix = read(fid["covariance_matrix"])[1:number_of_dimensions, 1:number_of_dimensions]
-            detailed_sample_bitmask = read(fid["detailed_sample_bitmask"])
-            sparse_sample_bitmask = read(fid["sparse_sample_bitmask"])
+            # detailed_sample_bitmask = read(fid["detailed_sample_bitmask"])
+            # sparse_sample_bitmask = read(fid["sparse_sample_bitmask"])
+            sample_bitmask = read(fid["sample_bitmask"])
             close(fid)
             # noise = noise_distribution_given_covaraince_matrix(covaraince_matrix)
             noise = noise_distribution_given_covaraince_matrix(covaraince_matrix) #  ./ size(traces)[1]
 
-            position = mean(hcat(traces[:, detailed_sample_bitmask], traces[:, sparse_sample_bitmask]) * projection_matrix, dims=1)[1, :]
+            # position = mean(hcat(traces[:, detailed_sample_bitmask], traces[:, sparse_sample_bitmask]) * projection_matrix, dims=1)[1, :]
+            position = mean(traces[:, sample_bitmask] * projection_matrix, dims=1)[1, :]
             prob_dist_for_template = get_dist_of_vector(mean_vectors, noise, position)
             # println(size(position))
             # prob_dist_for_template = zeros(1 << bits_per_template)
@@ -99,13 +101,15 @@ function add_initial_key_distribution_from_leakage_traces_set_of_templates(
             covaraince_matrix = covaraince_matrix[1:cur_dims, 1:cur_dims]
             projection_matrix = read(fid["projection"])[:, 1:cur_dims]
             mean_vectors = read(fid["class_means"])[:, 1:cur_dims]
-            detailed_sample_bitmask = read(fid["detailed_sample_bitmask"])
-            sparse_sample_bitmask = read(fid["sparse_sample_bitmask"])
+            # detailed_sample_bitmask = read(fid["detailed_sample_bitmask"])
+            # sparse_sample_bitmask = read(fid["sparse_sample_bitmask"])
+            sample_bitmask = read(fid["sample_bitmask"])
             close(fid)
             # noise = noise_distribution_given_covaraince_matrix(covaraince_matrix)
             noise = noise_distribution_given_covaraince_matrix(covaraince_matrix) #  ./ size(traces)[1]
 
-            position = mean(hcat(traces[:, detailed_sample_bitmask], traces[:, sparse_sample_bitmask]) * projection_matrix, dims=1)[1, :]
+            # position = mean(hcat(traces[:, detailed_sample_bitmask], traces[:, sparse_sample_bitmask]) * projection_matrix, dims=1)[1, :]
+            position = mean(traces[:, sample_bitmask] * projection_matrix, dims=1)[1, :]
             prob_dist_for_template = get_dist_of_vector(mean_vectors, noise, position)
 
             # prob_dist_for_template = zeros(1 << bits_per_template)
@@ -136,12 +140,13 @@ end
 
 function plot_distribution_of_values_and_means(
     base_path::String,
-    bits_per_template::Int64,
     number_of_dimensions::Int64,
     intermediate_value_index::Int64,
     template_number::Int64,
     value::Int64,
-    traces::Matrix{Float32}
+    traces,
+    dim_1::Int64 = 1,
+    dim_2::Int64 = 2
 )
     fid = h5open(string(base_path, intermediate_value_index, "_", template_number, "_template.hdf5"), "r")
     covaraince_matrix = read(fid["covariance_matrix"])
@@ -151,16 +156,16 @@ function plot_distribution_of_values_and_means(
     mean_vectors = read(fid["class_means"])[:, 1:cur_dims]
     detailed_sample_bitmask = read(fid["detailed_sample_bitmask"])
     sparse_sample_bitmask = read(fid["sparse_sample_bitmask"])
+    # sample_bitmask = read(fid["sample_bitmask"])
     close(fid)
     noise = noise_distribution_given_covaraince_matrix(covaraince_matrix)
     current_value_matrix = hcat(traces[:, detailed_sample_bitmask], traces[:, sparse_sample_bitmask]) * projection_matrix
+    # current_value_matrix = traces[:, sample_bitmask] * projection_matrix
     position = mean(current_value_matrix, dims=1)[1, :]
     
     p = scatter(size=(1000, 1000))
     randomly_generated_values_around_mean = rand(noise, 10_000) .+ (mean_vectors[value + 1, :])
-    dim_1 = 1
-    dim_2 = 2
-    scatter!(p, [randomly_generated_values_around_mean[1, :]], [randomly_generated_values_around_mean[2, :]], label="Generated samples of particular value")
+    scatter!(p, [randomly_generated_values_around_mean[dim_1, :]], [randomly_generated_values_around_mean[dim_2, :]], label="Generated samples of particular value")
     scatter!(p, [mean_vectors[:, dim_1]], [mean_vectors[:, dim_2]], label="Class Means")
     scatter!(p, [current_value_matrix[:, dim_1]], [current_value_matrix[:, dim_2]], label="Actual samples of particular value")
     scatter!(p, [mean_vectors[value + 1, dim_1]], [mean_vectors[value + 1, dim_2]], markersize=10, label="Mean of class")

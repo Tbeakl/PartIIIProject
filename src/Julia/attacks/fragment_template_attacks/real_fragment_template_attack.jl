@@ -9,22 +9,23 @@ include("../../encryption/chacha.jl")
 include("../../encryption/rank_estimation.jl")
 include("template_attack_traces.jl")
 
-initial_key_number = parse(Int64, ARGS[1])
-final_key_number = parse(Int64, ARGS[2])
+# initial_key_number = parse(Int64, ARGS[1])
+# final_key_number = parse(Int64, ARGS[2])
 
 number_of_bits::Int64 = 8
-number_of_encryption_traces::Int64 = 4
+bits_per_template::Int64 = 16
+dimensions_per_template::Int64 = 16
+number_of_encryption_traces::Int64 = 15
 number_of_values_averaged_over_key_leakage = 1
 number_of_values_trace_averaged_over = 1
 
-base_path_templates = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/second_trace_set/initial_templates_LR/sparse_50_detailed_50/"
-base_key_templates = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/second_trace_set/initial_templates_LR/sparse_50_detailed_50/"
+base_path_templates = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/second_trace_set/initial_templates_sixteen_bit_templates/sparse_50_detailed_50/"
+base_key_templates = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/second_trace_set/initial_templates_sixteen_bit_templates/sparse_50_detailed_50/"
 base_trace_path = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/captures/ChaChaRecordings_2/recording_attack_counter_constant_"
 
-base_evaluation_of_ranks = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/evaluation/constant_counter_4_8/"
-
-
-for key_number in initial_key_number:final_key_number
+base_evaluation_of_ranks = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/evaluation/constant_counter_4_16/"
+key_number = 1
+# for key_number in initial_key_number:final_key_number
     variables = Dict{String,AbsVariable}()
     factors = Dict{String,AbsFactor}()
     variables_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
@@ -50,7 +51,7 @@ for key_number in initial_key_number:final_key_number
         add_values_of_initial_nonce_and_counter(variables, factors, number_of_bits, nonce, counter, 1)
 
         println("Starting to add the factors for the trace")
-        add_byte_template_function = real_byte_template_path_to_function(base_path_templates, 8, 8, all_traces)
+        add_byte_template_function = real_byte_template_path_to_function(base_path_templates, bits_per_template, dimensions_per_template, all_traces)
         add_leakage_trace_to_factor_graph(encryption_trace, variables, factors, number_of_bits, encryption_run_number, add_byte_template_function)
         println("Added the factors for the trace")
 
@@ -66,8 +67,8 @@ for key_number in initial_key_number:final_key_number
         factors,
         number_of_bits,
         base_key_templates,
-        8,
-        8,
+        bits_per_template,
+        dimensions_per_template,
         all_traces)
     println("Added key distribution")
 
@@ -108,10 +109,10 @@ for key_number in initial_key_number:final_key_number
     for i in 1:initial_number_of_iterations
         println(i)
         Threads.@threads for var_name in internal_variables
-            variable_to_factor_messages(variables[var_name], 0.8)
+            variable_to_factor_messages(variables[var_name], 0.99)
         end
         Threads.@threads for fact_name in internal_factors
-            factor_to_variable_messages(factors[fact_name], 0.8)
+            factor_to_variable_messages(factors[fact_name], 0.99)
         end
         update_all_entropies(variables, all_variables)
         push!(visualisation_of_entropy, variables_to_heatmap_matrix(visualisation_variables, heatmap_plotting_function))
@@ -141,7 +142,7 @@ for key_number in initial_key_number:final_key_number
     result_fid["final_estimated_rank_log2"] = Float64(log2(final_estimated_rank))
     result_fid["entropy_over_time"] = tot_entropy_over_time
     close(result_fid)
-end
+# end
 
 # anim = @animate for i in eachindex(visualisation_of_entropy) #(length(visualisation_of_entropy)-1):length(visualisation_of_entropy)#
 #     Plots.heatmap(visualisation_of_entropy[i]; title=string("Round ", i - 1, " entropy of variables"), clim=(0, number_of_bits)) # 

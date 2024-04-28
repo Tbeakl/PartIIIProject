@@ -1,14 +1,16 @@
 using Plots, HDF5, StatsBase, Statistics
 plotly()
-fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/NICV_aligned_traces.hdf5", "r")
+fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/NICV_aligned_traces_2.hdf5", "r")
 
-number_of_intermediate_values = 2800
+number_of_intermediate_values = 700 #2800
 number_of_clock_cycles = (749500 ÷ 500)
 
-all_mean_NICV = zeros(number_of_clock_cycles, number_of_intermediate_values)
+all_mean_NICV = zeros(number_of_clock_cycles, 4 * number_of_intermediate_values)
 
 for intermediate_value_index in 1:number_of_intermediate_values
-    all_mean_NICV[:, intermediate_value_index] .= fid[string("mean_", intermediate_value_index)]
+    for tem_num in 1:4
+    all_mean_NICV[:, 4 * (intermediate_value_index - 1) + 3] .= fid[string("mean_", intermediate_value_index, "_", tem_num)]
+    end
 end
 close(fid)
 
