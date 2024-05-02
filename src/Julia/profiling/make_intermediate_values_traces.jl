@@ -7,9 +7,9 @@ elements_of_trace_to_select = append!(repeat([true, false, false, false, true], 
 
 file_number = 1
 trace_number = 1
-for file_number in 20:84
-    intermediates_fid = h5open(string("D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\intermediate_value_traces_2\\recording_profiling_", file_number, ".hdf5"), "w")
-    trace_fid = h5open(string("D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\captures\\ChaChaRecordings_2\\recording_profiling_", file_number, ".hdf5"), "r")
+for file_number in 51:60
+    intermediates_fid = h5open(string("D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\intermediate_value_traces_8_on_32\\recording_profiling_", file_number, ".hdf5"), "w")
+    trace_fid = h5open(string("D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\captures\\ChaChaRecordings_8_on_32\\recording_profiling_", file_number, ".hdf5"), "r")
 
 
     for trace_number in 0:999

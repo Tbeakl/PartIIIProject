@@ -1,10 +1,10 @@
 using HDF5
 
-base_path = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\captures\\ChaChaRecordings\\recording_profiling_"
+base_path = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\captures\\ChaChaRecordings_8_on_32\\recording_profiling_"
 correlation_threshold = 0.98
 number_of_samples_to_average_over = 10
 
-fid = h5open("D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\attack_profiling\\mean_trace.hdf5", "r")
+fid = h5open("D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\attack_profiling\\mean_trace_8_on_32.hdf5", "r")
 mean_trace = read(fid["mean_trace"])
 trimmed_mean_trace = mean_trace[50:(end - 50)]
 mean_arg_min = argmin(mean_trace)
@@ -13,10 +13,10 @@ close(fid)
 all_traces_to_exclude::Vector{String} = []
 all_correlations_excluded::Vector{Float64} = []
 all_correlations::Vector{Float64} = []
-for file_number in 1:84
+for file_number in 0:1
     fid = h5open(string(base_path, file_number, ".hdf5"), "r")
     println(file_number)
-    for i in 0:249
+    for i in 0:999
         # power_trace = collect(Iterators.map(mean, Iterators.partition(read(fid[string("power_", i)]), number_of_samples_to_average_over)))
         power_trace = read(fid[string("power_", i)])
         difference_between_mean_and_power = argmin(power_trace) - mean_arg_min

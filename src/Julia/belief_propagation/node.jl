@@ -51,9 +51,11 @@ mutable struct AddFactor{T} <: AbsFactor
     neighbours::Vector{T}
     incoming_messages::Vector{Vector{Float64}}
     index_in_neighbours_neighbour::Vector{Int64}
+    fft_plan
+    ifft_plan
 
-    function AddFactor{T}(name::String) where {T}
-        return new(name, Vector{T}[], Vector{Vector{Float64}}[], Vector{Int64}[])
+    function AddFactor{T}(name::String, fft_plan, ifft_plan) where {T}
+        return new(name, Vector{T}[], Vector{Vector{Float64}}[], Vector{Int64}[], fft_plan, ifft_plan)
     end
 end
 

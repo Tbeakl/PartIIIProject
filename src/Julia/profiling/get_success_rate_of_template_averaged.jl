@@ -10,7 +10,7 @@ end
 
 function get_number_of_guesses(mean_vectors, noise, value, projected_vector)
     permutation_of_results = sortperm(logpdf(noise, mean_vectors .- projected_vector); rev=true)
-    return findfirst(x -> x==value+1, permutation_of_results)
+    return findfirst(x -> x == value + 1, permutation_of_results)
 end
 
 function noise_distribution_given_covaraince_matrix(scov)
@@ -39,53 +39,55 @@ function get_guessing_entropy(means, noise, values, projected_vectors)
     return guessing_entropy / length(values)
 end
 
-number_of_bits_per_template = 16
+number_of_bits_per_template = 8
 number_of_templates_per_intermediate_value = 32 ÷ number_of_bits_per_template
 number_of_itermediate_values = 700# - 32
 
 success_rates = zeros(number_of_itermediate_values * number_of_templates_per_intermediate_value)
 guessing_entropies = zeros(number_of_itermediate_values * number_of_templates_per_intermediate_value)
 
-fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/second_trace_set/validation_50.hdf5", "r")
+fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/8_on_32_trace_set/validation_2.hdf5", "r")
 all_intermediate_values = read(fid["intermediate_values"])
 downsampled_matrix = read(fid["downsampled_matrix"])
 close(fid)
 
 intermediate_value_index = 1
 template_number = 1
-noise_distribution = noise_distribution_fixed_standard_dev(1., number_of_bits_per_template)
+noise_distribution = noise_distribution_fixed_standard_dev(1.0, number_of_bits_per_template)
 for intermediate_value_index in 1:number_of_itermediate_values
     for template_number in 1:number_of_templates_per_intermediate_value
         # Need to change these to work correctly for averaged versions of the templates
         println(intermediate_value_index, " ", template_number)
-        template_path = string("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/second_trace_set/initial_templates_sixteen_bit_templates/sparse_50_detailed_50/", intermediate_value_index, "_", template_number, "_template.hdf5")
-        intermediate_value_vector = (all_intermediate_values[:, intermediate_value_index] .>> (number_of_bits_per_template * (template_number - 1))) .& ((1 << number_of_bits_per_template) - 1)
-        fid = h5open(template_path, "r")
-        cov_matrix = HDF5.readmmap(fid["covariance_matrix"])
-        # number_of_dimensions = number_of_bits_per_template# min(number_of_bits_per_template, size(cov_matrix)[1])
-        template_projection = HDF5.readmmap(fid["projection"])
-        mean_vectors = HDF5.readmmap(fid["class_means"])
-        sample_bitmask = HDF5.readmmap(fid["sample_bitmask"])
-        # detailed_sample_bitmask = read(fid["detailed_sample_bitmask"])
-        # sparse_sample_bitmask = read(fid["sparse_sample_bitmask"])
-        original_traces = downsampled_matrix[:, sample_bitmask]
-        # original_traces = hcat(downsampled_matrix[:, detailed_sample_bitmask], downsampled_matrix[:, sparse_sample_bitmask])
-        projected_vectors = original_traces * template_projection
-        # success_rates[number_of_templates_per_intermediate_value * (intermediate_value_index - 1) + template_number] = get_guessing_entropy(mean_vectors, noise_distribution, intermediate_value_vector, projected_vectors)
-        success_rates[number_of_templates_per_intermediate_value * (intermediate_value_index - 1) + template_number] = get_success_rate(mean_vectors, noise_distribution, intermediate_value_vector, projected_vectors)
-        guessing_entropies[number_of_templates_per_intermediate_value * (intermediate_value_index - 1) + template_number] = get_guessing_entropy(mean_vectors, noise_distribution, intermediate_value_vector, projected_vectors)
-        close(fid)
+        template_path = string("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/8_on_32_trace_set/initial_templates/", intermediate_value_index, "_", template_number, "_template.hdf5")
+        if ispath(template_path)
+            intermediate_value_vector = (all_intermediate_values[:, intermediate_value_index] .>> (number_of_bits_per_template * (template_number - 1))) .& ((1 << number_of_bits_per_template) - 1)
+            fid = h5open(template_path, "r")
+            cov_matrix = HDF5.readmmap(fid["covariance_matrix"])
+            # number_of_dimensions = number_of_bits_per_template# min(number_of_bits_per_template, size(cov_matrix)[1])
+            template_projection = HDF5.readmmap(fid["projection"])
+            mean_vectors = HDF5.readmmap(fid["class_means"])
+            sample_bitmask = HDF5.readmmap(fid["sample_bitmask"])
+            # detailed_sample_bitmask = read(fid["detailed_sample_bitmask"])
+            # sparse_sample_bitmask = read(fid["sparse_sample_bitmask"])
+            original_traces = downsampled_matrix[:, sample_bitmask]
+            # original_traces = hcat(downsampled_matrix[:, detailed_sample_bitmask], downsampled_matrix[:, sparse_sample_bitmask])
+            projected_vectors = original_traces * template_projection
+            # success_rates[number_of_templates_per_intermediate_value * (intermediate_value_index - 1) + template_number] = get_guessing_entropy(mean_vectors, noise_distribution, intermediate_value_vector, projected_vectors)
+            success_rates[number_of_templates_per_intermediate_value*(intermediate_value_index-1)+template_number] = get_success_rate(mean_vectors, noise_distribution, intermediate_value_vector, projected_vectors)
+            guessing_entropies[number_of_templates_per_intermediate_value*(intermediate_value_index-1)+template_number] = get_guessing_entropy(mean_vectors, noise_distribution, intermediate_value_vector, projected_vectors)
+            close(fid)
+        end
     end
 end
 
-mapping = turn_intermediate_name_to_intermediate_index(number_of_bits)
-base_matrix = map(x->x[begin:end-2], make_positions_to_var_names(number_of_bits, 1)[1])
+mapping = turn_intermediate_name_to_intermediate_index(number_of_bits_per_template)
+base_matrix = map(x -> x[begin:end-2], make_positions_to_var_names(number_of_bits_per_template, 1)[1])
 mapped_matrix = map(x -> mapping[x], base_matrix)
 logarithic_guessing_entopies = map_to_values.(mapped_matrix, Ref(log2.(guessing_entropies)), Ref(2))
-logarithic_guessing_entopies = map_to_values.(mapped_matrix, Ref((success_rates)), Ref(2))
+# logarithic_guessing_entopies = map_to_values.(mapped_matrix, Ref((success_rates)), Ref(2))
 
 p = heatmap(logarithic_guessing_entopies, title="First order success rate of 16 bit templates", ylabel="Location in state by 16 bit fragments", dpi=300)
-savefig(p, "./plots/heatmaps/16bit_templates_FOSR.png")
+# savefig(p, "./plots/heatmaps/16bit_templates_FOSR.png")
 # average_percentage_success_rates = round.(collect(Iterators.map(mean, Iterators.partition(success_rates, number_of_templates_per_intermediate_value))), digits=2)
 # key_success_rates = average_percentage_success_rates[1:8]
 # intermediate_value_success_rates = average_percentage_success_rates[29:end] #-32

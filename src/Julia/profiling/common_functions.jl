@@ -129,3 +129,11 @@ function add_diag!(A::AbstractMatrix, v::Real)
     end
     return A
 end
+
+function make_intermediate_value_matrix(datasets::AbstractVector, index::Integer)
+    return reduce(vcat, [dset[:, index] for dset in datasets])
+end
+
+function make_dataset_of_values_matrix(datasets::AbstractVector, bitmask::BitVector)
+    return reduce(vcat, [dset[:, bitmask] for dset in datasets])
+end

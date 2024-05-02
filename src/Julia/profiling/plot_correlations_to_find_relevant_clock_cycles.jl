@@ -1,8 +1,8 @@
 using HDF5, Plots, Base.Threads, StatsBase, Statistics
 plotly()
-clock_cycle_sample_number = 405
+clock_cycle_sample_number = 49
 number_of_intermediate_values = 700
-number_of_clock_cycles = (749500 ÷ 500)
+number_of_clock_cycles = (759500 ÷ 50)
 
 all_intermediate_values = zeros(UInt32, length(trace_range_per_file) * length(file_range), number_of_intermediate_values)
 mean_value_per_cycle = zeros(Float64, length(trace_range_per_file) * length(file_range), number_of_clock_cycles)
@@ -10,7 +10,7 @@ mean_value_per_cycle = zeros(Float64, length(trace_range_per_file) * length(file
 number_of_bits = 8
 number_of_clusters = 32 ÷ number_of_bits
 
-data_fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/detection_matrix.hdf5", "r")
+data_fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/8_on_32_trace_set/cycle_detection_50.hdf5", "r")
 all_intermediate_values = read(data_fid["intermediate_values"])
 mean_value_per_cycle = read(data_fid["downsampled_matrix"])
 close(data_fid)
@@ -45,13 +45,13 @@ for intermediate_value_index in 1:number_of_intermediate_values
     end
 end
 
-base_inter_value = 484
-p = plot(all_NICV_mean_value[4 * base_inter_value - 3, :])
-plot!(p, all_NICV_mean_value[4 * base_inter_value - 2, :])
-plot!(p, all_NICV_mean_value[4 * base_inter_value - 1, :])
-plot!(p, all_NICV_mean_value[4 * base_inter_value, :])
-plot!(p, sum(all_NICV_mean_value[(4 * base_inter_value - 3):(4 * base_inter_value), :], dims=1)[1,:])
-hline!(p, [0.005])
+# base_inter_value = 251 #1
+# p = plot(all_NICV_mean_value[4 * base_inter_value - 3, :])
+# plot!(p, all_NICV_mean_value[4 * base_inter_value - 2, :])
+# plot!(p, all_NICV_mean_value[4 * base_inter_value - 1, :])
+# plot!(p, all_NICV_mean_value[4 * base_inter_value, :])
+# # plot!(p, mean(all_NICV_mean_value[(4 * base_inter_value - 3):(4 * base_inter_value), :], dims=1)[1,:])
+# hline!(p, [0.004])
 
 # p = plot(mean(Array(all_NICV_mean_value)[8033:8064, :], dims=1)[1, :], legend=false)
 # p = plot(Array(all_NICV_mean_value)[8033:8064, :]', legend=false)
@@ -63,14 +63,14 @@ hline!(p, [0.005])
 # close(fid)
 # plot!(p, cycle_bitmasks' ./ 10, color=:red)
 
-fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/COR_aligned_traces_2.hdf5", "w")
-for intermediate_value_index in 1:number_of_intermediate_values
-    for cluster_num in 1:number_of_clusters
-        println(intermediate_value_index, " ", cluster_num)
-        fid[string("mean_", intermediate_value_index, "_", cluster_num)] = all_NICV_mean_value[(number_of_clusters * (intermediate_value_index - 1)) + cluster_num, :]
-    end
-end
-close(fid)
+# fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/COR_aligned_traces_8_on_32.hdf5", "w")
+# for intermediate_value_index in 1:number_of_intermediate_values
+#     for cluster_num in 1:number_of_clusters
+#         println(intermediate_value_index, " ", cluster_num)
+#         fid[string("mean_", intermediate_value_index, "_", cluster_num)] = all_NICV_mean_value[(number_of_clusters * (intermediate_value_index - 1)) + cluster_num, :]
+#     end
+# end
+# close(fid)
 
 # fid = h5open("D:\\ChaChaData\\attack_profiling\\downsampled_traces_for_clock_cycle.hdf5", "w")
 # fid["mean_values"] = Array(mean_value_per_cycle)

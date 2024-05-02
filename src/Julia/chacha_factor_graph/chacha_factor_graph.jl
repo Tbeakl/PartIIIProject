@@ -179,6 +179,9 @@ function add_factor_graph!(variables::Dict{String,AbsVariable},
     run_number::Int64)
 
     number_of_clusters = Int64(ceil(32 / number_of_bits_per_cluster))
+
+    add_cluster_size::Vector{Float64} = zeros(1 << (number_of_bits_per_cluster + 1))
+
     # full_add_dist = precalculated_prob_tables["full_add_cluster"]
     # add_full_to_output = precalculated_prob_tables["add_full_to_output_cluster"]
     # add_full_to_carry = precalculated_prob_tables["add_full_to_carry_cluster"]
@@ -230,7 +233,7 @@ function add_factor_graph!(variables::Dict{String,AbsVariable},
         variables[full_add_output_name] = Variable{AbsFactor}(full_add_output_name, number_of_bits_per_cluster + 1)
 
         # factors[full_add_factor_name] = Factor{AbsVariable}(full_add_factor_name, LabelledArray(full_add_dist, [carry_in_variable_name, input_a_name, input_b_name, full_add_output_name]))
-        factors[full_add_factor_name] = AddFactor{AbsVariable}(full_add_factor_name)
+        factors[full_add_factor_name] = AddFactor{AbsVariable}(full_add_factor_name, plan_fft(add_cluster_size), plan_ifft(add_cluster_size))
         # factors[add_carry_out_factor_name] = Factor{AbsVariable}(add_carry_out_factor_name, LabelledArray(add_full_to_carry, [full_add_output_name, carry_out_variable_name]))
         factors[add_carry_out_factor_name] = MarginaliseTopBitsFactor{AbsVariable}(add_carry_out_factor_name)
         # factors[add_output_factor_name] = Factor{AbsVariable}(add_output_factor_name, LabelledArray(add_full_to_output, [full_add_output_name, output_name]))
@@ -456,9 +459,11 @@ function add_adds_between_counters(variables::Dict{String,AbsVariable},
     # Make an add between the counters (the 16th item of the state) of the consecutive runs of the algorithm because
     # we know that it is incremented by 1 between each run
     number_of_clusters = Int64(ceil(32 / number_of_bits_per_cluster))
-    full_add_dist = make_add_including_carry_prob_array(number_of_bits_per_cluster)
-    add_full_to_output = take_bottom_bits_prob_array(number_of_bits_per_cluster + 1)
-    add_full_to_carry = take_top_bit_prob_array(number_of_bits_per_cluster + 1)
+    # full_add_dist = make_add_including_carry_prob_array(number_of_bits_per_cluster)
+    # add_full_to_output = take_bottom_bits_prob_array(number_of_bits_per_cluster + 1)
+    # add_full_to_carry = take_top_bit_prob_array(number_of_bits_per_cluster + 1)
+
+    add_cluster_size::Vector{Float64} = zeros(1 << (number_of_bits_per_cluster + 1))
 
     zero_dist_table = zeros(1 << number_of_bits_per_cluster)
     zero_dist_table[1] = 1.0
@@ -508,7 +513,7 @@ function add_adds_between_counters(variables::Dict{String,AbsVariable},
             variables[full_add_output_name] = Variable{AbsFactor}(full_add_output_name, number_of_bits_per_cluster + 1)
 
             # factors[full_add_factor_name] = Factor{AbsVariable}(full_add_factor_name, LabelledArray(full_add_dist, [carry_in_variable_name, input_a_name, input_b_name, full_add_output_name]))
-            factors[full_add_factor_name] = AddFactor{AbsVariable}(full_add_factor_name)
+            factors[full_add_factor_name] = AddFactor{AbsVariable}(full_add_factor_name, plan_fft(add_cluster_size), plan_ifft(add_cluster_size))
             # factors[add_carry_out_factor_name] = Factor{AbsVariable}(add_carry_out_factor_name, LabelledArray(add_full_to_carry, [full_add_output_name, carry_out_variable_name]))
             factors[add_carry_out_factor_name] = MarginaliseTopBitsFactor{AbsVariable}(add_carry_out_factor_name)
             # factors[add_output_factor_name] = Factor{AbsVariable}(add_output_factor_name, LabelledArray(add_full_to_output, [full_add_output_name, output_name]))

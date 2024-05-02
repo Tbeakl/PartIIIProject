@@ -12,7 +12,7 @@ total_variation_to_include = 0.9
 number_of_bits_per_template = 8
 number_of_templates_per_intermediate_value = 32 ÷ number_of_bits_per_template
 
-bitmask_path = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/clock_cycles_bitmasks_no_dilation_cor.hdf5"
+bitmask_path = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/clock_cycles_bitmasks_no_dilation_8_on_32.hdf5"
 
 # data_path_20 = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/second_trace_set/profiling_20.hdf5"
 # final_number_of_samples_20 = 37471
@@ -25,7 +25,7 @@ final_number_of_samples_250 = 2998
 data_path_500 = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/second_trace_set/profiling_500.hdf5"
 final_number_of_samples_500 = 1499
 # data_path = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/downsampled_50_traces_maximum_profiling.hdf5"
-path_to_templates = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/second_trace_set/initial_templates_sixteen_bit_templates/"
+path_to_templates = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/8_on_32_trace_set/initial_templates/"
 
 bitmask_fid = h5open(bitmask_path, "r")
 

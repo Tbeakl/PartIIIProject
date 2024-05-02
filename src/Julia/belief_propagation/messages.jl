@@ -167,12 +167,12 @@ function factor_to_variable_messages(factor::AddFactor{AbsVariable}, damping_fac
     # println(b_message)
     # println(out_message)
 
-    C_IN = fft(carry_in_message)
-    A = fft(a_message)
-    B = fft(b_message)
-    OUT = fft(out_message)
+    C_IN = factor.fft_plan * carry_in_message
+    A = factor.fft_plan * a_message
+    B = factor.fft_plan * b_message
+    OUT = factor.fft_plan * out_message
 
-    t_c_in = real(ifft(conj.(A .* B) .* OUT))
+    t_c_in = real(factor.ifft_plan * (conj.(A .* B) .* OUT))
     # t_c_in = real(ifft(conj.(A) .* conj(B) .* OUT))
     t_c_in = max.(0.0, t_c_in[1:2])
     t_c_in ./= sum(t_c_in)
@@ -181,7 +181,7 @@ function factor_to_variable_messages(factor::AddFactor{AbsVariable}, damping_fac
     # println(t_c_in)
 
 
-    t_a = real(ifft(conj.(C_IN .* B) .* OUT))
+    t_a = real(factor.ifft_plan * (conj.(C_IN .* B) .* OUT))
     # t_a = real(ifft(conj.(C_IN) .* conj(B) .* OUT))
     t_a = max.(0.0, t_a[1:size_of_incoming_variables])
     t_a ./= sum(t_a)
@@ -189,7 +189,7 @@ function factor_to_variable_messages(factor::AddFactor{AbsVariable}, damping_fac
     t_a .+= addition_away_from_zero
     # println(t_a)
 
-    t_b = real(ifft(conj.(A .* C_IN) .* OUT))
+    t_b = real(factor.ifft_plan * (conj.(A .* C_IN) .* OUT))
     # t_b = real(ifft(conj.(A) .* conj(C_IN) .* OUT))
     t_b = max.(0.0, t_b[1:size_of_incoming_variables])
     t_b ./= sum(t_b)
@@ -198,7 +198,7 @@ function factor_to_variable_messages(factor::AddFactor{AbsVariable}, damping_fac
     # println(t_b)
 
 
-    t_out = max.(0.0, real(ifft(A .* B .* C_IN)))
+    t_out = max.(0.0, real(factor.ifft_plan * (A .* B .* C_IN)))
     t_out ./= sum(t_out)
     t_out .*= normalisation_constant
     t_out .+= addition_away_from_zero
