@@ -3,6 +3,9 @@ include("../../belief_propagation/node.jl")
 
 function get_dist_of_vector(mean_vectors, noise, current_vector)
     likelihood_of_values = pdf(noise, mean_vectors' .- current_vector)
+    if sum(likelihood_of_values) == 0
+        return ones(size(mean_vectors)[1])
+    end
     return likelihood_of_values
 end
 
@@ -140,6 +143,139 @@ function add_initial_key_distribution_from_leakage_traces_set_of_templates(
     end
 end
 
+function add_initial_nonce_distribution_from_leakage_traces_set_of_templates(
+    variables::Dict{String,AbsVariable},
+    factors::Dict{String,AbsFactor},
+    bits_per_cluster::Int64,
+    base_path::String,
+    bits_per_template::Int64,
+    number_of_dimensions::Int64,
+    traces::Matrix{Float32}
+)
+    templates_per_intermediate_value = 32 ÷ bits_per_template
+    clusters_per_leakage_weight = Int64(ceil(bits_per_template / bits_per_cluster))
+    for word_number in 14:16
+        for template_number in 1:templates_per_intermediate_value
+            fid = h5open(string(base_path, word_number - 4, "_", template_number, "_template.hdf5"), "r")
+            covaraince_matrix = read(fid["covariance_matrix"])
+            cur_dims = min(number_of_dimensions, size(covaraince_matrix)[1])
+            covaraince_matrix = covaraince_matrix[1:cur_dims, 1:cur_dims]
+            projection_matrix = read(fid["projection"])[:, 1:cur_dims]
+            mean_vectors = read(fid["class_means"])[:, 1:cur_dims]
+            # detailed_sample_bitmask = read(fid["detailed_sample_bitmask"])
+            # sparse_sample_bitmask = read(fid["sparse_sample_bitmask"])
+            sample_bitmask = read(fid["sample_bitmask"])
+            close(fid)
+            # noise = noise_distribution_given_covaraince_matrix(covaraince_matrix)
+            noise = noise_distribution_given_covaraince_matrix(covaraince_matrix) #  ./ size(traces)[1]
+
+            # position = mean(hcat(traces[:, detailed_sample_bitmask], traces[:, sparse_sample_bitmask]) * projection_matrix, dims=1)[1, :]
+            position = mean(traces[:, sample_bitmask] * projection_matrix, dims=1)[1, :]
+            prob_dist_for_template = get_dist_of_vector(mean_vectors, noise, position)
+
+            # prob_dist_for_template = zeros(1 << bits_per_template)
+            # for cur_trace in eachrow(traces)
+            #     values = vcat(cur_trace[detailed_sample_bitmask], cur_trace[sparse_sample_bitmask])
+            #     prob_dist_for_template += get_log_likelihoods_dist_of_vector(mean_vectors, noise, (values'*projection_matrix)[1, :])
+            # end
+            # # First bring up the max value to zero then exponentiate it, probably need to have some dealing with the problems associated with 
+            # # floating points and exp
+            # prob_dist_for_template .-= maximum(prob_dist_for_template)
+            # prob_dist_for_template[prob_dist_for_template .< -50] .= -50
+            # prob_dist_for_template = exp.(prob_dist_for_template)
+            # prob_dist_for_template ./= sum(prob_dist_for_template)
+
+            for j in 1:clusters_per_leakage_weight
+                cur_var_name = string(word_number, "_0_", (template_number - 1) * clusters_per_leakage_weight + j, "_1")
+                cur_dist_name = string("f_", cur_var_name, "_dist")
+                # Marginalise out the prob dist for this particular cluster, where cluster 1 is the LSB
+                marginalised_dist = marginalise_prob_dist(prob_dist_for_template, (j - 1) * bits_per_cluster, bits_per_cluster)
+                factors[cur_dist_name] = Factor{AbsVariable}(cur_dist_name, LabelledArray(marginalised_dist, [cur_var_name]))
+                add_edge_between(variables[cur_var_name], factors[cur_dist_name])
+                variables[cur_var_name].neighbour_index_to_avoid = length(variables[cur_var_name].neighbours)
+            end
+        end
+    end
+end
+
+function all_distribution_of_output(
+    variables::Dict{String,AbsVariable},
+    factors::Dict{String,AbsFactor},
+    bits_per_cluster::Integer,
+    base_path::String,
+    bits_per_template::Integer,
+    number_of_dimensions::Integer,
+    location_execution_counts::Vector{Int64},
+    trace::Vector{Float32},
+    encryption_run_number::Int64
+)
+    templates_per_intermediate_value = 32 ÷ bits_per_template
+    clusters_per_leakage_weight = Int64(ceil(bits_per_template / bits_per_cluster))
+    for word_number in 1:16
+        for template_number in 1:templates_per_intermediate_value
+            fid = h5open(string(base_path, 668 + word_number, "_", template_number, "_template.hdf5"), "r")
+            covaraince_matrix = read(fid["covariance_matrix"])
+            cur_dims = min(number_of_dimensions, size(covaraince_matrix)[1])
+            covaraince_matrix = covaraince_matrix[1:cur_dims, 1:cur_dims]
+            projection_matrix = read(fid["projection"])[:, 1:cur_dims]
+            mean_vectors = read(fid["class_means"])[:, 1:cur_dims]
+            sample_bitmask = read(fid["sample_bitmask"])
+            close(fid)
+            noise = noise_distribution_given_covaraince_matrix(covaraince_matrix)
+
+            position = (trace[sample_bitmask]'*projection_matrix)[1, :]
+            prob_dist_for_template = get_dist_of_vector(mean_vectors, noise, position)
+
+            for j in 1:clusters_per_leakage_weight
+                cur_var_name = string(word_number, "_", location_execution_counts[word_number], "_", (template_number - 1) * clusters_per_leakage_weight + j, "_", encryption_run_number)
+                cur_dist_name = string("f_", cur_var_name, "_dist")
+                # Marginalise out the prob dist for this particular cluster, where cluster 1 is the LSB
+                marginalised_dist = marginalise_prob_dist(prob_dist_for_template, (j - 1) * bits_per_cluster, bits_per_cluster)
+                factors[cur_dist_name] = Factor{AbsVariable}(cur_dist_name, LabelledArray(marginalised_dist, [cur_var_name]))
+                add_edge_between(variables[cur_var_name], factors[cur_dist_name])
+                variables[cur_var_name].neighbour_index_to_avoid = length(variables[cur_var_name].neighbours)
+            end
+        end
+    end
+end
+
+function add_initial_counter_distribution_from_leakage_traces_set_of_templates(
+    variables::Dict{String,AbsVariable},
+    factors::Dict{String,AbsFactor},
+    bits_per_cluster::Int64,
+    base_path::String,
+    bits_per_template::Int64,
+    number_of_dimensions::Int64,
+    trace::Vector{Float32},
+    encryption_run_number::Int64
+)
+    templates_per_intermediate_value = 32 ÷ bits_per_template
+    clusters_per_leakage_weight = Int64(ceil(bits_per_template / bits_per_cluster))
+    for template_number in 1:templates_per_intermediate_value
+        fid = h5open(string(base_path, "9_", template_number, "_template.hdf5"), "r")
+        covaraince_matrix = read(fid["covariance_matrix"])
+        cur_dims = min(number_of_dimensions, size(covaraince_matrix)[1])
+        covaraince_matrix = covaraince_matrix[1:cur_dims, 1:cur_dims]
+        projection_matrix = read(fid["projection"])[:, 1:cur_dims]
+        mean_vectors = read(fid["class_means"])[:, 1:cur_dims]
+        sample_bitmask = read(fid["sample_bitmask"])
+        close(fid)
+        noise = noise_distribution_given_covaraince_matrix(covaraince_matrix)
+
+        position = (trace[sample_bitmask]'*projection_matrix)[1, :]
+        prob_dist_for_template = get_dist_of_vector(mean_vectors, noise, position)
+
+        for j in 1:clusters_per_leakage_weight
+            cur_var_name = string("13_0_", (template_number - 1) * clusters_per_leakage_weight + j, "_", encryption_run_number)
+            cur_dist_name = string("f_", cur_var_name, "_dist")
+            # Marginalise out the prob dist for this particular cluster, where cluster 1 is the LSB
+            marginalised_dist = marginalise_prob_dist(prob_dist_for_template, (j - 1) * bits_per_cluster, bits_per_cluster)
+            factors[cur_dist_name] = Factor{AbsVariable}(cur_dist_name, LabelledArray(marginalised_dist, [cur_var_name]))
+            add_edge_between(variables[cur_var_name], factors[cur_dist_name])
+            variables[cur_var_name].neighbour_index_to_avoid = length(variables[cur_var_name].neighbours)
+        end
+    end
+end
 
 function plot_distribution_of_values_and_means(
     base_path::String,
@@ -182,8 +318,8 @@ function load_attack_trace(file_path::String, trace_number::Int64, encryption_ru
 
     file_number = (trace_number ÷ 100)
     trace_number_in_file = (trace_number - 1) % 100
-    clock_cycle_sample_number = 49 #405
-    number_of_samples_to_average_over = 2
+    clock_cycle_sample_number = 405
+    number_of_samples_to_average_over = 50
 
     fid = h5open(string(file_path, file_number, ".hdf5"), "r")
     base_trace_data = fid[string("power_", trace_number_in_file, "_", encryption_run_number)]
@@ -194,14 +330,16 @@ function load_attack_trace(file_path::String, trace_number::Int64, encryption_ru
     raw_trace = read(base_trace_data)
     close(fid)
     # Need to downsample and align this trace to the mean
-    fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/mean_trace_8_on_32.hdf5", "r")
+    fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/mean_trace_2.hdf5", "r")
     mean_trace = read(fid["mean_trace"])
     mean_arg_min = argmin(mean_trace)
     close(fid)
 
     difference_between_mean_and_power = argmin(raw_trace) - mean_arg_min
+    # lags_to_try = (-5:5) .+ base_difference_between_mean_and_power
+    # difference_between_mean_and_power = lags_to_try[argmax(crosscor(mean_trace, raw_trace, lags_to_try))]
     trimmed_raw_trace = raw_trace[50+difference_between_mean_and_power:end-(50-difference_between_mean_and_power)]
-    trimmed_raw_trace = trimmed_raw_trace[clock_cycle_sample_number:(end-(50-clock_cycle_sample_number)-1)]
+    trimmed_raw_trace = trimmed_raw_trace[clock_cycle_sample_number:(end-(500-clock_cycle_sample_number)-1)]
     downsampled_trace = Float32.(collect(Iterators.map(mean, Iterators.partition(trimmed_raw_trace, number_of_samples_to_average_over))))
     return (key, nonce, counter, downsampled_trace)
 end

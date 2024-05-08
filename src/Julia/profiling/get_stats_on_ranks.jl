@@ -1,15 +1,17 @@
 using HDF5
 
-path_to_results = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/evaluation/constant_counter_4_8/"
-
-initial_ranks = zeros(1000)
-final_ranks = zeros(1000)
+# path_to_results = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/evaluation/8_on_32_random_counter_1_8/"
+path_to_results = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/evaluation/8_on_32_random_counter_unknown_output_counter_nonce_1_8/"
+initial_ranks::Vector{Real} = []
+final_ranks::Vector{Real} = []
 
 for i in 1:1000
-    fid = h5open(string(path_to_results, i, ".hdf5"), "r")
-    initial_ranks[i] = read(fid["initial_estimated_rank_log2"])
-    final_ranks[i] = read(fid["final_estimated_rank_log2"])
-    close(fid)
+    if ispath(string(path_to_results, i, ".hdf5"))
+        fid = h5open(string(path_to_results, i, ".hdf5"), "r")
+        push!(initial_ranks, read(fid["initial_estimated_rank_log2"]))
+        push!(final_ranks, read(fid["final_estimated_rank_log2"]))
+        close(fid)
+    end
 end
 
 println("Average initial rank: ", mean(initial_ranks))

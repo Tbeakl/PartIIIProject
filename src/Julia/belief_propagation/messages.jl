@@ -3,8 +3,8 @@ include("node.jl")
 
 calculate_entropy(prob_dist) = -NaNMath.sum(prob_dist .* log2.(prob_dist))
 
-normalisation_constant::Float64 = 1e9
-addition_away_from_zero::Float64 = 1e-9
+normalisation_constant::Float64 = 1e6
+addition_away_from_zero::Float64 = 1e-6
 
 function tile_to_shape_along_axis(arr::Float64, target_shape::Tuple, target_axis::Int64)
     return fill(arr, target_shape)

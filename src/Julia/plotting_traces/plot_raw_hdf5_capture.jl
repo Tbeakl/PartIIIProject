@@ -1,25 +1,25 @@
-using HDF5, DSP, StatsBase, Statistics, DataStructures, GR, GRUtils # Plots, 
-# plotly()
+using Plots, HDF5, DSP, StatsBase, Statistics, DataStructures, GR, GRUtils # Plots, 
+plotly()
 # gr()
 usecolorscheme(1)
-file_to_plot = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\captures\\ChaChaRecordings\\recording_profiling_156.hdf5"
+file_to_plot = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/captures/ChaChaRecordings_8_on_32/recording_attack_counter_from_random_2.hdf5"
 fid = h5open(file_to_plot, "r")
 
-fid_mean = h5open("D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\attack_profiling\\mean_trace.hdf5", "r")
+fid_mean = h5open("D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\attack_profiling\\mean_trace_8_on_32.hdf5", "r")
 mean_trace = read(fid_mean["mean_trace"])
 mean_offset = read(fid_mean["mean_trace"]["offset"])
 mean_gain = read(fid_mean["mean_trace"]["gain"])
 close(fid_mean)
 
-trace_num_to_plot = 204
+trace_num_to_plot = 75
 
 # power_trace = read(fid[string("trigger_", trace_num_to_plot)])
 # power_offset = read(fid[string("trigger_", trace_num_to_plot)]["offset"])
 # power_gain = read(fid[string("trigger_", trace_num_to_plot)]["gain"])
 
-power_trace = read(fid[string("power_", trace_num_to_plot)])
-power_offset = read(fid[string("power_", trace_num_to_plot)]["offset"])
-power_gain = read(fid[string("power_", trace_num_to_plot)]["gain"])
+power_trace = read(fid[string("power_", trace_num_to_plot, "_0")])
+power_offset = read(fid[string("power_", trace_num_to_plot, "_0")]["offset"])
+power_gain = read(fid[string("power_", trace_num_to_plot, "_0")]["gain"])
 close(fid)
 
 # p = plot(power_trace .* power_gain .+ power_offset, size=(1500,500), ylabel="V", xlabel="Sample number",
@@ -36,19 +36,21 @@ close(fid)
 # power_gain = read(fid[string("power_", trace_num_to_plot, "_1")]["gain"])
 # trigger_trace = read(fid[string("trigger_", trace_num_to_plot)])
 
-# difference_between_mean_and_power = argmin(power_trace) - argmin(mean_trace)
-# trimmed_power_trace = power_trace[50 + difference_between_mean_and_power:end-(50 - difference_between_mean_and_power)]
-# trimmed_mean_trace = mean_trace[50:(end-50)]
+base_difference_between_mean_and_power = argmin(power_trace) - argmin(mean_trace)
+lags_to_try = (-5:5) .+ base_difference_between_mean_and_power
+difference_between_mean_and_power = lags_to_try[argmax(crosscor(mean_trace, power_trace, lags_to_try))]
+trimmed_power_trace = power_trace[50 + difference_between_mean_and_power:end-(50 - difference_between_mean_and_power)]
+trimmed_mean_trace = mean_trace[50:(end-50)]
 
-# p = plot([(trimmed_power_trace .* power_gain) .+ power_offset], label="Current trace", size=(1200,800), dpi=500)
-# plot!(p, [(trimmed_mean_trace .* mean_gain) .+ mean_offset], label="Mean trace")
+p = Plots.plot([(trimmed_power_trace .* power_gain) .+ power_offset], label="Current trace", size=(1200,800), dpi=500)
+Plots.plot!(p, [(trimmed_mean_trace .* mean_gain) .+ mean_offset], label="Mean trace")
 # p = plot(size=(1500,200))
 # colorscheme(1)
 
-x = collect(1:length(power_trace)) ./ 2_500_000_000
-y = (power_trace .* power_gain) .+ power_offset
-p = GRUtils.Figure((1500,500))
-p = GRUtils.shade!(p, x, y; xlabel="Time (s)", ylabel="V", title="Raw trace", colormap=-GR.COLORMAP_BLUESCALE, figsize=(1500,500))
+# x = collect(1:length(power_trace)) ./ 2_500_000_00
+# y = (power_trace .* power_gain) .+ power_offset
+# p = GRUtils.Figure((1500,500))
+# p = GRUtils.shade!(p, x, y; xlabel="Time (s)", ylabel="V", title="Raw trace", colormap=-GR.COLORMAP_BLUESCALE, figsize=(1500,500))
 # GRUtils.savefig("test.png", p)
 # p = shade(x, y, colormap=-GR.COLORMAP_BLUESCALE, size=(1500, 500), dpi=300, ylabel="V", xlabel="Time (s)",
 # xlim=(0, 750_000), title="Raw trace")

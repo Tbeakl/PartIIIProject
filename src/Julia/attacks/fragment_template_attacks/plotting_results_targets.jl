@@ -14,15 +14,15 @@ include("template_attack_traces.jl")
 
 bits_per_template::Int64 = 8
 dimensions_per_template::Int64 = 8
-number_of_encryption_traces::Int64 = 250
+number_of_encryption_traces::Int64 = 10
 
-base_path_templates = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/second_trace_set/initial_templates_LR/sparse_50_detailed_50/"
-base_key_templates = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/second_trace_set/initial_templates_LR/sparse_50_detailed_50/"
-base_trace_path = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/captures/ChaChaRecordings_2/recording_attack_counter_constant_"
+base_path_templates = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/8_on_32_trace_set/initial_templates/"
+base_key_templates = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/8_on_32_trace_set/initial_templates/"
+base_trace_path = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/captures/ChaChaRecordings_8_on_32/recording_attack_counter_from_random_"
 
-key_number = 1105
+key_number = 280
 
-all_traces::Matrix{Float32} = zeros(Float32, number_of_encryption_traces, 14989)
+all_traces::Matrix{Float32} = zeros(Float32, number_of_encryption_traces, 379926)
 key, nonce, counter, encryption_trace = load_attack_trace(base_trace_path, key_number, 1)
 for i in 1:number_of_encryption_traces
     key, nonce, counter, encryption_trace = load_attack_trace(base_trace_path, key_number, i - 1)
@@ -46,7 +46,7 @@ all_trace_values = append!(
 all_values = UInt32.(collect(Iterators.flatten(all_trace_values)))
 
 intermediate_index_to_plot = 1
-template_number_to_use = 3
+template_number_to_use = 1
 # profiling_intermediate_value_vector = reduce(vcat, transpose.(byte_values_for_input.(intermediate_values_of_profiling[:, intermediate_index_to_plot])))[:, template_number_to_use]
 # traces_to_use_profiling = matrix_used[profiling_intermediate_value_vector.==byte_values_for_input(all_values[intermediate_index_to_plot])[template_number_to_use], :]
 
@@ -56,4 +56,8 @@ p = plot_distribution_of_values_and_means(base_key_templates,
     template_number_to_use, byte_values_for_input(all_values[intermediate_index_to_plot])[template_number_to_use],
     all_traces, 1, 2)
 
-savefig(p, "./plots/template_plotting/eight_bits_6_1.svg")
+mean_trace = median(all_traces[2:10, :], dims=1)[1, :]
+p = plot(abs.(all_traces' .- mean_trace), dims=2)
+# plot!(p, abs.(all_traces[1, :] .- mean_trace))
+plotly()
+# savefig(p, "./plots/template_plotting/eight_bits_6_1.svg")
