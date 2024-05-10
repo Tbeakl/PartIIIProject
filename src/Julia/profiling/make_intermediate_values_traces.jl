@@ -5,12 +5,14 @@ include("../encryption/leakage_functions.jl")
 # 10001)
 elements_of_trace_to_select = append!(repeat([true, false, false, false, true], 320), ones(Bool, 16))
 
-file_number = 1
-trace_number = 1
-for file_number in 51:60
-    intermediates_fid = h5open(string("D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\intermediate_value_traces_8_on_32\\recording_profiling_", file_number, ".hdf5"), "w")
-    trace_fid = h5open(string("D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\captures\\ChaChaRecordings_8_on_32\\recording_profiling_", file_number, ".hdf5"), "r")
+path_to_data = "C:/Users/henry/Documents/PartIIIProject/data/"
 
+# file_number = 1
+# trace_number = 1
+for file_number in 35:64
+    println(file_number)
+    intermediates_fid = h5open(string(path_to_data, "intermediate_value_traces_8_on_32/recording_profiling_", file_number, ".hdf5"), "w")
+    trace_fid = h5open(string(path_to_data, "captures/ChaChaRecordings_8_on_32/recording_profiling_", file_number, ".hdf5"), "r")
 
     for trace_number in 0:999
         key = UInt32.(read(trace_fid[string("power_", trace_number)]["key"]))
@@ -27,8 +29,8 @@ for file_number in 51:60
             plaintext,
             trace,
             ciphertext)
-            all_values = UInt32.(collect(Iterators.flatten(all_trace_values)))
-            intermediates_fid[string("power_", trace_number)] = all_values
+        all_values = UInt32.(collect(Iterators.flatten(all_trace_values)))
+        intermediates_fid[string("power_", trace_number)] = all_values
     end
 
     close(trace_fid)

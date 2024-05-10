@@ -2,7 +2,7 @@ using HDF5, Base.Threads, StatsBase, Statistics
 include("../attacks/byte_template_attacks/template_attack_traces.jl")
 include("../encryption/leakage_functions.jl")
 
-println("Help")
+
 fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/downsampled_50_traces_validation.hdf5", "r")
 
 all_intermediate_values = read(fid["intermediate_values"])

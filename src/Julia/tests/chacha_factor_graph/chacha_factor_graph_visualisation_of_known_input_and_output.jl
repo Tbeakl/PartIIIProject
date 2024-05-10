@@ -80,7 +80,7 @@ internal_variables = [union(variables_by_round[:]...)...]
 all_variables = [keys(variables)...]
 update_all_entropies(variables, all_variables)
 
-initial_number_of_iterations = 200
+initial_number_of_iterations = 1
 
 for i in 1:initial_number_of_iterations
     println(i)
@@ -106,18 +106,18 @@ end
 #     end
 # end
 
-# @benchmark begin
-#     for var_name in internal_variables
-#         variable_to_factor_messages(variables[var_name])
-#     end
-#     for fact_name in internal_factors
-#         factor_to_variable_messages(factors[fact_name])
-#     end
-# end
-
-anim = @animate for i in eachindex(visualisation_of_entropy)
-    heatmap(visualisation_of_entropy[i]; title=string("Round ", i - 1, " entropy of variables"), clim=(0, number_of_bits)) # 
+@benchmark begin
+    for var_name in internal_variables
+        variable_to_factor_messages(variables[var_name])
+    end
+    for fact_name in internal_factors
+        factor_to_variable_messages(factors[fact_name])
+    end
 end
 
-# heatmap(visualisation_of_entropy[1]; title=string("Round ", 0, " entropy of variables")) # clim=(0, number_of_bits),
-gif(anim, string("test_test_", number_of_bits, ".gif"), fps=50)
+# anim = @animate for i in eachindex(visualisation_of_entropy)
+#     heatmap(visualisation_of_entropy[i]; title=string("Round ", i - 1, " entropy of variables"), clim=(0, number_of_bits)) # 
+# end
+
+# # heatmap(visualisation_of_entropy[1]; title=string("Round ", 0, " entropy of variables")) # clim=(0, number_of_bits),
+# gif(anim, string("test_test_", number_of_bits, ".gif"), fps=50)

@@ -5,12 +5,14 @@ individual_trace_mean_NICV = 0.004
 number_of_intermediate_values = 700
 number_of_bits = 8
 templates_per_intermediate_value = 32 ÷ number_of_bits
-number_of_clock_cycles = 15198 #(759500 ÷ 50)
+number_of_clock_cycles = 15997 #(759500 ÷ 50)
+
+path_to_data = "C:/Users/henry/Documents/PartIIIProject/data/"
 
 # Collect each 4 together because the operations are on 32 bits at a time
 all_mean_NICV = zeros(number_of_clock_cycles, number_of_intermediate_values * templates_per_intermediate_value)
 
-fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/COR_aligned_traces_8_on_32.hdf5", "r")
+fid = h5open(path_to_data * "attack_profiling/8_on_32/COR_aligned_traces.hdf5", "r")
 for intermediate_value_index in 1:number_of_intermediate_values
     for cluster_num in 1:templates_per_intermediate_value
         println(intermediate_value_index, " ", cluster_num)
@@ -77,7 +79,7 @@ end
 #     end
 # end
 
-fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/clock_cycles_bitmasks_no_dilation_8_on_32.hdf5", "w")
+fid = h5open(path_to_data * "attack_profiling/8_on_32/clock_cycles_bitmasks.hdf5", "w")
 for intermediate_value_index in 1:number_of_intermediate_values
     for cluster_num in 1:templates_per_intermediate_value
         println(intermediate_value_index, " ", cluster_num)

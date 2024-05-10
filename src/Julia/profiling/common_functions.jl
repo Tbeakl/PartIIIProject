@@ -64,7 +64,7 @@ function calculate_within_class_scatter(data_samples, labels, means)
     @assert maximum(labels) < size(means)[1]
     @assert minimum(labels) >= 0
     @inbounds for i in eachindex(labels)
-        @inbounds part_of_interest = data_samples[i, :] .- means[labels[i] + 1, :]'
+        @inbounds part_of_interest = data_samples[i, :] .- means[labels[i]+1, :]'
         output_matrix += part_of_interest * part_of_interest' #Statistics.cov(StatsBase.SimpleCovariance(; corrected=true), part_of_interest; mean=zeros(size(part_of_interest)))
     end
     return output_matrix ./ length(labels)
@@ -75,7 +75,7 @@ function alternative_within_class_scatter(data_samples, labels, means)
     @assert maximum(labels) < size(means)[1]
     @assert minimum(labels) >= 0
     @inbounds for i in eachindex(labels)
-        data_samples[:, i] -= means[labels[i] + 1, :]
+        data_samples[:, i] -= means[labels[i]+1, :]
     end
     return (data_samples * data_samples') ./ length(labels)
 end
@@ -85,7 +85,7 @@ function calculate_between_class_scatter(labels, means)
     overall_mean = mean(original_mean_vectors, dims=1)[1, :]
     for i in 0:size(means)[1]
         vals_to_include = labels .== i
-        cur_mean = means[i + 1, :]
+        cur_mean = means[i+1, :]
         output_matrix += sum(vals_to_include) .* ((cur_mean - overall_mean) * (cur_mean - overall_mean)')
     end
     return output_matrix ./ length(labels)
@@ -96,9 +96,9 @@ function alternative_calculate_between_class_scatter(labels, means)
     overall_mean = mean(means, dims=1)[1, :]
     # label_counts = zeros(Int64, size(means)[1])
     matrix_of_vectors = zeros(size(means)[2], size(means)[1])
-    for i in 0:(size(means)[1] - 1)
+    for i in 0:(size(means)[1]-1)
         # label_counts[i + 1] = sum(labels .== i)
-        matrix_of_vectors[:, i + 1] = sum(labels .== i) .* (means[i + 1, :] - overall_mean)
+        matrix_of_vectors[:, i+1] = sum(labels .== i) .* (means[i+1, :] - overall_mean)
     end
     # for i in 0:size(means)[1]
     #     vals_to_include = labels .== i
@@ -136,4 +136,11 @@ end
 
 function make_dataset_of_values_matrix(datasets::AbstractVector, bitmask::BitVector)
     return reduce(vcat, [dset[:, bitmask] for dset in datasets])
+end
+
+function make_power_trace_trimmed_and_aligned_to_mean(mean_trace::Vector{Float32}, power_trace::Vector{Int16})
+    base_difference_between_mean_and_power = argmin(power_trace[begin+50:end-50]) - argmin(mean_trace)
+    lags_to_try = (-5:5) .+ base_difference_between_mean_and_power
+    difference_between_mean_and_power = lags_to_try[argmax(crosscor(mean_trace, power_trace[begin+50:end-50], lags_to_try))]
+    return power_trace[begin+50+difference_between_mean_and_power:end-(50-difference_between_mean_and_power)]
 end

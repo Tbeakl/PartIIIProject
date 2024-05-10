@@ -2,10 +2,14 @@
 # by checking that they are well correlated so that we can have confidence that the trigger has worked
 using HDF5, StatsBase
 
-samples_per_trace = 760_000
-base_path = "D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\captures\\ChaChaRecordings_8_on_32\\recording_profiling_"
+samples_per_trace = 800_000
 
-summed_trace = zeros(Float32, samples_per_trace)
+path_to_data = "C:/Users/henry/Documents/PartIIIProject/data/"
+
+base_path = string(path_to_data, "captures/ChaChaRecordings_8_on_32/recording_profiling_")
+
+summed_trace = zeros(Float32, samples_per_trace - 100)
+trace_to_align_to = zeros(Int16, samples_per_trace)
 all_gains::Vector{Float64} = []
 all_offsets::Vector{Float64} = []
 
@@ -15,27 +19,35 @@ all_offsets::Vector{Float64} = []
     length(x) < 2 && return true
     e1 = x[1]
     i = 2
-    @inbounds for i=2:length(x)
+    @inbounds for i = 2:length(x)
         x[i] == e1 || return false
     end
     return true
 end
 
-
+# Should look to align all the traces correctly so the mean is correctly aligned with them
 for i in 0:1
     fid = h5open(string(base_path, i, ".hdf5"))
     for j in 0:999
         println(i, " ", j)
-        summed_trace[:] .+= read(fid[string("power_", j)]) #collect(Iterators.map(mean, Iterators.partition(read(fid[string("power_", j)]), number_of_samples_to_average_over)))
+        if i + j == 0
+            trace_to_align_to = read(fid[string("power_", j)])
+        else
+            # Align the result to the mean trace
+            raw_trace = read(fid[string("power_", j)])
+            base_difference_between_mean_and_power = (argmin(raw_trace) - argmin(trace_to_align_to))
+            lags_to_try = (-5:5) .+ base_difference_between_mean_and_power
+            difference_between_mean_and_power = lags_to_try[argmax(crosscor(trace_to_align_to, raw_trace, lags_to_try))]
+            trimmed_raw_trace = raw_trace[begin+50+difference_between_mean_and_power:end-(50-difference_between_mean_and_power)]
+            summed_trace[:] .+= trimmed_raw_trace
+        end
         push!(all_gains, read(fid[string("power_", j)]["gain"]))
         push!(all_offsets, read(fid[string("power_", j)]["offset"]))
     end
     close(fid)
 end
-
-all_gains
-
-fid = h5open("D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\attack_profiling\\mean_trace_8_on_32.hdf5", "w")
+summed_trace .+ trace_to_align_to[begin+50:end-50]
+fid = h5open(string(path_to_data, "attack_profiling/mean_trace_8_on_32.hdf5"), "w")
 @assert allequal(all_gains)
 @assert allequal(all_offsets)
 

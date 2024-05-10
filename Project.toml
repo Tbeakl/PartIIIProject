@@ -1,5 +1,6 @@
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 CryptoSideChannel = "5125bf15-d1e5-4048-9f9a-1009b1b43be4"
 DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"

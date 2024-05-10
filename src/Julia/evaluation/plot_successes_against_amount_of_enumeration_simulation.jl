@@ -1,6 +1,8 @@
 using Plots, HDF5
 
-base_path_to_counts = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/evaluation/simulation_unknown_output_nonce_counter/"
+
+path_to_data = "C:/Users/henry/Documents/PartIIIProject/data/"
+base_path_to_counts = path_to_data * "evaluation/simulation_unknown_output_nonce_counter/"
 
 signal_to_noise_ratios = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6]
 
@@ -10,12 +12,12 @@ final_ranks::Dict{Number,Vector{Number}} = Dict()
 for snr in signal_to_noise_ratios
     current_initial_ranks::Vector{Float64} = []
     current_final_ranks::Vector{Float64} = []
-    fid = h5open(string(base_path_to_counts, snr, "_successes.hdf5"), "r")
     for i in 1:100
-        push!(current_initial_ranks, read(fid[string("initial_estimated_rank_log2_", i)]))
-        push!(current_final_ranks, read(fid[string("final_estimated_rank_log2_", i)]))
+        fid = h5open(string(base_path_to_counts, snr, "/", i, ".hdf5"), "r")
+        push!(current_initial_ranks, read(fid["initial_estimated_rank_log2"]))
+        push!(current_final_ranks, read(fid["final_estimated_rank_log2"]))
+        close(fid)
     end
-    close(fid)
     initial_ranks[snr] = sort(current_initial_ranks)
     final_ranks[snr] = sort(current_final_ranks)
 end

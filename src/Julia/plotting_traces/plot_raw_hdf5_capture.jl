@@ -1,25 +1,30 @@
 using Plots, HDF5, DSP, StatsBase, Statistics, DataStructures, GR, GRUtils # Plots, 
+include("../profiling/common_functions.jl")
+
 plotly()
 # gr()
 usecolorscheme(1)
-file_to_plot = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/captures/ChaChaRecordings_8_on_32/recording_attack_counter_from_random_2.hdf5"
+
+path_to_data = "C:/Users/henry/Documents/PartIIIProject/data/"
+
+file_to_plot = string(path_to_data, "captures/ChaChaRecordings_8_on_32/recording_profiling_2.hdf5")
 fid = h5open(file_to_plot, "r")
 
-fid_mean = h5open("D:\\Year_4_Part_3\\Dissertation\\SourceCode\\PartIIIProject\\data\\attack_profiling\\mean_trace_8_on_32.hdf5", "r")
+fid_mean = h5open(string(path_to_data, "attack_profiling/mean_trace_8_on_32.hdf5"), "r")
 mean_trace = read(fid_mean["mean_trace"])
 mean_offset = read(fid_mean["mean_trace"]["offset"])
 mean_gain = read(fid_mean["mean_trace"]["gain"])
 close(fid_mean)
 
-trace_num_to_plot = 75
+trace_num_to_plot = 250
 
 # power_trace = read(fid[string("trigger_", trace_num_to_plot)])
 # power_offset = read(fid[string("trigger_", trace_num_to_plot)]["offset"])
 # power_gain = read(fid[string("trigger_", trace_num_to_plot)]["gain"])
 
-power_trace = read(fid[string("power_", trace_num_to_plot, "_0")])
-power_offset = read(fid[string("power_", trace_num_to_plot, "_0")]["offset"])
-power_gain = read(fid[string("power_", trace_num_to_plot, "_0")]["gain"])
+power_trace = read(fid[string("power_", trace_num_to_plot)])
+power_offset = read(fid[string("power_", trace_num_to_plot)]["offset"])
+power_gain = read(fid[string("power_", trace_num_to_plot)]["gain"])
 close(fid)
 
 # p = plot(power_trace .* power_gain .+ power_offset, size=(1500,500), ylabel="V", xlabel="Sample number",
@@ -36,14 +41,10 @@ close(fid)
 # power_gain = read(fid[string("power_", trace_num_to_plot, "_1")]["gain"])
 # trigger_trace = read(fid[string("trigger_", trace_num_to_plot)])
 
-base_difference_between_mean_and_power = argmin(power_trace) - argmin(mean_trace)
-lags_to_try = (-5:5) .+ base_difference_between_mean_and_power
-difference_between_mean_and_power = lags_to_try[argmax(crosscor(mean_trace, power_trace, lags_to_try))]
-trimmed_power_trace = power_trace[50 + difference_between_mean_and_power:end-(50 - difference_between_mean_and_power)]
-trimmed_mean_trace = mean_trace[50:(end-50)]
+trimmed_power_trace = make_power_trace_trimmed_and_aligned_to_mean(mean_trace, power_trace)
 
-p = Plots.plot([(trimmed_power_trace .* power_gain) .+ power_offset], label="Current trace", size=(1200,800), dpi=500)
-Plots.plot!(p, [(trimmed_mean_trace .* mean_gain) .+ mean_offset], label="Mean trace")
+p = Plots.plot([(trimmed_power_trace .* power_gain) .+ power_offset], label="Current trace", size=(1200, 800), dpi=500)
+Plots.plot!(p, [(mean_trace .* mean_gain) .+ mean_offset], label="Mean trace")
 # p = plot(size=(1500,200))
 # colorscheme(1)
 
