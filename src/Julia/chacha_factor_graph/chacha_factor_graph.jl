@@ -316,7 +316,7 @@ function chacha_quarter_round_factor_graph!(variables::Dict{String,AbsVariable},
     # block[b] = ROTL(block[b], 7)
 end
 
-function chacha_factor_graph!(variables::Dict{String, AbsVariable},
+function chacha_factor_graph!(variables::Dict{String,AbsVariable},
     factors::Dict{String,AbsFactor},
     number_of_bits_per_cluster::Int64,
     variables_by_round::Vector{Set{String}},
@@ -340,7 +340,7 @@ function chacha_factor_graph!(variables::Dict{String, AbsVariable},
         end
     end
     number_of_operations = Dict("xor" => 0, "add" => 0, "rot" => 0)
-    precalculated_prob_tables = Dict{String, Array{Float64}}()
+    precalculated_prob_tables = Dict{String,Array{Float64}}()
     # precalculated_prob_tables = Dict("xor_cluster" => make_xor_prob_table(number_of_bits_per_cluster),
     #     "full_add_cluster" => make_add_including_carry_prob_array(number_of_bits_per_cluster),
     #     "add_full_to_output_cluster" => take_bottom_bits_prob_array(number_of_bits_per_cluster + 1),
@@ -421,8 +421,10 @@ function add_values_of_initial_nonce_and_counter(variables::Dict{String,AbsVaria
     nonce::Vector{UInt32}, counter::UInt32,
     run_number::Int64)
     set_variable_to_value(variables, factors, string("13_0"), counter, number_of_bits_per_cluster, run_number)
-    for i in 1:3
-        set_variable_to_value(variables, factors, string(i + 13, "_0"), nonce[i], number_of_bits_per_cluster, run_number)
+    if run_number == 1
+        for i in 1:3
+            set_variable_to_value(variables, factors, string(i + 13, "_0"), nonce[i], number_of_bits_per_cluster, run_number)
+        end
     end
 end
 

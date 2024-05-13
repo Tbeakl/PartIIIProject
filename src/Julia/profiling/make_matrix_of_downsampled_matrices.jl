@@ -18,16 +18,16 @@ close(fid)
 
 trace_range_per_file = 0:999
 # file_range = 46:57
-file_range = 46:46
+# file_range = 46:46
 # file_range = 46:57
-# file_range = 58:58
+file_range = 58:58
 # file_range = 26:35
 
 all_intermediate_values = zeros(UInt32, length(trace_range_per_file) * length(file_range), number_of_intermediate_values)
 
 # downsampled_matrix_20 = zeros(Float32, length(trace_range_per_file) * length(file_range), 1499)
 # downsampled_matrix_50 = zeros(Float32, length(trace_range_per_file) * length(file_range), 759851)
-downsampled_matrix_100 = zeros(Float32, length(trace_range_per_file) * length(file_range), 399925 * 2)
+downsampled_matrix_100 = zeros(Float32, length(trace_range_per_file) * length(file_range), 399925)
 # downsampled_matrix_250 = zeros(Float32, length(trace_range_per_file) * length(file_range), 151971)
 # downsampled_matrix_500 = zeros(Float32, length(trace_range_per_file) * length(file_range), 15198)
 
@@ -45,7 +45,7 @@ for i in file_range
         trimmed_raw_trace = make_power_trace_trimmed_and_aligned_to_mean(mean_trace, read(fid[string("power_", j)]))
         trimmed_raw_trace = trimmed_raw_trace[clock_cycle_sample_number:(end-(number_of_samples_per_clock_cycle-clock_cycle_sample_number)-1)]
         # downsampled_trace_50 = trimmed_raw_trace #collect(Iterators.map(mean, Iterators.partition(trimmed_raw_trace, 50)))
-        downsampled_trace_100 = collect(Iterators.map(mean, Iterators.partition(trimmed_raw_trace, 1)))
+        downsampled_trace_100 = collect(Iterators.map(mean, Iterators.partition(trimmed_raw_trace, 2)))
         # downsampled_trace_250 = collect(Iterators.map(mean, Iterators.partition(trimmed_raw_trace, 5)))
         # downsampled_trace_500 = collect(Iterators.map(mean, Iterators.partition(trimmed_raw_trace, 50)))
         # downsampled_matrix_50[(i-file_range[1])*length(trace_range_per_file)+j+1, :] = downsampled_trace_50
@@ -56,22 +56,22 @@ for i in file_range
     close(fid)
 end
 
-p = plot(size=(1500,1500))
-plot!(p, downsampled_matrix_100[1, :])
-plot!(p, downsampled_matrix_100[2, :])
-plot!(p, downsampled_matrix_100[3, :])
-plot!(p, downsampled_matrix_100[4, :])
-plot!(p, downsampled_matrix_100[5, :])
-plot!(p, trimmed_mean_trace)
+# p = plot(size=(1500,1500))
+# plot!(p, downsampled_matrix_100[1, :])
+# plot!(p, downsampled_matrix_100[2, :])
+# plot!(p, downsampled_matrix_100[3, :])
+# plot!(p, downsampled_matrix_100[4, :])
+# plot!(p, downsampled_matrix_100[5, :])
+# plot!(p, trimmed_mean_trace)
 # fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/8_on_32_trace_set/profiling_1_1.hdf5", "w")
 # fid["intermediate_values"] = all_intermediate_values
 # fid["downsampled_matrix"] = downsampled_matrix_50
 # close(fid)
 
-# fid = h5open(string(path_to_data, "attack_profiling/8_on_32/profiling_2_4.hdf5"), "w")
-# fid["intermediate_values"] = all_intermediate_values
-# fid["downsampled_matrix"] = downsampled_matrix_100
-# close(fid)
+fid = h5open(string(path_to_data, "attack_profiling/8_on_32/validation.hdf5"), "w")
+fid["intermediate_values"] = all_intermediate_values
+fid["downsampled_matrix"] = downsampled_matrix_100
+close(fid)
 
 # fid = h5open("D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/8_on_32_trace_set/profiling_5_1.hdf5", "w")
 # fid["intermediate_values"] = all_intermediate_values

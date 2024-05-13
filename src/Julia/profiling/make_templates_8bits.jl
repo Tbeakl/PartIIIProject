@@ -5,7 +5,7 @@ include("common_functions.jl")
 # to see if they can improve the overall success rate of the template compared to just having a single
 # template containing all of them, could also try 'training'
 gr()
-number_of_intermediate_values = 8
+number_of_intermediate_values = 700
 
 number_of_bits_per_template = 8
 number_of_templates_per_intermediate_value = 32 ÷ number_of_bits_per_template
@@ -25,7 +25,7 @@ end
 
 simple_intermediate_values::Matrix{Int32} = permutedims(hcat(digits.(collect(0:((1<<number_of_bits_per_template)-1)), base=2, pad=number_of_bits_per_template + 1)...))
 simple_intermediate_values[:, end] .= 1
-# simple_intermediate_values = CuArray(simple_intermediate_values)
+simple_intermediate_values = (simple_intermediate_values)
 
 number_of_trace_files = 4
 
@@ -50,9 +50,7 @@ for i in 1:number_of_trace_files
     push!(all_intermediate_datasets, dset_intermediate_values)
 end
 
-# intermediate_value_index = 1
-# template_num = 2
-for intermediate_value_index in 1:number_of_intermediate_values
+Threads.@threads for intermediate_value_index in 1:number_of_intermediate_values
     intermediate_value_vector = make_intermediate_value_matrix(all_intermediate_datasets, intermediate_value_index)
     for template_num in 1:number_of_templates_per_intermediate_value
         current_full_template_path = string(path_to_templates,
@@ -73,16 +71,17 @@ for intermediate_value_index in 1:number_of_intermediate_values
 
             # Try and make it using a linear regression model on bits for the mean vectors etc.
             original_mean_vectors = zeros(1 << number_of_bits_per_template, size(matrix_of_current_data)[1])
-            base_prediction_matrix = ones(length(template_intermediate_value_vector), number_of_bits_per_template + 1)
+            base_prediction_matrix = ones(Int32, length(template_intermediate_value_vector), number_of_bits_per_template + 1)
             for i in 0:(number_of_bits_per_template-1)
                 base_prediction_matrix[:, i+1] = 1 .& (template_intermediate_value_vector .>> i)
             end
-            matrix_of_current_data_gpu = matrix_of_current_data #CuArray(
+            matrix_of_current_data_gpu = (matrix_of_current_data) #CuArray(
             original_mean_vectors_vector = calculate_linear_prediction.(Ref((base_prediction_matrix)), #CuArray(
-                Ref(matrix_of_current_data_gpu),
+                Ref(matrix_of_current_data),
                 Ref(simple_intermediate_values),
                 1:(size(matrix_of_current_data)[1]))
             original_mean_vectors = hcat(original_mean_vectors_vector...)
+            template_intermediate_value_vector = (template_intermediate_value_vector)
             within_class_scatter = alternative_within_class_scatter(Matrix(matrix_of_current_data), template_intermediate_value_vector, original_mean_vectors)
             between_class_scatter = alternative_calculate_between_class_scatter(template_intermediate_value_vector, original_mean_vectors)
 

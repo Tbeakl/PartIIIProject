@@ -2,42 +2,7 @@ using HDF5, Base.Threads, StatsBase, Statistics, Distributions, LinearAlgebra, P
 include("../attacks/byte_template_attacks/template_attack_traces.jl")
 include("../chacha_factor_graph/heatmap_visualisation_intermediate_values.jl")
 include("../chacha_factor_graph/heatmap_visualisation.jl")
-
-function get_prob_dist_of_vector(mean_vectors, noise, current_vector)
-    likelihood_of_values = logpdf(noise, mean_vectors' .- current_vector)
-    return likelihood_of_values# ./ sum(likelihood_of_values)
-end
-
-function get_number_of_guesses(mean_vectors, noise, value, projected_vector)
-    permutation_of_results = sortperm(logpdf(noise, mean_vectors .- projected_vector); rev=true)
-    return findfirst(x -> x == value + 1, permutation_of_results)
-end
-
-function noise_distribution_given_covaraince_matrix(scov)
-    return MvNormal(Hermitian(scov))
-end
-
-function noise_distribution_fixed_standard_dev(standard_deviation, dimensions)
-    variance = standard_deviation * standard_deviation
-    covariance_matrix = ones(dimensions) .* variance
-    return MvNormal(covariance_matrix)
-end
-
-function get_success_rate(means, noise, values, projected_vectors)
-    number_of_successes = 0
-    for i in eachindex(values)
-        most_likely_value = findmax(get_prob_dist_of_vector(means, noise, projected_vectors[i, :]))[2] - 1
-        if values[i] == most_likely_value
-            number_of_successes += 1
-        end
-    end
-    return number_of_successes / length(values)
-end
-
-function get_guessing_entropy(means, noise, values, projected_vectors)
-    guessing_entropy = sum(get_number_of_guesses.(Ref(means'), Ref(noise), values, eachrow(projected_vectors)))
-    return guessing_entropy / length(values)
-end
+include("common_functions.jl")
 
 number_of_bits_per_template = 8
 number_of_templates_per_intermediate_value = 32 ÷ number_of_bits_per_template

@@ -22,20 +22,24 @@ function main()
     end
 
     normal_memory_mean_val_per_cycle = eachcol(mean_value_per_cycle)
-    mean_value_per_cycle = CuArray(mean_value_per_cycle)
+    # mean_value_per_cycle = (mean_value_per_cycle)
 
-    all_NICV_mean_value = zeros(number_of_intermediate_values * number_of_clusters, size(mean_value_per_cycle)[2])
-
-
-    for intermediate_value_index in 1:number_of_intermediate_values
-        for cluster_num in 1:number_of_clusters
-            println(intermediate_value_index, " ", cluster_num)
-            intermediate_value_vector = (all_intermediate_values[:, intermediate_value_index] .>> (number_of_bits * (cluster_num - 1))) .& ((1 << number_of_bits) - 1)
-            base_prediction_matrix = permutedims(hcat(digits.(intermediate_value_vector, base=2, pad=number_of_bits + 1)...))
-            base_prediction_matrix[:, end] .= 1
-            base_prediction_matrix = CuArray(Int32.(base_prediction_matrix))
-            predicted_vectors = calculate_linear_correlation.(Ref(base_prediction_matrix), Ref(mean_value_per_cycle), 1:(size(mean_value_per_cycle)[2]))
-            all_NICV_mean_value[(number_of_clusters*(intermediate_value_index-1))+cluster_num, :] = cor.(normal_memory_mean_val_per_cycle, Array.(predicted_vectors)) .^ 2
+    Threads.@threads for intermediate_value_index in 1:number_of_intermediate_values
+        if !ispath(path_to_data * "attack_profiling/8_on_32/correlations/" * string(intermediate_value_index) * ".hdf5")
+            all_NICV_mean_value = zeros(number_of_clusters, size(mean_value_per_cycle)[2])
+            for cluster_num in 1:number_of_clusters
+                println(intermediate_value_index, " ", cluster_num)
+                intermediate_value_vector = (all_intermediate_values[:, intermediate_value_index] .>> (number_of_bits * (cluster_num - 1))) .& ((1 << number_of_bits) - 1)
+                base_prediction_matrix = permutedims(hcat(digits.(intermediate_value_vector, base=2, pad=number_of_bits + 1)...))
+                base_prediction_matrix[:, end] .= 1
+                base_prediction_matrix = (Int32.(base_prediction_matrix))
+                predicted_vectors = calculate_linear_correlation.(Ref(base_prediction_matrix), Ref(mean_value_per_cycle), 1:(size(mean_value_per_cycle)[2]))
+                all_NICV_mean_value[cluster_num, :] = cor.(normal_memory_mean_val_per_cycle, Array.(predicted_vectors)) .^ 2
+            end
+            # Save out the values which have been calculated to a file
+            fid = h5open(path_to_data * "attack_profiling/8_on_32/correlations/" * string(intermediate_value_index) * ".hdf5", "w")
+            fid["correlations"] = all_NICV_mean_value
+            close(fid)
         end
     end
     # base_inter_value = 251
