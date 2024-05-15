@@ -1,16 +1,14 @@
 using HDF5, Plots, Base.Threads, StatsBase, Statistics, CUDA
 plotly()
 function main()
-    clock_cycle_sample_number = 46
     number_of_intermediate_values = 700
-    number_of_clock_cycles = (799850 ÷ 50)
 
     number_of_bits = 8
     number_of_clusters = 32 ÷ number_of_bits
 
     path_to_data = "C:/Users/henry/Documents/PartIIIProject/data/"
 
-    data_fid = h5open(string(path_to_data, "attack_profiling/8_on_32/detection.hdf5"), "r")
+    data_fid = h5open(string(path_to_data, "attack_profiling/32_volatile/detection.hdf5"), "r")
     all_intermediate_values = read(data_fid["intermediate_values"])
     mean_value_per_cycle = read(data_fid["downsampled_matrix"])
     close(data_fid)
@@ -25,7 +23,7 @@ function main()
     # mean_value_per_cycle = (mean_value_per_cycle)
 
     Threads.@threads for intermediate_value_index in 1:number_of_intermediate_values
-        if !ispath(path_to_data * "attack_profiling/8_on_32/correlations/" * string(intermediate_value_index) * ".hdf5")
+        if !ispath(path_to_data * "attack_profiling/32_volatile/correlations/" * string(intermediate_value_index) * ".hdf5")
             all_NICV_mean_value = zeros(number_of_clusters, size(mean_value_per_cycle)[2])
             for cluster_num in 1:number_of_clusters
                 println(intermediate_value_index, " ", cluster_num)
@@ -37,7 +35,7 @@ function main()
                 all_NICV_mean_value[cluster_num, :] = cor.(normal_memory_mean_val_per_cycle, Array.(predicted_vectors)) .^ 2
             end
             # Save out the values which have been calculated to a file
-            fid = h5open(path_to_data * "attack_profiling/8_on_32/correlations/" * string(intermediate_value_index) * ".hdf5", "w")
+            fid = h5open(path_to_data * "attack_profiling/32_volatile/correlations/" * string(intermediate_value_index) * ".hdf5", "w")
             fid["correlations"] = all_NICV_mean_value
             close(fid)
         end
@@ -51,14 +49,14 @@ function main()
     # hline!(p, [0.004])
 
 
-    fid = h5open(path_to_data * "attack_profiling/8_on_32/COR_aligned_traces.hdf5", "w")
-    for intermediate_value_index in 1:number_of_intermediate_values
-        for cluster_num in 1:number_of_clusters
-            println(intermediate_value_index, " ", cluster_num)
-            fid[string("mean_", intermediate_value_index, "_", cluster_num)] = all_NICV_mean_value[(number_of_clusters*(intermediate_value_index-1))+cluster_num, :]
-        end
-    end
-    close(fid)
+    # fid = h5open(path_to_data * "attack_profiling/32_volatile/COR_aligned_traces.hdf5", "w")
+    # for intermediate_value_index in 1:number_of_intermediate_values
+    #     for cluster_num in 1:number_of_clusters
+    #         println(intermediate_value_index, " ", cluster_num)
+    #         fid[string("mean_", intermediate_value_index, "_", cluster_num)] = all_NICV_mean_value[(number_of_clusters*(intermediate_value_index-1))+cluster_num, :]
+    #     end
+    # end
+    # close(fid)
 end
 
 main()

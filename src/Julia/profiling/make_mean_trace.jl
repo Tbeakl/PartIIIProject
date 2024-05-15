@@ -2,11 +2,11 @@
 # by checking that they are well correlated so that we can have confidence that the trigger has worked
 using HDF5, StatsBase
 
-samples_per_trace = 800_000
+samples_per_trace = 650_000
 
 path_to_data = "C:/Users/henry/Documents/PartIIIProject/data/"
 
-base_path = string(path_to_data, "captures/ChaChaRecordings_8_on_32/recording_profiling_")
+base_path = string(path_to_data, "captures/ChaChaRecordings_3/recording_profiling_")
 
 summed_trace = zeros(Float32, samples_per_trace - 100)
 trace_to_align_to = zeros(Int16, samples_per_trace)
@@ -47,10 +47,9 @@ for i in 0:1
     close(fid)
 end
 summed_trace .+ trace_to_align_to[begin+50:end-50]
-fid = h5open(string(path_to_data, "attack_profiling/mean_trace_8_on_32.hdf5"), "w")
+fid = h5open(string(path_to_data, "attack_profiling/32_volatile/mean_trace.hdf5"), "w")
 @assert allequal(all_gains)
 @assert allequal(all_offsets)
-
 fid["mean_trace"] = summed_trace ./ 2000
 attributes(fid["mean_trace"])["offset"] = all_offsets[1]
 attributes(fid["mean_trace"])["gain"] = all_gains[1]

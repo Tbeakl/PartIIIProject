@@ -1,7 +1,7 @@
 using DataStructures
 include("rank_estimation.jl")
 
-function make_matrices_of_values(likelihood_tables::Vector{Vector{Float64}})
+function make_matrices_of_values(likelihood_tables)
     sorting_permutation = sortperm.(likelihood_tables, rev=true)
     values = [collect(0:(length(likelihood_tables[1]) - 1))[sorting_permutation[i]] for i in eachindex(likelihood_tables)]
     sorted_likelihood_tables = [likelihood_tables[i][sorting_permutation[i]] for i in eachindex(likelihood_tables)]
@@ -90,8 +90,8 @@ function turn_key_into_cluster_values(key::Vector{UInt32}, number_of_bits_per_cl
     return values
 end
 
-likelihood_tables = make_log_likelihood_tables_for_key(variables, number_of_bits)
-sorted_likelihood_matrix, sorted_values = make_matrices_of_values(likelihood_tables)
-key_by_cluster = turn_key_into_cluster_values(key, 8)
-calculate_log_likelihood_of_key(key, likelihood_tables, 8)
-actual_rank = key_enumerate(sorted_likelihood_matrix, sorted_values, key_by_cluster, 1 << 24)
+# likelihood_tables = make_log_likelihood_tables_for_key(variables, number_of_bits)
+# sorted_likelihood_matrix, sorted_values = make_matrices_of_values(likelihood_tables)
+# key_by_cluster = turn_key_into_cluster_values(key, 8)
+# calculate_log_likelihood_of_key(key, likelihood_tables, 8)
+# actual_rank = key_enumerate(sorted_likelihood_matrix, sorted_values, key_by_cluster, 1 << 24)

@@ -16,16 +16,18 @@ bits_per_template::Int64 = 8
 dimensions_per_template::Int64 = 8
 number_of_encryption_traces::Int64 = 10
 
-base_path_templates = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/8_on_32_trace_set/initial_templates/"
-base_key_templates = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/attack_profiling/8_on_32_trace_set/initial_templates/"
-base_trace_path = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/captures/ChaChaRecordings_8_on_32/recording_attack_counter_from_random_"
+path_to_data = "C:/Users/henry/Documents/PartIIIProject/data/"
 
-key_number = 280
+base_path_templates = path_to_data * "attack_profiling/32_volatile/initial_templates_8bits/"
+base_key_templates = path_to_data * "attack_profiling/32_volatile/initial_templates_8bits/"
+base_trace_path = path_to_data * "captures/ChaChaRecordings_3/recording_attack_counter_constant_"
 
-all_traces::Matrix{Float32} = zeros(Float32, number_of_encryption_traces, 379926)
-key, nonce, counter, encryption_trace = load_attack_trace(base_trace_path, key_number, 1)
+key_number = 1
+
+all_traces::Matrix{Float32} = zeros(Float32, number_of_encryption_traces, 129960)
+key, nonce, counter, encryption_trace = load_attack_trace(base_trace_path, key_number, 1, path_to_data)
 for i in 1:number_of_encryption_traces
-    key, nonce, counter, encryption_trace = load_attack_trace(base_trace_path, key_number, i - 1)
+    key, nonce, counter, encryption_trace = load_attack_trace(base_trace_path, key_number, i - 1, path_to_data)
     all_traces[i, :] = encryption_trace
 end
 encryption_output = encrypt(key, nonce, counter)

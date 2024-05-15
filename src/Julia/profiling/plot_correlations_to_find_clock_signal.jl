@@ -4,24 +4,22 @@ include("common_functions.jl")
 # gr()
 plotly()
 
-lower_bound_samples = 750_000 #563000
-upper_bound_samples = 799_900 #587000
+lower_bound_samples = 550_000 #563000
+upper_bound_samples = 649_900 #587000
 
-intermediate_value_index = 700
+intermediate_value_index = 1
 number_of_intermediate_values = 700
 path_to_data = "C:/Users/henry/Documents/PartIIIProject/data/"
 
-intermediate_values_base_path = string(path_to_data, "intermediate_value_traces_8_on_32/recording_profiling_")
-traces_base_path = string(path_to_data, "captures/ChaChaRecordings_8_on_32/recording_profiling_")
+intermediate_values_base_path = string(path_to_data, "intermediate_value_traces/32_volatile/recording_profiling_")
+traces_base_path = string(path_to_data, "captures/ChaChaRecordings_3/recording_profiling_")
 
-fid = h5open(string(path_to_data, "attack_profiling/mean_trace_8_on_32.hdf5"), "r")
+fid = h5open(string(path_to_data, "attack_profiling/32_volatile/mean_trace.hdf5"), "r")
 mean_trace = read(fid["mean_trace"])
-trimmed_mean_trace = mean_trace[50:(end-50)]
-mean_arg_min = argmin(mean_trace)
 close(fid)
 
 trace_range_per_file = 0:999
-file_range = 2:9
+file_range = 2:17
 
 all_intermediate_values = zeros(UInt32, length(trace_range_per_file) * length(file_range), number_of_intermediate_values)
 sections_of_trace = zeros(Int16, length(trace_range_per_file) * length(file_range), upper_bound_samples - lower_bound_samples)

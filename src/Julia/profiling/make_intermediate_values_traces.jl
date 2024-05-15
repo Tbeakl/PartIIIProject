@@ -9,10 +9,10 @@ path_to_data = "C:/Users/henry/Documents/PartIIIProject/data/"
 
 # file_number = 1
 # trace_number = 1
-for file_number in 35:64
+for file_number in 0:84
     println(file_number)
-    intermediates_fid = h5open(string(path_to_data, "intermediate_value_traces_8_on_32/recording_profiling_", file_number, ".hdf5"), "w")
-    trace_fid = h5open(string(path_to_data, "captures/ChaChaRecordings_8_on_32/recording_profiling_", file_number, ".hdf5"), "r")
+    intermediates_fid = h5open(string(path_to_data, "intermediate_value_traces/32_volatile/recording_profiling_", file_number, ".hdf5"), "w")
+    trace_fid = h5open(string(path_to_data, "captures/ChaChaRecordings_3/recording_profiling_", file_number, ".hdf5"), "r")
 
     for trace_number in 0:999
         key = UInt32.(read(trace_fid[string("power_", trace_number)]["key"]))

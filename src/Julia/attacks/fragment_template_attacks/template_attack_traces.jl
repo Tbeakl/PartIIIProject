@@ -294,13 +294,13 @@ function plot_distribution_of_values_and_means(
     covaraince_matrix = covaraince_matrix[1:cur_dims, 1:cur_dims]
     projection_matrix = read(fid["projection"])[:, 1:cur_dims]
     mean_vectors = read(fid["class_means"])[:, 1:cur_dims]
-    detailed_sample_bitmask = read(fid["detailed_sample_bitmask"])
-    sparse_sample_bitmask = read(fid["sparse_sample_bitmask"])
-    # sample_bitmask = read(fid["sample_bitmask"])
+    # detailed_sample_bitmask = read(fid["detailed_sample_bitmask"])
+    # sparse_sample_bitmask = read(fid["sparse_sample_bitmask"])
+    sample_bitmask = read(fid["sample_bitmask"])
     close(fid)
     noise = noise_distribution_given_covaraince_matrix(covaraince_matrix)
-    current_value_matrix = hcat(traces[:, detailed_sample_bitmask], traces[:, sparse_sample_bitmask]) * projection_matrix
-    # current_value_matrix = traces[:, sample_bitmask] * projection_matrix
+    # current_value_matrix = hcat(traces[:, detailed_sample_bitmask], traces[:, sparse_sample_bitmask]) * projection_matrix
+    current_value_matrix = traces[:, sample_bitmask] * projection_matrix
     position = mean(current_value_matrix, dims=1)[1, :]
 
     p = scatter(size=(1000, 1000))
@@ -319,9 +319,9 @@ function load_attack_trace(file_path::String, trace_number::Int64, encryption_ru
 
     file_number = (trace_number ÷ 100)
     trace_number_in_file = (trace_number - 1) % 100
-    clock_cycle_sample_number = 46 #405
-    number_of_samples_per_cycle = 50
-    number_of_samples_to_average_over = 2
+    clock_cycle_sample_number = 31 #405
+    number_of_samples_per_cycle = 100
+    number_of_samples_to_average_over = 5
 
     fid = h5open(string(file_path, file_number, ".hdf5"), "r")
     base_trace_data = fid[string("power_", trace_number_in_file, "_", encryption_run_number)]
@@ -332,7 +332,7 @@ function load_attack_trace(file_path::String, trace_number::Int64, encryption_ru
     raw_trace = read(base_trace_data)
     close(fid)
     # Need to downsample and align this trace to the mean
-    fid = h5open(path_to_data * "attack_profiling/8_on_32/mean_trace.hdf5", "r")
+    fid = h5open(path_to_data * "attack_profiling/32_volatile/mean_trace.hdf5", "r")
     mean_trace = read(fid["mean_trace"])
     close(fid)
 

@@ -16,7 +16,7 @@ function make_log_likelihood_tables_for_key(variables::Dict{String,AbsVariable},
 end
 
 function calculate_log_likelihood_of_key(key::Vector{UInt32},
-    log_likelihood_tables::Vector{Vector{Float64}},
+    log_likelihood_tables,
     bits_per_cluster::Int64)
     total_log_likelihood = 0
 

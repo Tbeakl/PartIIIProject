@@ -10,10 +10,10 @@ number_of_intermediate_values = 700
 number_of_bits_per_template = 8
 number_of_templates_per_intermediate_value = 32 ÷ number_of_bits_per_template
 path_to_data = "C:/Users/henry/Documents/PartIIIProject/data/"
-bitmask_path = path_to_data * "attack_profiling/8_on_32/clock_cycles_bitmasks.hdf5"
+bitmask_path = path_to_data * "attack_profiling/32_volatile/clock_cycles_bitmasks.hdf5"
 
-data_path = path_to_data * "attack_profiling/8_on_32/"
-path_to_templates = path_to_data * "attack_profiling/8_on_32/initial_templates/"
+data_path = path_to_data * "attack_profiling/32_volatile/"
+path_to_templates = path_to_data * "attack_profiling/32_volatile/initial_templates_8bits/"
 
 bitmask_fid = h5open(bitmask_path, "r")
 
@@ -34,7 +34,7 @@ all_data_datasets = []
 all_intermediate_datasets = []
 
 for i in 1:number_of_trace_files
-    data_fid = h5open(string(data_path, "profiling_2_", i, ".hdf5"), "r")
+    data_fid = h5open(string(data_path, "profiling_", i, ".hdf5"), "r")
     dset_intermediate_values = data_fid["intermediate_values"]
     if HDF5.ismmappable(dset_intermediate_values)
         dset_intermediate_values = HDF5.readmmap(dset_intermediate_values)
@@ -64,7 +64,7 @@ Threads.@threads for intermediate_value_index in 1:number_of_intermediate_values
         if !ispath(current_full_template_path) && sum(cycle_bitmask) > 0
             cycle_bitmask = dilate_infront(cycle_bitmask, 4)
             cycle_bitmask = dilate_after(cycle_bitmask, 2)
-            sample_bitmask = Bool.(repeat(cycle_bitmask, inner=50 ÷ 2)[1:399925])
+            sample_bitmask = Bool.(repeat(cycle_bitmask, inner=20)[1:129960])
             original_matrix_of_current_data = make_dataset_of_values_matrix(all_data_datasets, sample_bitmask)'
 
             matrix_of_current_data = original_matrix_of_current_data[:, permutation_of_intermediate_values]
