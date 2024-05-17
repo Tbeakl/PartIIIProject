@@ -1,4 +1,4 @@
-using Plots, Base.Threads, Random, BenchmarkTools
+using Plots, Base.Threads, Random, BenchmarkTools, HDF5
 include("../../belief_propagation/node.jl")
 include("../../belief_propagation/messages.jl")
 include("../../chacha_factor_graph/chacha_factor_graph.jl")
@@ -7,13 +7,13 @@ include("../../chacha_factor_graph/heatmap_visualisation.jl")
 include("../../encryption/leakage_functions.jl")
 include("../../encryption/chacha.jl")
 
-key = zeros(UInt32, 8)
-nonce = zeros(UInt32, 3)
-counter::UInt32 = 1
-
-# key = [0x03020100, 0x07060504, 0x0b0a0908, 0x0f0e0d0c, 0x13121110, 0x17161514, 0x1b1a1918, 0x1f1e1d1c]
-# nonce = [0x09000000, 0x4a000000, 0x00000000]
+# key = zeros(UInt32, 8)
+# nonce = zeros(UInt32, 3)
 # counter::UInt32 = 1
+
+key = [0x03020100, 0x07060504, 0x0b0a0908, 0x0f0e0d0c, 0x13121110, 0x17161514, 0x1b1a1918, 0x1f1e1d1c]
+nonce = [0x09000000, 0x4a000000, 0x00000000]
+counter::UInt32 = 1
 
 number_of_bits = 8
 
@@ -80,7 +80,7 @@ internal_variables = [union(variables_by_round[:]...)...]
 all_variables = [keys(variables)...]
 update_all_entropies(variables, all_variables)
 
-initial_number_of_iterations = 1
+initial_number_of_iterations = 100
 
 for i in 1:initial_number_of_iterations
     println(i)
@@ -106,18 +106,24 @@ end
 #     end
 # end
 
-@benchmark begin
-    for var_name in internal_variables
-        variable_to_factor_messages(variables[var_name])
-    end
-    for fact_name in internal_factors
-        factor_to_variable_messages(factors[fact_name])
-    end
-end
+# @benchmark begin
+#     for var_name in internal_variables
+#         variable_to_factor_messages(variables[var_name])
+#     end
+#     for fact_name in internal_factors
+#         factor_to_variable_messages(factors[fact_name])
+#     end
+# end
 
 # anim = @animate for i in eachindex(visualisation_of_entropy)
 #     heatmap(visualisation_of_entropy[i]; title=string("Round ", i - 1, " entropy of variables"), clim=(0, number_of_bits)) # 
 # end
 
 # # heatmap(visualisation_of_entropy[1]; title=string("Round ", 0, " entropy of variables")) # clim=(0, number_of_bits),
-# gif(anim, string("test_test_", number_of_bits, ".gif"), fps=50)
+# gif(anim, fps=10)
+
+fid = h5open("./data/evaluation/heatmap_data/tree_adds/" * string(number_of_bits) * ".hdf5", "w")
+for i in eachindex(visualisation_of_entropy)
+    fid["entropies_" * string(i - 1)] = visualisation_of_entropy[i]
+end
+close(fid)
