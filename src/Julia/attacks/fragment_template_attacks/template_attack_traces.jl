@@ -313,7 +313,7 @@ function plot_distribution_of_values_and_means(
     return p
 end
 
-function load_attack_trace(file_path::String, trace_number::Int64, encryption_run_number::Int64, path_to_data::String)
+function load_attack_trace(file_path::String, trace_number::Int64, encryption_run_number::Int64, path_to_mean::String)
     # Need to calculate the file in which it falls because each file contains 100
     # values with them and then also the encryption run number which needs to be done
 
@@ -332,12 +332,41 @@ function load_attack_trace(file_path::String, trace_number::Int64, encryption_ru
     raw_trace = read(base_trace_data)
     close(fid)
     # Need to downsample and align this trace to the mean
-    fid = h5open(path_to_data * "attack_profiling/32_volatile/mean_trace.hdf5", "r")
+    fid = h5open(path_to_mean, "r")
     mean_trace = read(fid["mean_trace"])
     close(fid)
 
     trimmed_raw_trace = make_power_trace_trimmed_and_aligned_to_mean(mean_trace, raw_trace)
     trimmed_raw_trace = trimmed_raw_trace[clock_cycle_sample_number:(end-(number_of_samples_per_cycle-clock_cycle_sample_number)-1)]
+    downsampled_trace = Float32.(collect(Iterators.map(mean, Iterators.partition(trimmed_raw_trace, number_of_samples_to_average_over))))
+    return (key, nonce, counter, downsampled_trace)
+end
+
+function load_attack_trace_argmin_alignment(file_path::String, trace_number::Int64, encryption_run_number::Int64, path_to_mean::String)
+    # Need to calculate the file in which it falls because each file contains 100
+    # values with them and then also the encryption run number which needs to be done
+    file_number = (trace_number ÷ 100)
+    trace_number_in_file = (trace_number - 1) % 100
+    clock_cycle_sample_number = 405
+    number_of_samples_to_average_over = 50
+
+    fid = h5open(string(file_path, file_number, ".hdf5"), "r")
+    base_trace_data = fid[string("power_", trace_number_in_file, "_", encryption_run_number)]
+    key = UInt32.(read(base_trace_data["key"]))
+    nonce = UInt32.(read(base_trace_data["nonce"]))
+    counter = UInt32(read(base_trace_data["counter"])[1])
+
+    raw_trace = read(base_trace_data)
+    close(fid)
+    # Need to downsample and align this trace to the mean
+    fid = h5open(path_to_mean, "r")
+    mean_trace = read(fid["mean_trace"])
+    mean_arg_min = argmin(mean_trace)
+    close(fid)
+
+    difference_between_mean_and_power = argmin(raw_trace) - mean_arg_min
+    trimmed_raw_trace = raw_trace[50+difference_between_mean_and_power:end-(50-difference_between_mean_and_power)]
+    trimmed_raw_trace = trimmed_raw_trace[clock_cycle_sample_number:(end-(500-clock_cycle_sample_number)-1)]
     downsampled_trace = Float32.(collect(Iterators.map(mean, Iterators.partition(trimmed_raw_trace, number_of_samples_to_average_over))))
     return (key, nonce, counter, downsampled_trace)
 end

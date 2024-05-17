@@ -12,20 +12,18 @@ include("template_attack_traces.jl")
 number_of_bits::Int64 = 8
 bits_per_template::Int64 = 8
 dimensions_per_template::Int64 = 8
-number_of_encryption_traces::Int64 = 1
+number_of_encryption_traces::Int64 = 10
 key_number::Int64 = 3
 
 path_to_data = "C:/Users/henry/Documents/PartIIIProject/data/"
 
 base_path_templates = path_to_data * "attack_profiling/32_volatile/initial_templates_8bits/"
 base_key_templates = path_to_data * "attack_profiling/32_volatile/initial_templates_8bits/"
-base_trace_path = path_to_data * "captures/ChaChaRecordings_3/recording_attack_counter_from_random_"
-
-base_evaluation_of_ranks = path_to_data * "evaluation/random_counter_32_volatile_1_8/"
+# base_trace_path = path_to_data * "captures/ChaChaRecordings_3/recording_attack_counter_from_random_"
+base_trace_path = path_to_data * "captures/ChaChaRecordings_3/recording_attack_counter_constant_"
 
 damping_factor::Float64 = 0.95
 
-result_path = string(base_evaluation_of_ranks, key_number, ".hdf5")
 variables = Dict{String,AbsVariable}()
 factors = Dict{String,AbsFactor}()
 variables_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
@@ -33,14 +31,15 @@ factors_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
 adds_by_round::Vector{Set{Int64}} = [Set{Int64}() for _ in 1:21]
 println("Key number: ", key_number)
 all_traces = zeros(Float32, number_of_encryption_traces, 129960)
-key, nonce, counter, encryption_trace = load_attack_trace(base_trace_path, key_number, 1, path_to_data)
+key, nonce, counter, encryption_trace = load_attack_trace(base_trace_path, key_number, 1, path_to_data * "attack_profiling/32_volatile/mean_trace.hdf5")
 for i in 1:number_of_encryption_traces
-    key, nonce, counter, encryption_trace = load_attack_trace(base_trace_path, key_number, i - 1, path_to_data)
+    key, nonce, counter, encryption_trace = load_attack_trace(base_trace_path, key_number, i - 1, path_to_data * "attack_profiling/32_volatile/mean_trace.hdf5")
     all_traces[i, :] = encryption_trace
 end
 encryption_output = encrypt(key, nonce, counter)
 
-for encryption_run_number in 1:number_of_encryption_traces
+for encryption_run_number in 1:1 #number_of_encryption_traces
+    key, nonce, counter, encryption_trace = load_attack_trace(base_trace_path, key_number, encryption_run_number - 1, path_to_data * "attack_profiling/32_volatile/mean_trace.hdf5")
     location_execution_counts = zeros(Int64, 16)
     chacha_factor_graph!(variables, factors, number_of_bits, variables_by_round, factors_by_round, adds_by_round, location_execution_counts, encryption_run_number)
     if encryption_run_number == 1
