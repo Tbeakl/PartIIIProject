@@ -115,12 +115,12 @@ end
 #     end
 # end
 
-# anim = @animate for i in eachindex(visualisation_of_entropy)
-#     heatmap(visualisation_of_entropy[i]; title=string("Round ", i - 1, " entropy of variables"), clim=(0, number_of_bits)) # 
-# end
+anim = @animate for i in eachindex(visualisation_of_entropy)
+    heatmap(visualisation_of_entropy[i]; title=string("Round ", i - 1, " entropy of variables"), clim=(0, number_of_bits)) # 
+end
 
-# # heatmap(visualisation_of_entropy[1]; title=string("Round ", 0, " entropy of variables")) # clim=(0, number_of_bits),
-# gif(anim, fps=10)
+# heatmap(visualisation_of_entropy[1]; title=string("Round ", 0, " entropy of variables")) # clim=(0, number_of_bits),
+gif(anim, fps=10)
 
 fid = h5open("./data/evaluation/heatmap_data/tree_adds/" * string(number_of_bits) * ".hdf5", "w")
 for i in eachindex(visualisation_of_entropy)

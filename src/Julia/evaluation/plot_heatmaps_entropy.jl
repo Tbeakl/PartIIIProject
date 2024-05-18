@@ -1,4 +1,4 @@
-using Plots
+using Plots, HDF5
 
 path_to_data_for_heatmaps = "./data/evaluation/heatmap_data/"
 
