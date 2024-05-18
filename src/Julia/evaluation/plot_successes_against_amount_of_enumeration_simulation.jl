@@ -37,6 +37,11 @@ for i in eachindex(signal_to_noise_ratios)
     push!(initial_ranks[signal_to_noise_ratios[i]], 256)
     push!(final_ranks[signal_to_noise_ratios[i]], 256)
 end
+prepend!(proportion, [0, 0])
+for i in eachindex(signal_to_noise_ratios)
+    prepend!(initial_ranks[signal_to_noise_ratios[i]], [0, initial_ranks[signal_to_noise_ratios[i]][begin]])
+    prepend!(final_ranks[signal_to_noise_ratios[i]], [0, final_ranks[signal_to_noise_ratios[i]][begin]])
+end
 
 for i in eachindex(signal_to_noise_ratios)
     plot!(p, initial_ranks[signal_to_noise_ratios[i]], proportion, c=cur_colors[i], linestyle=:dash, label=string("Pre-SASCA ", signal_to_noise_ratios[i], " SNR"), linewidth=1.5)
@@ -82,6 +87,11 @@ push!(proportion, 1.0)
 for i in eachindex(signal_to_noise_ratios)
     push!(initial_ranks[signal_to_noise_ratios[i]], 256)
     push!(final_ranks[signal_to_noise_ratios[i]], 256)
+end
+prepend!(proportion, [0, 0])
+for i in eachindex(signal_to_noise_ratios)
+    prepend!(initial_ranks[signal_to_noise_ratios[i]], [0, initial_ranks[signal_to_noise_ratios[i]][begin]])
+    prepend!(final_ranks[signal_to_noise_ratios[i]], [0, final_ranks[signal_to_noise_ratios[i]][begin]])
 end
 
 for i in eachindex(signal_to_noise_ratios)

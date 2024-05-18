@@ -1,4 +1,4 @@
-using Plots, HDF5
+using Plots, HDF5, Statistics
 include("../chacha_factor_graph/heatmap_visualisation_intermediate_values.jl")
 include("../chacha_factor_graph/heatmap_visualisation.jl")
 # 8 bit implementation
@@ -23,6 +23,7 @@ mapped_matrix = map(x -> mapping[x], base_matrix)
 heatmap_of_counts = map_to_values.(mapped_matrix, Ref(log2.(guessing_entropies)), Ref(32 ÷ number_of_bits))
 p = heatmap(heatmap_of_counts, title="Logarithmic guessing entropy", ylabel="ChaCha state", xlabel="Operation number", clim=(0,7), dpi=300)
 savefig(p, "./plots/heatmaps/byte_templates_LGE.png")
+println("8: LGE: ", log2(mean(guessing_entropies)), " FSR: ", mean(success_rates))
 
 # 32 volatile
 fid = h5open("./data/evaluation/heatmap_data/FSR/32_volatile.hdf5", "r")
@@ -46,6 +47,7 @@ mapped_matrix = map(x -> mapping[x], base_matrix)
 heatmap_of_counts = map_to_values.(mapped_matrix, Ref(log2.(guessing_entropies)), Ref(32 ÷ number_of_bits))
 p = heatmap(heatmap_of_counts, title="Logarithmic guessing entropy", ylabel="ChaCha state", xlabel="Operation number", clim=(0,7), dpi=300)
 savefig(p, "./plots/heatmaps/32_volatile_byte_templates_LGE.png")
+println("32 volatile: LGE: ", log2(mean(guessing_entropies)), " FSR: ", mean(success_rates))
 
 # 32
 fid = h5open("./data/evaluation/heatmap_data/FSR/32.hdf5", "r")
@@ -69,3 +71,4 @@ mapped_matrix = map(x -> mapping[x], base_matrix)
 heatmap_of_counts = map_to_values.(mapped_matrix, Ref(log2.(guessing_entropies)), Ref(32 ÷ number_of_bits))
 p = heatmap(heatmap_of_counts, title="Logarithmic guessing entropy", ylabel="ChaCha state", xlabel="Operation number", clim=(0,15), dpi=300)
 savefig(p, "./plots/heatmaps/32_16_bit_templates_LGE.png")
+println("32: LGE: ", log2(mean(guessing_entropies)), " FSR: ", mean(success_rates))

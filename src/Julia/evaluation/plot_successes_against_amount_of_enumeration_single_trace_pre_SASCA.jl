@@ -10,6 +10,7 @@ base_paths_to_counts::Vector{String} = base_path_to_data .* [
     "evaluation/attack_8_on_32_unknown/",
     "evaluation/random_counter_1_8/",
     "evaluation/random_counter_1_16/",
+    "evaluation/16_bit_fragments_1/",
     "evaluation/random_counter_32_volatile_1_8/",
 ]
 
@@ -29,6 +30,7 @@ paths_to_actual_keys::Vector{String} = base_path_to_data .* "captures/" .* [
     "ChaChaRecordings_8_on_32/recording_attack_counter_from_random_",
     "ChaChaRecordings_2/recording_attack_counter_from_random_",
     "ChaChaRecordings_2/recording_attack_counter_from_random_",
+    "ChaChaRecordings_2/recording_attack_counter_from_random_",
     "ChaChaRecordings_3/recording_attack_counter_from_random_",
 ]
 
@@ -45,11 +47,12 @@ paths_to_actual_keys::Vector{String} = base_path_to_data .* "captures/" .* [
 
 initial_ranks::Vector{Vector{Number}} = []
 
-labels::Vector{String} = ["8-bit implementation\nsingle trace",
+labels::Vector{String} = ["8-bit implementation",
     "8-bit implementation\nunknown counter, nonce, output",
-    "8-bit fragment\nsingle trace",
-    "16-bit fragment\nsingle trace",
-    "8-bit fragment volatile\nsingle trace",]
+    "8-bit fragment",
+    "16-bit fragment marginalised to 8-bits",
+    "16-bit fragment",
+    "8-bit fragment volatile",]
 
 # "8-bit fragment 10 trace\nchanged counter mean",
 # "16-bit fragment 10 trace\nchanged counter mean",
@@ -94,13 +97,27 @@ for (i, base_path_to_counts) in enumerate(base_paths_to_counts)
             else
                 push!(current_initial_ranks, current_estimated_rank)
             end
-            if isnan(read(fid["entropy_over_time"])[end])
-                println(base_path_to_counts, " ", trace_number)
-            end
+            # if isnan(read(fid["entropy_over_time"])[end])
+            #     println(base_path_to_counts, " ", trace_number)
+            # end
             close(fid)
         end
     end
     push!(initial_ranks, sort(current_initial_ranks))
+end
+
+proportion = collect((1:1000) ./ 1000)
+
+push!(proportion, 1.0)
+for i in eachindex(base_paths_to_counts)
+    push!(initial_ranks[i], 256)
+end
+
+# Also add zero at the start of the trace and prepend the other intial rank to get the long line at the bottom
+# and another zero zero at the very start
+prepend!(proportion, [0, 0])
+for i in eachindex(base_paths_to_counts)
+    prepend!(initial_ranks[i], [0, initial_ranks[i][begin]])
 end
 
 p = plot(size=(1500, 500),
@@ -110,12 +127,6 @@ p = plot(size=(1500, 500),
     leftmargin=8Plots.mm,
     bottom_margin=6Plots.mm,
     legend=:outerright, legendcolumns=1, xlim=(0, 256), ylim=(0, 1))
-proportion = collect((1:1000) ./ 1000)
-
-push!(proportion, 1.0)
-for i in eachindex(base_paths_to_counts)
-    push!(initial_ranks[i], 256)
-end
 
 for i in eachindex(base_paths_to_counts)
     cur_colors = get_color_palette(:auto, plot_color(:white))
