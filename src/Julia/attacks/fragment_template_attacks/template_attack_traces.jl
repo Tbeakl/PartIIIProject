@@ -25,7 +25,7 @@ function marginalise_prob_dist(original_dist::AbstractVector{Float64}, shift_amo
     return output_dist
 end
 
-function real_byte_template_path_to_function(base_path::String, bits_per_template::Int64, number_of_dimensions::Int64, traces::Matrix{Float32})
+function real_byte_template_path_to_function(base_path::String, bits_per_template::Int64, number_of_dimensions::Int64, traces)
     # Need mapping from the positions in the theoertical trace to template number
     val = 8 + 4 + 16 + 1 # Need to add on the base of the 
     trace_mapping = zeros(Int64, 1600)
@@ -319,7 +319,7 @@ function load_attack_trace(file_path::String, trace_number::Int64, encryption_ru
 
     file_number = (trace_number ÷ 100)
     trace_number_in_file = (trace_number - 1) % 100
-    clock_cycle_sample_number = 31 #405
+    clock_cycle_sample_number =  31 #46 #405
     number_of_samples_per_cycle = 100
     number_of_samples_to_average_over = 5
 

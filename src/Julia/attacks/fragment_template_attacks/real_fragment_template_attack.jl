@@ -21,7 +21,9 @@ using Plots, Base.Threads, Random, HDF5, Distributed
     base_key_templates = path_to_data * "attack_profiling/32_volatile/initial_templates_8bits/"
     base_trace_path = path_to_data * "captures/ChaChaRecordings_3/recording_attack_counter_from_random_"
 
-    base_evaluation_of_ranks = path_to_data * "evaluation/random_counter_32_volatile_1_8/"
+    base_evaluation_of_ranks = path_to_data * "evaluation/incremented_random_counter_32_volatile_10_8/"
+
+    path_to_mean = path_to_data * "attack_profiling/32_volatile/mean_trace.hdf5"
 
     damping_factor::Float64 = 0.95
 
@@ -34,14 +36,16 @@ using Plots, Base.Threads, Random, HDF5, Distributed
         adds_by_round::Vector{Set{Int64}} = [Set{Int64}() for _ in 1:21]
         println("Key number: ", key_number)
         all_traces = zeros(Float32, number_of_encryption_traces, 129960)
-        key, nonce, counter, encryption_trace = load_attack_trace(base_trace_path, key_number, 1, path_to_data)
+        key, nonce, counter, encryption_trace = load_attack_trace(base_trace_path, key_number, 1, path_to_mean)
         for i in 1:number_of_encryption_traces
-            key, nonce, counter, encryption_trace = load_attack_trace(base_trace_path, key_number, i - 1, path_to_data)
+            key, nonce, counter, encryption_trace = load_attack_trace(base_trace_path, key_number, i - 1, path_to_mean)
             all_traces[i, :] = encryption_trace
         end
         encryption_output = encrypt(key, nonce, counter)
 
         for encryption_run_number in 1:number_of_encryption_traces
+            key, nonce, counter, encryption_trace = load_attack_trace(base_trace_path, key_number, encryption_run_number - 1, path_to_mean)
+            encryption_output = encrypt(key, nonce, counter)
             location_execution_counts = zeros(Int64, 16)
             chacha_factor_graph!(variables, factors, number_of_bits, variables_by_round, factors_by_round, adds_by_round, location_execution_counts, encryption_run_number)
             if encryption_run_number == 1
@@ -60,7 +64,7 @@ using Plots, Base.Threads, Random, HDF5, Distributed
             #     encryption_run_number)
 
             println("Starting to add the factors for the trace")
-            add_byte_template_function = real_byte_template_path_to_function(base_path_templates, bits_per_template, dimensions_per_template, all_traces)
+            add_byte_template_function = real_byte_template_path_to_function(base_path_templates, bits_per_template, dimensions_per_template, encryption_trace')
             add_leakage_trace_to_factor_graph(encryption_trace, variables, factors, number_of_bits, encryption_run_number, add_byte_template_function)
             println("Added the factors for the trace")
 
@@ -202,7 +206,7 @@ final_key_number = parse(Int64, ARGS[2])
 number_of_bits::Int64 = 8
 bits_per_template::Int64 = 8
 dimensions_per_template::Int64 = 8
-number_of_encryption_traces::Int64 = 1
+number_of_encryption_traces::Int64 = 10
 
 # trace_numbers = [2, 6, 10, 16, 21, 30, 35, 45, 46, 48, 49, 51, 55, 58, 59, 65, 74, 75, 76, 85, 86, 87, 93, 99, 100,
 #     101, 102, 108, 109, 110, 113, 119, 124, 127, 129, 132, 135, 138, 143, 148, 150, 152, 154, 160, 161,

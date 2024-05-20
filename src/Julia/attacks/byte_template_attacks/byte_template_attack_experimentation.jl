@@ -1,4 +1,4 @@
-using Plots, Base.Threads, Random, NPZ
+using Plots, Base.Threads, Random, NPZ, HDF5
 gr()
 include("../../belief_propagation/node.jl")
 include("../../belief_propagation/messages.jl")
@@ -18,7 +18,7 @@ all_nonces::Vector{Vector{UInt32}} = []
 all_counters::Vector{UInt32} = []
 
 
-path_to_data = "D:/Year_4_Part_3/Dissertation/SourceCode/PartIIIProject/data/"
+path_to_data = "C:/Users/henry/Documents/PartIIIProject/data/"
 
 keyset_fid = h5open(string(path_to_data, "evaluation/key_sets/100_random_keys_nonces_counter.hdf5"), "r")
 for i in 1:100
@@ -29,7 +29,7 @@ end
 close(keyset_fid)
 
 # for i in 1:100
-key_number = 1
+key_number = 2
 Random.seed!(1234)
 number_of_encryption_traces::Int64 = 1
 
@@ -42,17 +42,17 @@ counter::UInt32 = all_counters[key_number]
 # The factor graph has clearly been broken because the adds are not working around the graph
 
 noise = noise_distribution_fixed_standard_dev(1.0, dimensions)
-mean_vectors = generate_mean_vectors(noise, signal_to_noise_ratio, 255)
-add_byte_key_template_to_variable = byte_template_value_to_function(mean_vectors, noise)
-add_byte_intermediate_add_template_to_variable = byte_template_value_to_function(mean_vectors, noise)
-add_byte_intermediate_rot_template_to_variable = byte_template_value_to_function(mean_vectors, noise)
+# mean_vectors = generate_mean_vectors(noise, signal_to_noise_ratio, 255)
+# add_byte_key_template_to_variable = byte_template_value_to_function(mean_vectors, noise)
+# add_byte_intermediate_add_template_to_variable = byte_template_value_to_function(mean_vectors, noise)
+# add_byte_intermediate_rot_template_to_variable = byte_template_value_to_function(mean_vectors, noise)
 
-# base_path_key_mean_vectors = string(path_to_data, "ChaCha_Simulation/templates_Keccak/templateLDA_B_ID/template_B00/template_expect_b")
-# base_path_intermediate_add_mean_vectors = string(path_to_data, "ChaCha_Simulation/templates_Keccak/templateLDA_B_ID/template_C00/template_expect_b")
-# base_path_intermediate_rot_mean_vectors = string(path_to_data, "ChaCha_Simulation/templates_Keccak/templateLDA_B_ID/template_C00/template_expect_b")
-# add_byte_key_template_to_variable = byte_template_path_to_function(base_path_key_mean_vectors, noise, 200)
-# add_byte_intermediate_add_template_to_variable = byte_template_path_to_function(base_path_intermediate_add_mean_vectors, noise, 40)
-# add_byte_intermediate_rot_template_to_variable = byte_template_path_to_function(base_path_intermediate_rot_mean_vectors, noise, 40)
+base_path_key_mean_vectors = string(path_to_data, "templates_Keccak/templateLDA_B_ID/template_B00/template_expect_b")
+base_path_intermediate_add_mean_vectors = string(path_to_data, "templates_Keccak/templateLDA_B_ID/template_B00/template_expect_b")
+base_path_intermediate_rot_mean_vectors = string(path_to_data, "templates_Keccak/templateLDA_B_ID/template_B00/template_expect_b")
+add_byte_key_template_to_variable = byte_template_path_to_function(base_path_key_mean_vectors, noise, 200)
+add_byte_intermediate_add_template_to_variable = byte_template_path_to_function(base_path_intermediate_add_mean_vectors, noise, 200)
+add_byte_intermediate_rot_template_to_variable = byte_template_path_to_function(base_path_intermediate_rot_mean_vectors, noise, 200)
 
 variables = Dict{String,AbsVariable}()
 factors = Dict{String,AbsFactor}()
@@ -136,7 +136,7 @@ println(tot_entropy_over_time[end])
 internal_factors = [union(additional_factors, factors_by_round[:]...)...]
 internal_variables = [union(additional_variables, variables_by_round[:]...)...]
 
-initial_number_of_iterations = 200
+initial_number_of_iterations = 200 #200
 
 for i in 1:initial_number_of_iterations
     println(i)
@@ -162,10 +162,10 @@ end
 # factors_at_ends = [union(additional_factors, factors_by_round[begin:rounds_for_ends]..., factors_by_round[end-rounds_for_ends-1:end]...)...]
 # for i in 1:number_of_iterations_of_ends
 #     println(i)
-#     Threads.@threads for var_name in variables_at_ends
+#     for var_name in variables_at_ends
 #         variable_to_factor_messages(variables[var_name], damping_factor)
 #     end
-#     Threads.@threads for fact_name in factors_at_ends
+#     for fact_name in factors_at_ends
 #         factor_to_variable_messages(factors[fact_name], damping_factor)
 #     end
 #     update_all_entropies(variables, variables_at_ends)
@@ -173,7 +173,20 @@ end
 
 #     push!(tot_entropy_over_time, total_entropy_of_graph(variables))
 #     println(tot_entropy_over_time[end])
-#     if tot_entropy_over_time[end] < 1e-6 || abs(tot_entropy_over_time[end] - tot_entropy_over_time[end-1]) <= 1e-6
+#     if tot_entropy_over_time[end] < 1e-6 || abs(tot_entropy_over_time[end] - tot_entropy_over_time[end-1]) <= 1
+#         break
+#     end
+# end
+
+# number_of_iterations_forwards_backwards = 200
+# for i in 1:number_of_iterations_forwards_backwards
+#     belief_propagate_forwards_and_back_through_graph(variables, factors, variables_by_round, factors_by_round, 1, damping_factor)
+#     update_all_entropies(variables, all_variables)
+#     push!(visualisation_of_entropy, variables_to_heatmap_matrix(visualisation_variables, heatmap_plotting_function))
+
+#     push!(tot_entropy_over_time, total_entropy_of_graph(variables))
+#     println(tot_entropy_over_time[end])
+#     if tot_entropy_over_time[end] < 1e-6 || abs(tot_entropy_over_time[end] - tot_entropy_over_time[end-1]) <= 1
 #         break
 #     end
 # end
@@ -191,9 +204,15 @@ end
 # plot(tot_entropy_over_time)
 
 anim = @animate for i in eachindex(visualisation_of_entropy)
-    heatmap(visualisation_of_entropy[i]; title=string("Round ", i - 1, " entropy of variables"), clim=(0, number_of_bits)) # 
+    heatmap(visualisation_of_entropy[i]; title=string("Round ", i - 1, " entropy of variables"), clim=(0, number_of_bits))
 end
 # heatmap(visualisation_of_entropy[1]; title=string("Round ", 0, " entropy of variables")) # clim=(0, number_of_bits),
-gif(anim, "test.gif", fps=20)
+gif(anim, fps=20)
 
-heatmap(visualisation_of_entropy[1]; title=string("Round ", 0, " entropy of variables"), clim=(0, number_of_bits))
+# heatmap(visualisation_of_entropy[1]; title=string("Round ", 0, " entropy of variables"), clim=(0, number_of_bits))
+
+# fid = h5open(path_to_data * "evaluation/heatmap_data/schedule_changes/B_C_C_ends.hdf5", "w")
+# for i in eachindex(visualisation_of_entropy)
+#     fid[string("entropies_", i - 1)] = visualisation_of_entropy[i]
+# end
+# close(fid)

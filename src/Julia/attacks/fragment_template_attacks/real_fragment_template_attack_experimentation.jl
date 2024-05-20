@@ -13,14 +13,18 @@ number_of_bits::Int64 = 8
 bits_per_template::Int64 = 8
 dimensions_per_template::Int64 = 8
 number_of_encryption_traces::Int64 = 10
-key_number::Int64 = 3
+key_number::Int64 = 1
 
 path_to_data = "C:/Users/henry/Documents/PartIIIProject/data/"
 
+# base_path_templates = path_to_data * "attack_profiling/32/initial_templates_sixteen_bit_templates/sparse_50_detailed_50/"
+# base_key_templates = path_to_data * "attack_profiling/32/initial_templates_sixteen_bit_templates/sparse_50_detailed_50/"
 base_path_templates = path_to_data * "attack_profiling/32_volatile/initial_templates_8bits/"
 base_key_templates = path_to_data * "attack_profiling/32_volatile/initial_templates_8bits/"
-# base_trace_path = path_to_data * "captures/ChaChaRecordings_3/recording_attack_counter_from_random_"
-base_trace_path = path_to_data * "captures/ChaChaRecordings_3/recording_attack_counter_constant_"
+base_trace_path = path_to_data * "captures/ChaChaRecordings_3/recording_attack_counter_from_random_"
+# base_trace_path = path_to_data * "captures/ChaChaRecordings_2/recording_attack_counter_from_random_"
+
+path_to_mean = path_to_data * "attack_profiling/32_volatile/mean_trace.hdf5"
 
 damping_factor::Float64 = 0.95
 
@@ -31,15 +35,18 @@ factors_by_round::Vector{Set{String}} = [Set{String}() for _ in 1:21]
 adds_by_round::Vector{Set{Int64}} = [Set{Int64}() for _ in 1:21]
 println("Key number: ", key_number)
 all_traces = zeros(Float32, number_of_encryption_traces, 129960)
-key, nonce, counter, encryption_trace = load_attack_trace(base_trace_path, key_number, 1, path_to_data * "attack_profiling/32_volatile/mean_trace.hdf5")
+key, nonce, counter, encryption_trace = load_attack_trace(base_trace_path, key_number, 1, path_to_mean)
+# key, nonce, counter, encryption_trace = load_attack_trace_argmin_alignment(base_trace_path, key_number, 1, path_to_mean)
 for i in 1:number_of_encryption_traces
-    key, nonce, counter, encryption_trace = load_attack_trace(base_trace_path, key_number, i - 1, path_to_data * "attack_profiling/32_volatile/mean_trace.hdf5")
+    key, nonce, counter, encryption_trace = load_attack_trace(base_trace_path, key_number, i - 1, path_to_mean)
+    # key, nonce, counter, encryption_trace = load_attack_trace_argmin_alignment(base_trace_path, key_number, i - 1, path_to_mean)
     all_traces[i, :] = encryption_trace
 end
-encryption_output = encrypt(key, nonce, counter)
 
-for encryption_run_number in 1:1 #number_of_encryption_traces
-    key, nonce, counter, encryption_trace = load_attack_trace(base_trace_path, key_number, encryption_run_number - 1, path_to_data * "attack_profiling/32_volatile/mean_trace.hdf5")
+for encryption_run_number in 1:number_of_encryption_traces
+    key, nonce, counter, encryption_trace = load_attack_trace(base_trace_path, key_number, encryption_run_number - 1, path_to_mean)
+    # key, nonce, counter, encryption_trace = load_attack_trace_argmin_alignment(base_trace_path, key_number, encryption_run_number - 1, path_to_mean)
+    encryption_output = encrypt(key, nonce, counter)
     location_execution_counts = zeros(Int64, 16)
     chacha_factor_graph!(variables, factors, number_of_bits, variables_by_round, factors_by_round, adds_by_round, location_execution_counts, encryption_run_number)
     if encryption_run_number == 1
@@ -48,9 +55,17 @@ for encryption_run_number in 1:1 #number_of_encryption_traces
 
     # Here we are assuming that we have known nonce and counter
     add_values_of_initial_nonce_and_counter(variables, factors, number_of_bits, nonce, counter, encryption_run_number)
+    # add_initial_counter_distribution_from_leakage_traces_set_of_templates(variables,
+    #     factors,
+    #     number_of_bits,
+    #     base_key_templates,
+    #     bits_per_template,
+    #     dimensions_per_template,
+    #     encryption_trace,
+    #     encryption_run_number)
 
     println("Starting to add the factors for the trace")
-    add_byte_template_function = real_byte_template_path_to_function(base_path_templates, bits_per_template, dimensions_per_template, all_traces)
+    add_byte_template_function = real_byte_template_path_to_function(base_path_templates, bits_per_template, dimensions_per_template, encryption_trace')
     add_leakage_trace_to_factor_graph(encryption_trace, variables, factors, number_of_bits, encryption_run_number, add_byte_template_function)
     println("Added the factors for the trace")
 
@@ -58,6 +73,17 @@ for encryption_run_number in 1:1 #number_of_encryption_traces
     for i in 1:16
         set_variable_to_value(variables, factors, string(i, "_", location_execution_counts[i]), encryption_output[i], number_of_bits, encryption_run_number)
     end
+    # all_distribution_of_output(
+    #     variables,
+    #     factors,
+    #     number_of_bits,
+    #     base_key_templates,
+    #     bits_per_template,
+    #     dimensions_per_template,
+    #     location_execution_counts,
+    #     encryption_trace,
+    #     encryption_run_number
+    # )
 end
 
 println("Starting adding key distribution")
@@ -69,6 +95,14 @@ add_initial_key_distribution_from_leakage_traces_set_of_templates(
     bits_per_template,
     dimensions_per_template,
     all_traces)
+# add_initial_nonce_distribution_from_leakage_traces_set_of_templates(
+#     variables,
+#     factors,
+#     number_of_bits,
+#     base_key_templates,
+#     bits_per_template,
+#     dimensions_per_template,
+#     all_traces)
 println("Added key distribution")
 
 additional_variables::Set{String} = Set{String}()
@@ -101,7 +135,7 @@ println(tot_entropy_over_time[end])
 internal_factors = [union(additional_factors, factors_by_round[:]...)...]
 internal_variables = [union(additional_variables, variables_by_round[:]...)...]
 
-initial_number_of_iterations = 10
+initial_number_of_iterations = 10 #200
 
 for i in 1:initial_number_of_iterations
     println(i)
@@ -116,12 +150,12 @@ for i in 1:initial_number_of_iterations
 
     push!(tot_entropy_over_time, total_entropy_of_graph(variables))
     println(tot_entropy_over_time[end])
-    if tot_entropy_over_time[end] < 100 || tot_entropy_over_time[end-1] - tot_entropy_over_time[end] <= 0.05 || isnan(tot_entropy_over_time[end])
+    if tot_entropy_over_time[end] < 1 || abs(tot_entropy_over_time[end-1] - tot_entropy_over_time[end]) <= 0.05 || isnan(tot_entropy_over_time[end])
         break
     end
 end
 
-number_of_iterations_of_ends = 200
+number_of_iterations_of_ends = 400
 rounds_for_ends = 2
 variables_at_ends = [union(additional_variables, variables_by_round[begin:rounds_for_ends]..., variables_by_round[end-rounds_for_ends-1:end]...)...]
 factors_at_ends = [union(additional_factors, factors_by_round[begin:rounds_for_ends]..., factors_by_round[end-rounds_for_ends-1:end]...)...]
@@ -138,10 +172,23 @@ for i in 1:number_of_iterations_of_ends
 
     push!(tot_entropy_over_time, total_entropy_of_graph(variables))
     println(tot_entropy_over_time[end])
-    if tot_entropy_over_time[end] < 100 || tot_entropy_over_time[end-1] - tot_entropy_over_time[end] <= 0.05 || isnan(tot_entropy_over_time[end])
+    if tot_entropy_over_time[end] < 1 || tot_entropy_over_time[end-1] - tot_entropy_over_time[end] <= 0.05 || isnan(tot_entropy_over_time[end])
         break
     end
 end
+
+# number_of_iterations_forwards_backwards = 400
+# for i in 1:number_of_iterations_forwards_backwards
+#     belief_propagate_forwards_and_back_through_graph(variables, factors, variables_by_round, factors_by_round, 1, damping_factor)
+#     update_all_entropies(variables, all_variables)
+#     push!(visualisation_of_entropy, variables_to_heatmap_matrix(visualisation_variables, heatmap_plotting_function))
+
+#     push!(tot_entropy_over_time, total_entropy_of_graph(variables))
+#     println(tot_entropy_over_time[end])
+#     if tot_entropy_over_time[end] < 1e-6 || abs(tot_entropy_over_time[end] - tot_entropy_over_time[end-1]) <= 0.05
+#         break
+#     end
+# end
 
 final_likelihood_tables = make_log_likelihood_tables_for_key(variables, number_of_bits)
 # Replace all the -Inf with like -800 because of the issues associated with expoentiatation
@@ -155,4 +202,10 @@ end
 anim = @animate for i in eachindex(visualisation_of_entropy)
     heatmap(visualisation_of_entropy[i]; title=string("Round ", i - 1, " entropy of variables"), clim=(0, number_of_bits))
 end
-gif(anim, "test.gif", fps=10)
+gif(anim, fps=10)
+
+# fid = h5open(path_to_data * "evaluation/heatmap_data/schedule_changes/real_8bit_2_clusters_ends.hdf5", "w")
+# for i in eachindex(visualisation_of_entropy)
+#     fid[string("entropies_", i - 1)] = visualisation_of_entropy[i]
+# end
+# close(fid)

@@ -20,7 +20,7 @@ path_to_data = "C:/Users/henry/Documents/PartIIIProject/data/"
 
 base_path_templates = path_to_data * "attack_profiling/32_volatile/initial_templates_8bits/"
 base_key_templates = path_to_data * "attack_profiling/32_volatile/initial_templates_8bits/"
-base_trace_path = path_to_data * "captures/ChaChaRecordings_3/recording_attack_counter_constant_"
+base_trace_path = path_to_data * "captures/ChaChaRecordings_3/recording_attack_counter_from_random_"
 
 key_number = 1
 
