@@ -17,9 +17,9 @@ F_CPU = int(5e6)  # Compile time option
 target_frequency = int(5e6)
 
 # NI Scope settings
-sample_rate = int(2500e6)  # change sample_rate here
+sample_rate = int(500e6)  # change sample_rate here
 points_per_clock = sample_rate // target_frequency
-number_of_cycles = 1500  # Scope length by cycle count
+number_of_cycles = 6500  # Scope length by cycle count
 number_of_points = int(points_per_clock * number_of_cycles)
 trace_channel = "0"
 trigger_channel = "1"
@@ -140,12 +140,63 @@ def capture_raw_trace(
         trigger_trace.attrs['counter'] = counter
 
 
-def main(file_recording_number):
+def main_varying_counter_initial_random(file_recording_number):
     chip_whisperer_controller, ni_controller = init()
 
     print("Capture several traces into the file")
 
-    with h5py.File(f"\\\\filer\\userfiles\\htb27\\unix_home\\ChaChaRecordings\\recording_attack_counter_from_one_{file_recording_number}.hdf5", "a") as file:
+    with h5py.File(f"\\\\filer\\userfiles\\htb27\\unix_home\\ChaChaRecordings_3\\recording_attack_counter_from_random_{file_recording_number}.hdf5", "a") as file:
+        for i in range(100):
+            print(f"Key number: {i}")
+            key = convert_byte_array_to_integer_list(bytearray(np.random.bytes(32)))
+            nonce = convert_byte_array_to_integer_list(bytearray(np.random.bytes(12)))
+            counter = convert_byte_array_to_integer_list(bytearray(np.random.bytes(4)))
+            for j in range(10):
+                capture_raw_trace(
+                    chip_whisperer_controller=chip_whisperer_controller,
+                    ni_controller=ni_controller,
+                    plaintext=convert_byte_array_to_integer_list(bytearray(np.random.bytes(64))),
+                    key=key,
+                    nonce=nonce,
+                    counter=[counter[0] + j],
+                    group=file,
+                    dataset_name=str(i) + "_" + str(j),
+                    record_trigger=False
+                )
+    print("Captured raw trace")
+
+
+def main_constant_counter_initial_random(file_recording_number):
+    chip_whisperer_controller, ni_controller = init()
+
+    print("Capture several traces into the file")
+
+    with h5py.File(f"\\\\filer\\userfiles\\htb27\\unix_home\\ChaChaRecordings_3\\recording_attack_counter_constant_{file_recording_number}.hdf5", "a") as file:
+        for i in range(100):
+            print(f"Key number: {i}")
+            key = convert_byte_array_to_integer_list(bytearray(np.random.bytes(32)))
+            nonce = convert_byte_array_to_integer_list(bytearray(np.random.bytes(12)))
+            counter = convert_byte_array_to_integer_list(bytearray(np.random.bytes(4)))
+            for j in range(10):
+                capture_raw_trace(
+                    chip_whisperer_controller=chip_whisperer_controller,
+                    ni_controller=ni_controller,
+                    plaintext=convert_byte_array_to_integer_list(bytearray(np.random.bytes(64))),
+                    key=key,
+                    nonce=nonce,
+                    counter=counter,
+                    group=file,
+                    dataset_name=str(i) + "_" + str(j),
+                    record_trigger=False
+                )
+    print("Captured raw trace")
+
+def main_varying_counter_initial_1(file_recording_number):
+    chip_whisperer_controller, ni_controller = init()
+
+    print("Capture several traces into the file")
+
+    with h5py.File(f"\\\\filer\\userfiles\\htb27\\unix_home\\ChaChaRecordings_3\\recording_attack_counter_from_one_{file_recording_number}.hdf5", "a") as file:
         for i in range(100):
             print(f"Key number: {i}")
             key = convert_byte_array_to_integer_list(bytearray(np.random.bytes(32)))
@@ -164,7 +215,3 @@ def main(file_recording_number):
                     record_trigger=False
                 )
     print("Captured raw trace")
-
-
-if __name__ == "__main__":
-    main(1)

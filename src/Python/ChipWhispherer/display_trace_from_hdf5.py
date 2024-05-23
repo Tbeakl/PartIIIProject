@@ -2,8 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import h5py
 
-file_name = "\\\\filer\\userfiles\\htb27\\unix_home\\ChaChaRecordings\\recording_attack_10.hdf5"
-dataset_name = "1_9"
+file_name = "\\\\filer\\userfiles\\htb27\\windows_home\\ChipWhispherer\\first_capture_8bit.hdf5"
+dataset_name = "0"
 
 power_wave = None
 trigger_wave = None

@@ -14,22 +14,23 @@ def convert_byte_array_to_integer_list(byte_array):
 # ChipWhisperer Settings
 firmware_path = None
 F_CPU = int(5e6)  # Compile time option
-target_frequency = int(5e6)
+target_frequency = int(5e6) #int(5e6)
 
 # NI Scope settings
-sample_rate = int(2500e6)  # change sample_rate here
+sample_rate = int(500e6)  # change sample_rate here
 points_per_clock = sample_rate // target_frequency
-number_of_cycles = 1500  # Scope length by cycle count
+number_of_cycles = 6500  # Scope length by cycle count
 number_of_points = int(points_per_clock * number_of_cycles)
 trace_channel = "0"
 trigger_channel = "1"
-channel_0_range = 0.04  # peak-to-peak voltage (by using high-pass filter)
+channel_0_range = 0.03  # peak-to-peak voltage (by using high-pass filter)
 
 
 def init(firmware_path=None, target_frequency=target_frequency):
     chip_whisperer_controller = setup_chip_whisperer(
         firmware_path
     )  # target communication, program firmware
+    print("Switching to external clock")
     ni_controller = setup_NI_Fgen(chip_whisperer_controller, target_frequency)  # clock
     ni_controller = setup_NI_scope(ni_controller)  # oscilloscope
     return chip_whisperer_controller, ni_controller
@@ -59,11 +60,13 @@ def setup_chip_whisperer(firmware_path=None):
 def setup_NI_Fgen(chip_whisperer_controller, frequency=target_frequency):
     print("Switching to NI clock")
     chip_whisperer_controller.clk_off()
-    #input("Turned off the scope clock and now connect up the waveform generator")
+    input("Turned off the scope clock and now connect up the waveform generator")
+    print(frequency)
     ni_controller = NIController.NIController(fgen_freq=frequency)
     ni_controller.fgen.initiate()
     print("Check communication")
     chip_whisperer_controller.reset_target()
+    print(chip_whisperer_controller.scope)
     com_check = chip_whisperer_controller.test_run()
     assert com_check, "CW target failed to recalibrate to new clock!"
     return ni_controller
@@ -142,18 +145,18 @@ def main():
 
     print("Capture several traces into the file")
 
-    with h5py.File("nonces_rand_key_rand_counter_1_4_trigger_not_recroded_2.hdf5", "a") as file:
-        for i in range(100):
+    with h5py.File("first_capture_volatile.hdf5", "a") as file:
+        for i in range(1):
             print(i)
             capture_raw_trace(
                 chip_whisperer_controller=chip_whisperer_controller,
                 ni_controller=ni_controller,
                 key=convert_byte_array_to_integer_list(bytearray(np.random.bytes(32))),
                 nonce=convert_byte_array_to_integer_list(bytearray(np.random.bytes(12))),
-                counter=1,
+                counter=[1],
                 group=file,
                 dataset_name=str(i),
-                record_trigger=False
+                record_trigger=True
             )
     print("Captured raw trace")
 

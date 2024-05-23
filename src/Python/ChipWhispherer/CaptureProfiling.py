@@ -17,9 +17,9 @@ F_CPU = int(5e6)  # Compile time option
 target_frequency = int(5e6)
 
 # NI Scope settings
-sample_rate = int(2500e6)  # change sample_rate here
+sample_rate = int(500e6)  # change sample_rate here
 points_per_clock = sample_rate // target_frequency
-number_of_cycles = 1500  # Scope length by cycle count
+number_of_cycles = 6500  # Scope length by cycle count
 number_of_points = int(points_per_clock * number_of_cycles)
 trace_channel = "0"
 trigger_channel = "1"
@@ -140,13 +140,39 @@ def capture_raw_trace(
         trigger_trace.attrs['counter'] = counter
 
 
+def warm_up_trace(
+    chip_whisperer_controller: CWController.CWController,
+    plaintext,
+    key,
+    nonce,
+    counter,
+):
+    chip_whisperer_controller.reset_cipher()
+    chip_whisperer_controller.set_key(key)
+    chip_whisperer_controller.set_nonce(nonce)
+    chip_whisperer_controller.set_counter(counter)
+    chip_whisperer_controller.set_plaintext(plaintext)
+    chip_whisperer_controller.perform_encryption()
+
+def warm_up():
+    chip_whisperer_controller, ni_controller = init()
+
+    print("Warmup")
+    for i in range(1000):
+        print(i)
+        warm_up_trace(chip_whisperer_controller=chip_whisperer_controller,
+                plaintext=convert_byte_array_to_integer_list(bytearray(np.random.bytes(64))),
+                key=convert_byte_array_to_integer_list(bytearray(np.random.bytes(32))),
+                nonce=convert_byte_array_to_integer_list(bytearray(np.random.bytes(12))),
+                counter=convert_byte_array_to_integer_list(bytearray(np.random.bytes(4))))
+    
 def main(file_recording_number):
     chip_whisperer_controller, ni_controller = init()
 
     print("Capture several traces into the file")
 
-    with h5py.File(f"\\\\filer\\userfiles\\htb27\\unix_home\\ChaChaRecordings\\recording_profiling_including_trigger_{file_recording_number}.hdf5", "a") as file:
-        for i in range(250):
+    with h5py.File(f"\\\\filer\\userfiles\\htb27\\unix_home\\ChaChaRecordings_3\\recording_profiling_{file_recording_number}.hdf5", "a") as file:
+        for i in range(1000):
             print(i)
             capture_raw_trace(
                 chip_whisperer_controller=chip_whisperer_controller,
@@ -157,7 +183,7 @@ def main(file_recording_number):
                 counter=convert_byte_array_to_integer_list(bytearray(np.random.bytes(4))),
                 group=file,
                 dataset_name=str(i),
-                record_trigger=True
+                record_trigger=False
             )
     print("Captured raw trace")
 
