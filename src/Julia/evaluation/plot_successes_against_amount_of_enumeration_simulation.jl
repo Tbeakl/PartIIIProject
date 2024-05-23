@@ -1,4 +1,4 @@
-using Plots, HDF5
+using Plots, HDF5, LaTeXStrings
 
 path_to_data = "C:/Users/henry/Documents/PartIIIProject/data/"
 base_path_to_counts = path_to_data * "evaluation/simulation_known_output_nonce_counter/"
@@ -24,10 +24,15 @@ end
 p = plot(size=(1500, 500),
     title="Proportion of keys successfully found after differing amounts of key enumeration",
     ylabel="Proportion",
-    xlabel="Log base 2 of estimated number of keys required to be enumerated",
+    xlabel="Estimated number of keys required to be enumerated (log scale)",
     leftmargin=8Plots.mm,
-    bottom_margin=6Plots.mm,
-    legend=:outerright, legendcolumns=1, xlim=(0, 256), ylim=(0, 1))
+    bottom_margin=8Plots.mm,
+    legend=:outerright, legendcolumns=1, xlim=(0, 256), ylim=(0, 1),
+    xticks=([0:32:256;], latexstring.("2^{" .* string.(0:32:256) .* "}")),
+    yticks=([0:0.2:1;], latexstring.(0:0.2:1)),
+    xtickfont=font(10), 
+    ytickfont=font(10), 
+    legendfont=font(10))
 proportion = collect((1:100) ./ 100)
 cur_colors = get_color_palette(:auto, plot_color(:white))
 
@@ -44,8 +49,8 @@ for i in eachindex(signal_to_noise_ratios)
 end
 
 for i in eachindex(signal_to_noise_ratios)
-    plot!(p, initial_ranks[signal_to_noise_ratios[i]], proportion, c=cur_colors[i], linestyle=:dash, label=string("Pre-SASCA ", signal_to_noise_ratios[i], " SNR"), linewidth=1.5)
-    plot!(p, final_ranks[signal_to_noise_ratios[i]], proportion, c=cur_colors[i], linestyle=:solid, label=string("Post-SASCA ", signal_to_noise_ratios[i], " SNR"), linewidth=1.5)
+    plot!(p, initial_ranks[signal_to_noise_ratios[i]], proportion, c=cur_colors[i], linestyle=:dash, label=string("Pre-SASCA ", signal_to_noise_ratios[i], " SNR"), linewidth=2)
+    plot!(p, final_ranks[signal_to_noise_ratios[i]], proportion, c=cur_colors[i], linestyle=:solid, label=string("Post-SASCA ", signal_to_noise_ratios[i], " SNR"), linewidth=2)
 end
 p
 savefig(p, "./plots/evaluation/simulated_signal_to_noise_ratios_known_output.pdf")
@@ -75,13 +80,17 @@ end
 p = plot(size=(1500, 500),
     title="Proportion of keys successfully found after differing amounts of key enumeration",
     ylabel="Proportion",
-    xlabel="Log base 2 of estimated number of keys required to be enumerated",
+    xlabel="Estimated number of keys required to be enumerated (log scale)",
     leftmargin=8Plots.mm,
-    bottom_margin=6Plots.mm,
-    legend=:outerright, legendcolumns=1, xlim=(0, 256), ylim=(0, 1))
-proportion = collect((1:100) ./ 100)
+    bottom_margin=8Plots.mm,
+    legend=:outerright, legendcolumns=1, xlim=(0, 256), ylim=(0, 1),
+    xticks=([0:32:256;], latexstring.("2^{" .* string.(0:32:256) .* "}")),
+    yticks=([0:0.2:1;], latexstring.(0:0.2:1)),
+    xtickfont=font(10), 
+    ytickfont=font(10), 
+    legendfont=font(10))
 cur_colors = get_color_palette(:auto, plot_color(:white))
-
+proportion = collect((1:100) ./ 100)
 # Add on a final value at the top left of each so that the lines continue along the top
 push!(proportion, 1.0)
 for i in eachindex(signal_to_noise_ratios)
@@ -95,8 +104,8 @@ for i in eachindex(signal_to_noise_ratios)
 end
 
 for i in eachindex(signal_to_noise_ratios)
-    plot!(p, initial_ranks[signal_to_noise_ratios[i]], proportion, c=cur_colors[i], linestyle=:dash, label=string("Pre-SASCA ", signal_to_noise_ratios[i], " SNR"), linewidth=1.5)
-    plot!(p, final_ranks[signal_to_noise_ratios[i]], proportion, c=cur_colors[i], linestyle=:solid, label=string("Post-SASCA ", signal_to_noise_ratios[i], " SNR"), linewidth=1.5)
+    plot!(p, initial_ranks[signal_to_noise_ratios[i]], proportion, c=cur_colors[i], linestyle=:dash, label=string("Pre-SASCA ", signal_to_noise_ratios[i], " SNR"), linewidth=2)
+    plot!(p, final_ranks[signal_to_noise_ratios[i]], proportion, c=cur_colors[i], linestyle=:solid, label=string("Post-SASCA ", signal_to_noise_ratios[i], " SNR"), linewidth=2)
 end
 p
 savefig(p, "./plots/evaluation/simulated_signal_to_noise_ratios_unknown_output.pdf")

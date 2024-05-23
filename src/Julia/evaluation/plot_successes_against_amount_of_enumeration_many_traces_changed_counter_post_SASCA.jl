@@ -1,4 +1,4 @@
-using Plots, HDF5
+using Plots, HDF5, LaTeXStrings
 include("../encryption/key_enumeration.jl")
 gr()
 base_path_to_data = "C:/Users/henry/Documents/PartIIIProject/data/"
@@ -10,55 +10,41 @@ base_paths_to_counts::Vector{String} = base_path_to_data .* [
     "evaluation/incremented_counter_prod_10_8/",
     "evaluation/random_counter_incremented_10_16/",
     "evaluation/incremented_counter_prod_10_16/",
-    "evaluation/set_counter_mean_10_8/",
-    "evaluation/set_counter_prod_10_8/",
-    "evaluation/set_counter_mean_10_16/",
-    "evaluation/set_counter_prod_10_16/",
-    "evaluation/random_counter_32_volatile_set_mean_10_8/",
-    "evaluation/random_counter_32_volatile_set_prod_10_8/"
+    "evaluation/incremented_random_counter_32_volatile_10_8/",
+    "evaluation/incremented_random_counter_32_volatile_10_8_prod/"
 ]
-
-
 
 paths_to_actual_keys::Vector{String} = base_path_to_data .* "captures/" .* [
     "ChaChaRecordings_2/recording_attack_counter_from_random_",
     "ChaChaRecordings_2/recording_attack_counter_from_random_",
     "ChaChaRecordings_2/recording_attack_counter_from_random_",
     "ChaChaRecordings_2/recording_attack_counter_from_random_",
-    "ChaChaRecordings_2/recording_attack_counter_constant_",
-    "ChaChaRecordings_2/recording_attack_counter_constant_",
-    "ChaChaRecordings_2/recording_attack_counter_constant_",
-    "ChaChaRecordings_2/recording_attack_counter_constant_",
-    "ChaChaRecordings_3/recording_attack_counter_constant_",
-    "ChaChaRecordings_3/recording_attack_counter_constant_",
+    "ChaChaRecordings_3/recording_attack_counter_from_random_",
+    "ChaChaRecordings_3/recording_attack_counter_from_random_",
 ]
 
-initial_ranks::Vector{Vector{Number}} = []
+final_ranks::Vector{Vector{Number}} = []
 
 labels::Vector{String} = [
-"8-bit fragment\nchanged counter mean",
-"8-bit fragment\nchanged counter product",
-"16-bit fragment\nchanged counter mean",
-"16-bit fragment\nchanged counter product",
-"8-bit fragment\nset counter mean",
-"8-bit fragment\nset counter product",
-"16-bit fragment\nset counter mean",
-"16-bit fragment\nset counter product",
-"8-bit fragment volatile\nset counter mean",
-"8-bit fragment voaltile\nset counter product"]
+"8-bit fragment mean",
+"8-bit fragment product",
+"16-bit fragment mean",
+"16-bit fragment product",
+"8-bit fragment volatile mean",
+"8-bit fragment voaltile product"]
 
 for (i, base_path_to_counts) in enumerate(base_paths_to_counts)
-    current_initial_ranks::Vector{Number} = []
+    current_final_ranks::Vector{Number} = []
     for trace_number in 1:1000
         if ispath(string(base_path_to_counts, trace_number, ".hdf5"))
             fid = h5open(string(base_path_to_counts, trace_number, ".hdf5"), "r")
             # Need to do all of the different types of real key enumeration, possibly need to increase
             # the number of iterations done on the unknown output version because it may not be correct
-            current_estimated_rank = read(fid[string("initial_estimated_rank_log2")])
+            current_estimated_rank = read(fid[string("final_estimated_rank_log2")])
             if current_estimated_rank < 20
                 # Actually perform the key enumeration to find the solution
                 # need to also get the key for this to know the correct values which is not stored in it 
-                prob_tables = read(fid[string("initial_likelihood_tables")])
+                prob_tables = read(fid[string("final_likelihood_tables")])
                 # Also need to read in the correct key so need to pick the correct file and trace within it
                 # println(trace_number)
                 file_number = (trace_number ÷ 100)
@@ -75,9 +61,9 @@ for (i, base_path_to_counts) in enumerate(base_paths_to_counts)
                     println(calculate_log_likelihood_of_key(key, eachrow(prob_tables), 8))
                     println(current_estimated_rank)
                 end
-                push!(current_initial_ranks, log2(actual_rank))
+                push!(current_final_ranks, log2(actual_rank))
             else
-                push!(current_initial_ranks, current_estimated_rank)
+                push!(current_final_ranks, current_estimated_rank)
             end
             # if isnan(read(fid["entropy_over_time"])[end])
             #     println(base_path_to_counts, " ", trace_number)
@@ -85,21 +71,21 @@ for (i, base_path_to_counts) in enumerate(base_paths_to_counts)
             close(fid)
         end
     end
-    push!(initial_ranks, sort(current_initial_ranks))
+    push!(final_ranks, sort(current_final_ranks))
 end
 
 proportion = collect((1:1000) ./ 1000)
 
 push!(proportion, 1.0)
 for i in eachindex(base_paths_to_counts)
-    push!(initial_ranks[i], 256)
+    push!(final_ranks[i], 256)
 end
 
 # Also add zero at the start of the trace and prepend the other intial rank to get the long line at the bottom
 # and another zero zero at the very start
 prepend!(proportion, [0, 0])
 for i in eachindex(base_paths_to_counts)
-    prepend!(initial_ranks[i], [0, initial_ranks[i][begin]])
+    prepend!(final_ranks[i], [0, final_ranks[i][begin]])
 end
 
 # I think it would be good to have the products as dashed lines with the mean ones solid and have them as the same
@@ -109,15 +95,20 @@ cur_colors = get_color_palette(:auto, plot_color(:white))
 p = plot(size=(1500, 500),
     title="Proportion of keys successfully found after differing amounts of key enumeration",
     ylabel="Proportion",
-    xlabel="Log base 2 of estimated number of keys required to be enumerated",
+    xlabel="Estimated number of keys required to be enumerated (log scale)",
     leftmargin=8Plots.mm,
-    bottom_margin=6Plots.mm,
-    legend=:outerright, legendcolumns=1, xlim=(0, 256), ylim=(0, 1))
+    bottom_margin=8Plots.mm,
+    legend=:outerright, legendcolumns=1, xlim=(0, 256), ylim=(0, 1),
+    xticks=([0:32:256;], latexstring.("2^{" .* string.(0:32:256) .* "}")),
+    yticks=([0:0.2:1;], latexstring.(0:0.2:1)),
+    xtickfont=font(10), 
+    ytickfont=font(10), 
+    legendfont=font(10))
 
 for i in 1:2:length(base_paths_to_counts)
     cur_colors = get_color_palette(:auto, plot_color(:white))
-    plot!(p, initial_ranks[i], proportion, label=labels[i], linewidth=1.5, c=cur_colors[(i ÷ 2) + 1], linestyle=:solid)
-    plot!(p, initial_ranks[i + 1], proportion, label=labels[i + 1], linewidth=1.5, c=cur_colors[(i ÷ 2) + 1], linestyle=:dash)
+    plot!(p, final_ranks[i], proportion, label=labels[i], linewidth=2, c=cur_colors[(i ÷ 2) + 1], linestyle=:solid)
+    plot!(p, final_ranks[i + 1], proportion, label=labels[i + 1], linewidth=2, c=cur_colors[(i ÷ 2) + 1], linestyle=:dash)
 end
 p
-savefig(p, "./plots/evaluation/real_attack_multi_trace_pre_SASCA.pdf")
+savefig(p, "./plots/evaluation/real_attack_multi_trace_changed_counter_post_SASCA.pdf")

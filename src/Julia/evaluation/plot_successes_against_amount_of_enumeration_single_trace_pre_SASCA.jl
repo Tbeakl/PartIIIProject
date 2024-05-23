@@ -1,4 +1,4 @@
-using Plots, HDF5
+using Plots, HDF5, LaTeXStrings
 include("../encryption/key_enumeration.jl")
 gr()
 base_path_to_data = "C:/Users/henry/Documents/PartIIIProject/data/"
@@ -123,14 +123,19 @@ end
 p = plot(size=(1500, 500),
     title="Proportion of keys successfully found after differing amounts of key enumeration",
     ylabel="Proportion",
-    xlabel="Log base 2 of estimated number of keys required to be enumerated",
+    xlabel="Estimated number of keys required to be enumerated (log scale)",
     leftmargin=8Plots.mm,
-    bottom_margin=6Plots.mm,
-    legend=:outerright, legendcolumns=1, xlim=(0, 256), ylim=(0, 1))
+    bottom_margin=8Plots.mm,
+    legend=:outerright, legendcolumns=1, xlim=(0, 256), ylim=(0, 1),
+    xticks=([0:32:256;], latexstring.("2^{" .* string.(0:32:256) .* "}")),
+    yticks=([0:0.2:1;], latexstring.(0:0.2:1)),
+    xtickfont=font(10), 
+    ytickfont=font(10), 
+    legendfont=font(10))
 
 for i in eachindex(base_paths_to_counts)
     cur_colors = get_color_palette(:auto, plot_color(:white))
-    plot!(p, initial_ranks[i], proportion, label=labels[i], linewidth=1.5)
+    plot!(p, initial_ranks[i], proportion, label=labels[i], linewidth=2)
 end
 p
 savefig(p, "./plots/evaluation/real_attack_single_trace_pre_SASCA.pdf")

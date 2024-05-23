@@ -92,27 +92,34 @@ for j in 1:4
     end
 end
 
-p = plot(all_NICV[:, 1], label=L"K_1", size=(1000, 300), ylabel="NICV", xlabel="Sample number", left_margin=5Plots.mm, bottom_margin=6Plots.mm, title="NICV for individual samples")
+p = plot(all_NICV[:, 1], label=L"K_1", size=(1000, 300),
+    ylabel="NICV", xlabel="Sample number", left_margin=5Plots.mm,
+    bottom_margin=6Plots.mm, title="NICV for individual samples")
 plot!(p, all_NICV[:, 2], label=L"K_2")
 plot!(p, all_NICV[:, 3], label=L"K_3")
 plot!(p, all_NICV[:, 4], label=L"K_4")
 plot!(p, mean(all_NICV, dims=2)[:, 1], label=L"K_\mu")
-# savefig(p, "./plots/clock_signal_detection/NICV_clock_signal_8_on_32.svg")
-# savefig(p, "./plots/clock_signal_detection/NICV_clock_signal_8_on_32.pdf")
+# savefig(p, "./plots/clock_signal_detection/NICV_clock_signal.svg")
+# savefig(p, "./plots/clock_signal_detection/NICV_clock_signal.pdf")
 # savefig(p, "./plots/NICVs.html")
 
-p = plot(all_correlations[:, 1], label=L"K_1", size=(1000, 300), ylabel=L"R^2", xlabel="Sample number", left_margin=5Plots.mm, bottom_margin=6Plots.mm, title="Hamming weight correlation for individual samples")
+p = plot(all_correlations[:, 1], label=L"K_1",
+    size=(1000, 300), ylabel=L"R^2", xlabel="Sample number",
+    left_margin=5Plots.mm, bottom_margin=6Plots.mm,
+    title="Hamming weight correlation for individual samples")
 plot!(p, all_correlations[:, 2], label=L"K_2")
 plot!(p, all_correlations[:, 3], label=L"K_3")
 plot!(p, all_correlations[:, 4], label=L"K_4")
 plot!(p, mean(all_correlations, dims=2)[:, 1], label=L"K_\mu")
-# savefig(p, "./plots/clock_signal_detection/Hamming_weight_clock_signal_8_on_32.svg")
-# savefig(p, "./plots/clock_signal_detection/Hamming_weight_clock_signal_8_on_32.pdf")
+# savefig(p, "./plots/clock_signal_detection/Hamming_weight_clock_signal.svg")
+# savefig(p, "./plots/clock_signal_detection/Hamming_weight_clock_signal.pdf")
 
-p = plot(all_correlations_on_linear_model[:, 1], label=L"K_1", size=(1000, 300), ylabel=L"R^2", xlabel="Sample number", left_margin=5Plots.mm, bottom_margin=6Plots.mm, title="Linear bit model correlation for individual samples")
+p = plot(all_correlations_on_linear_model[:, 1], label=L"K_1",
+    size=(1000, 300), ylabel=L"R^2", xlabel="Sample number", left_margin=5Plots.mm,
+    bottom_margin=6Plots.mm, title="Bitwise linear model correlation for individual samples")
 plot!(p, all_correlations_on_linear_model[:, 2], label=L"K_2")
 plot!(p, all_correlations_on_linear_model[:, 3], label=L"K_3")
 plot!(p, all_correlations_on_linear_model[:, 4], label=L"K_4")
 plot!(p, mean(all_correlations_on_linear_model, dims=2)[:, 1], label=L"K_\mu")
-# savefig(p, "./plots/clock_signal_detection/Linear_model_clock_signal_8_on_32.svg")
-# savefig(p, "./plots/clock_signal_detection/Linear_model_clock_signal_8_on_32.pdf")
+# savefig(p, "./plots/clock_signal_detection/Linear_model_clock_signal.svg")
+# savefig(p, "./plots/clock_signal_detection/Linear_model_clock_signal.pdf")

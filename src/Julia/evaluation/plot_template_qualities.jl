@@ -1,6 +1,7 @@
 using Plots, HDF5, Statistics
 include("../chacha_factor_graph/heatmap_visualisation_intermediate_values.jl")
 include("../chacha_factor_graph/heatmap_visualisation.jl")
+
 # 8 bit implementation
 fid = h5open("./data/evaluation/heatmap_data/FSR/8_on_32.hdf5", "r")
 success_rates = read(fid["success_rates"])

@@ -6,61 +6,32 @@ base_path_to_data = "C:/Users/henry/Documents/PartIIIProject/data/"
 # Traces which have NaNs in them 347, 384, 403 need to potentially look in more detail at why they do and 
 # if there is someway they can be improved
 base_paths_to_counts::Vector{String} = base_path_to_data .* [
-    "evaluation/attack_8_on_32_known/",
-    "evaluation/attack_8_on_32_unknown/",
-    "evaluation/random_counter_1_8/",
-    "evaluation/random_counter_1_16/",
-    "evaluation/random_counter_32_volatile_1_8/",
+    "evaluation/set_counter_mean_10_8/",
+    "evaluation/set_counter_prod_10_8/",
+    "evaluation/set_counter_mean_10_16/",
+    "evaluation/set_counter_prod_10_16/",
+    "evaluation/random_counter_32_volatile_set_mean_10_8/",
+    "evaluation/random_counter_32_volatile_set_prod_10_8/"
 ]
-
-# "evaluation/random_counter_incremented_10_8/",
-# "evaluation/random_counter_incremented_10_16/",
-# "evaluation/incremented_counter_prod_10_8/",
-# "evaluation/incremented_counter_prod_10_16/",
-# "evaluation/set_counter_mean_10_8/",
-# "evaluation/set_counter_mean_10_16/",
-# "evaluation/set_counter_prod_10_8/",
-# "evaluation/set_counter_prod_10_16/",
-# "evaluation/random_counter_32_volatile_set_mean_10_8/",
-# "evaluation/random_counter_32_volatile_set_prod_10_8/"
 
 paths_to_actual_keys::Vector{String} = base_path_to_data .* "captures/" .* [
-    "ChaChaRecordings_8_on_32/recording_attack_counter_from_random_",
-    "ChaChaRecordings_8_on_32/recording_attack_counter_from_random_",
-    "ChaChaRecordings_2/recording_attack_counter_from_random_",
-    "ChaChaRecordings_2/recording_attack_counter_from_random_",
-    "ChaChaRecordings_3/recording_attack_counter_from_random_",
+    "ChaChaRecordings_2/recording_attack_counter_constant_",
+    "ChaChaRecordings_2/recording_attack_counter_constant_",
+    "ChaChaRecordings_2/recording_attack_counter_constant_",
+    "ChaChaRecordings_2/recording_attack_counter_constant_",
+    "ChaChaRecordings_3/recording_attack_counter_constant_",
+    "ChaChaRecordings_3/recording_attack_counter_constant_",
 ]
-
-# "ChaChaRecordings_2/recording_attack_counter_from_random_",
-#     "ChaChaRecordings_2/recording_attack_counter_from_random_",
-#     "ChaChaRecordings_2/recording_attack_counter_from_random_",
-#     "ChaChaRecordings_2/recording_attack_counter_from_random_",
-#     "ChaChaRecordings_2/recording_attack_counter_constant_",
-#     "ChaChaRecordings_2/recording_attack_counter_constant_",
-#     "ChaChaRecordings_2/recording_attack_counter_constant_",
-#     "ChaChaRecordings_2/recording_attack_counter_constant_",
-#     "ChaChaRecordings_3/recording_attack_counter_constant_",
-#     "ChaChaRecordings_3/recording_attack_counter_constant_",
 
 final_ranks::Vector{Vector{Number}} = []
 
-labels::Vector{String} = ["8-bit implementation",
-    "8-bit implementation\nunknown counter, nonce, output",
-    "8-bit fragment",
-    "16-bit fragment\nmarginalised to 8-bits",
-    "8-bit fragment volatile",]
-
-# "8-bit fragment 10 trace\nchanged counter mean",
-# "16-bit fragment 10 trace\nchanged counter mean",
-# "8-bit fragment 10 trace\nchanged counter product",
-# "16-bit fragment 10 trace\nchanged counter product",
-# "8-bit fragment 10 trace\nset counter mean",
-# "16-bit fragment 10 trace\nset counter mean",
-# "8-bit fragment 10 trace\nset counter product",
-# "16-bit fragment 10 trace\nset counter product",
-# "8-bit fragment volatile 10 trace\nset counter mean",
-# "8-bit fragment voaltile 10 trace\nset counter product"
+labels::Vector{String} = [
+"8-bit fragment mean",
+"8-bit fragment product",
+"16-bit fragment mean",
+"16-bit fragment product",
+"8-bit fragment volatile mean",
+"8-bit fragment voaltile product"]
 
 for (i, base_path_to_counts) in enumerate(base_paths_to_counts)
     current_final_ranks::Vector{Number} = []
@@ -117,6 +88,10 @@ for i in eachindex(base_paths_to_counts)
     prepend!(final_ranks[i], [0, final_ranks[i][begin]])
 end
 
+# I think it would be good to have the products as dashed lines with the mean ones solid and have them as the same
+# colour as each other
+cur_colors = get_color_palette(:auto, plot_color(:white))
+
 p = plot(size=(1500, 500),
     title="Proportion of keys successfully found after differing amounts of key enumeration",
     ylabel="Proportion",
@@ -130,9 +105,10 @@ p = plot(size=(1500, 500),
     ytickfont=font(10), 
     legendfont=font(10))
 
-for i in eachindex(base_paths_to_counts)
+for i in 1:2:length(base_paths_to_counts)
     cur_colors = get_color_palette(:auto, plot_color(:white))
-    plot!(p, final_ranks[i], proportion, label=labels[i], linewidth=2)
+    plot!(p, final_ranks[i], proportion, label=labels[i], linewidth=2, c=cur_colors[(i ÷ 2) + 1], linestyle=:solid)
+    plot!(p, final_ranks[i + 1], proportion, label=labels[i + 1], linewidth=2, c=cur_colors[(i ÷ 2) + 1], linestyle=:dash)
 end
 p
-savefig(p, "./plots/evaluation/real_attack_single_trace_post_SASCA.pdf")
+savefig(p, "./plots/evaluation/real_attack_multi_trace_set_counter_post_SASCA.pdf")
