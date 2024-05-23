@@ -16,7 +16,10 @@ mapping = turn_intermediate_name_to_intermediate_index(number_of_bits)
 base_matrix = map(x -> x[begin:end-2], make_positions_to_var_names(number_of_bits, 1)[1])
 mapped_matrix = map(x -> mapping[x], base_matrix)
 heatmap_of_counts = map_to_values.(mapped_matrix, Ref(sum(all_bitmasks, dims=2)[:, 1]), Ref(32 ÷ number_of_bits))
-p = heatmap(heatmap_of_counts, title="Number of interesting clock cycles", ylabel="ChaCha state", xlabel="Operation number", dpi=300)
+p = heatmap(heatmap_of_counts, title="Number of interesting clock cycles",
+ ylabel="ChaCha state", xlabel="Operation number",
+  dpi=300,
+  yticks=([0.5:(32 ÷ number_of_bits):(512 ÷ number_of_bits) + 1;], 0:16))
 savefig(p, "./plots/heatmaps/correlation_interesting_cycles_8_bits.png")
 
 all_bitmasks = zeros(UInt8, 2800, 6498)
@@ -32,7 +35,8 @@ mapping = turn_intermediate_name_to_intermediate_index(number_of_bits)
 base_matrix = map(x -> x[begin:end-2], make_positions_to_var_names(number_of_bits, 1)[1])
 mapped_matrix = map(x -> mapping[x], base_matrix)
 heatmap_of_counts = map_to_values.(mapped_matrix, Ref(sum(all_bitmasks, dims=2)[begin:4:end, 1]), Ref(32 ÷ number_of_bits))
-p = heatmap(heatmap_of_counts, title="Number of interesting clock cycles", ylabel="ChaCha state", xlabel="Operation number", dpi=300)
+p = heatmap(heatmap_of_counts, title="Number of interesting clock cycles", ylabel="ChaCha state", xlabel="Operation number", dpi=300,
+yticks=([0.5:(32 ÷ number_of_bits):(512 ÷ number_of_bits) + 1;], 0:16))
 savefig(p, "./plots/heatmaps/correlation_interesting_cycles_32_volatile_bits.png")
 
 
@@ -49,5 +53,6 @@ mapping = turn_intermediate_name_to_intermediate_index(number_of_bits)
 base_matrix = map(x -> x[begin:end-2], make_positions_to_var_names(number_of_bits, 1)[1])
 mapped_matrix = map(x -> mapping[x], base_matrix)
 heatmap_of_counts = map_to_values.(mapped_matrix, Ref(sum(all_bitmasks, dims=2)[begin:4:end, 1]), Ref(32 ÷ number_of_bits))
-p = heatmap(heatmap_of_counts, title="Number of interesting clock cycles", ylabel="ChaCha state", xlabel="Operation number", dpi=300)
+p = heatmap(heatmap_of_counts, title="Number of interesting clock cycles", ylabel="ChaCha state", xlabel="Operation number", dpi=300,
+yticks=([0.5:(32 ÷ number_of_bits):(512 ÷ number_of_bits) + 1;], 0:16))
 savefig(p, "./plots/heatmaps/correlation_interesting_cycles_32.png")

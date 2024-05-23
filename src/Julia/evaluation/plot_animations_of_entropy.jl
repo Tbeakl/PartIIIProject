@@ -23,10 +23,11 @@ function make_heatmap(additional_path::String, fps::Int64, number_of_bits::Int64
     close(fid)
     anim = @animate for i in eachindex(visualisation_of_entropies)
         heatmap(visualisation_of_entropies[i];
-            title=string("Round ", i - 1, " entropies of variables"),
+            title=string("Entropies of variables after ", i - 1, " iterations"),
             clim=(0, number_of_bits),
             xlabel=x_label_name,
-            ylabel=y_label_name)
+            ylabel=y_label_name,
+            yticks=([0.5:(32 ÷ number_of_bits):((512 ÷ number_of_bits) + 1);], 0:16))
     end
     p = gif(anim, gif_path, fps=fps)
     return p
