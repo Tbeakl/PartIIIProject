@@ -50,7 +50,7 @@ initial_ranks::Vector{Vector{Number}} = []
 labels::Vector{String} = ["8-bit implementation",
     "8-bit implementation\nunknown counter, nonce, output",
     "8-bit fragment",
-    "16-bit fragment marginalised to 8-bits",
+    "16-bit fragment\nmarginalised to 8-bits",
     "16-bit fragment",
     "8-bit fragment volatile",]
 
