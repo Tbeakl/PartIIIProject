@@ -3,6 +3,11 @@ include("../encryption/key_enumeration.jl")
 gr()
 base_path_to_data = "C:/Users/henry/Documents/PartIIIProject/data/"
 
+tickfontsize=11
+guidefontsize=14
+titlefontsize=16
+legendfontsize=11
+
 # Traces which have NaNs in them 347, 384, 403 need to potentially look in more detail at why they do and 
 # if there is someway they can be improved
 base_paths_to_counts::Vector{String} = base_path_to_data .* [
@@ -129,9 +134,10 @@ p = plot(size=(1500, 500),
     legend=:outerright, legendcolumns=1, xlim=(0, 256), ylim=(0, 1),
     xticks=([0:32:256;], latexstring.("2^{" .* string.(0:32:256) .* "}")),
     yticks=([0:0.2:1;], latexstring.(0:0.2:1)),
-    xtickfont=font(10), 
-    ytickfont=font(10), 
-    legendfont=font(10))
+    xtickfontsize=tickfontsize, 
+    ytickfontsize=tickfontsize, 
+    legendfontsize=legendfontsize,
+    guidefontsize=guidefontsize)
 
 for i in eachindex(base_paths_to_counts)
     cur_colors = get_color_palette(:auto, plot_color(:white))

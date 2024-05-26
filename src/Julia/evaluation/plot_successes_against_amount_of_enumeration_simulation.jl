@@ -3,6 +3,11 @@ using Plots, HDF5, LaTeXStrings
 path_to_data = "C:/Users/henry/Documents/PartIIIProject/data/"
 base_path_to_counts = path_to_data * "evaluation/simulation_known_output_nonce_counter/"
 
+tickfontsize=11
+guidefontsize=14
+titlefontsize=16
+legendfontsize=11
+
 signal_to_noise_ratios = [0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6]
 
 initial_ranks::Dict{Number,Vector{Number}} = Dict()
@@ -30,9 +35,10 @@ p = plot(size=(1500, 500),
     legend=:outerright, legendcolumns=1, xlim=(0, 256), ylim=(0, 1),
     xticks=([0:32:256;], latexstring.("2^{" .* string.(0:32:256) .* "}")),
     yticks=([0:0.2:1;], latexstring.(0:0.2:1)),
-    xtickfont=font(10), 
-    ytickfont=font(10), 
-    legendfont=font(10))
+    xtickfontsize=tickfontsize, 
+    ytickfontsize=tickfontsize, 
+    legendfontsize=legendfontsize,
+    guidefontsize=guidefontsize)
 proportion = collect((1:100) ./ 100)
 cur_colors = get_color_palette(:auto, plot_color(:white))
 
@@ -86,9 +92,10 @@ p = plot(size=(1500, 500),
     legend=:outerright, legendcolumns=1, xlim=(0, 256), ylim=(0, 1),
     xticks=([0:32:256;], latexstring.("2^{" .* string.(0:32:256) .* "}")),
     yticks=([0:0.2:1;], latexstring.(0:0.2:1)),
-    xtickfont=font(10), 
-    ytickfont=font(10), 
-    legendfont=font(10))
+    xtickfontsize=tickfontsize, 
+    ytickfontsize=tickfontsize, 
+    legendfontsize=legendfontsize,
+    guidefontsize=guidefontsize)
 cur_colors = get_color_palette(:auto, plot_color(:white))
 proportion = collect((1:100) ./ 100)
 # Add on a final value at the top left of each so that the lines continue along the top
