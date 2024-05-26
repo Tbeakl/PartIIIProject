@@ -1,11 +1,11 @@
 using Plots, Base.Threads, Random, BenchmarkTools, HDF5
-include("../../belief_propagation/node.jl")
-include("../../belief_propagation/messages.jl")
-include("../../chacha_factor_graph/chacha_factor_graph.jl")
-include("../../chacha_factor_graph/add_leakage_to_graph.jl")
-include("../../chacha_factor_graph/heatmap_visualisation.jl")
-include("../../encryption/leakage_functions.jl")
-include("../../encryption/chacha.jl")
+include("../belief_propagation/node.jl")
+include("../belief_propagation/messages.jl")
+include("../chacha_factor_graph/chacha_factor_graph.jl")
+include("../chacha_factor_graph/add_leakage_to_graph.jl")
+include("../chacha_factor_graph/heatmap_visualisation.jl")
+include("../encryption/leakage_functions.jl")
+include("../encryption/chacha.jl")
 
 # key = zeros(UInt32, 8)
 # nonce = zeros(UInt32, 3)
