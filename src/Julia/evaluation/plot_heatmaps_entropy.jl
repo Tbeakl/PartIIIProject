@@ -1,12 +1,12 @@
 using Plots, HDF5
 
 path_to_data_for_heatmaps = "./data/evaluation/heatmap_data/"
+guidefontsize=12
 
 # Read in the correct rounds for each in turn
 fid = h5open(path_to_data_for_heatmaps * "loopy_adds/2.hdf5", "r")
 visualisation_data = read(fid["entropies_50"])
 close(fid)
-guidefontsize=12
 p = heatmap(visualisation_data, dpi=300, ylabel="ChaCha state",
     xlabel="Operation number",
     title="Entropies of variables after 50 iterations",
@@ -25,6 +25,17 @@ p = heatmap(visualisation_data, dpi=300, ylabel="ChaCha state",
     yticks=([0.5:16:257;], 0:16),
     guidefontsize=guidefontsize)
 savefig(p, "./plots/factor_graph_findings/tree_add_fifty_rounds.png")
+
+fid = h5open(path_to_data_for_heatmaps * "tree_adds/2.hdf5", "r")
+visualisation_data = read(fid["entropies_0"])
+close(fid)
+p = heatmap(visualisation_data, dpi=300, ylabel="ChaCha state",
+    xlabel="Operation number",
+    title="Entropies of variables after 0 iterations",
+    clim=(0, 2),
+    yticks=([0.5:16:257;], 0:16),
+    guidefontsize=guidefontsize)
+savefig(p, "./plots/factor_graph_findings/tree_add_zero_rounds.png")
 
 fid = h5open(path_to_data_for_heatmaps * "tree_adds/1.hdf5", "r")
 visualisation_data = read(fid["entropies_147"])

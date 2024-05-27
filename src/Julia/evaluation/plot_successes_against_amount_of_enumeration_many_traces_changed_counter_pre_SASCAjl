@@ -36,7 +36,7 @@ labels::Vector{String} = [
 "16-bit fragment mean",
 "16-bit fragment product",
 "8-bit fragment volatile mean",
-"8-bit fragment voaltile product"]
+"8-bit fragment volatile product"]
 
 for (i, base_path_to_counts) in enumerate(base_paths_to_counts)
     current_initial_ranks::Vector{Number} = []
