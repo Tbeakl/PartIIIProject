@@ -54,7 +54,7 @@ for i in eachindex(signal_to_noise_ratios)
     prepend!(final_ranks[signal_to_noise_ratios[i]], [0, final_ranks[signal_to_noise_ratios[i]][begin]])
 end
 
-for i in eachindex(signal_to_noise_ratios)
+for i in reverse(eachindex(signal_to_noise_ratios))
     plot!(p, initial_ranks[signal_to_noise_ratios[i]], proportion, c=cur_colors[i], linestyle=:dash, label=string("Pre-SASCA ", signal_to_noise_ratios[i], " SNR"), linewidth=2)
     plot!(p, final_ranks[signal_to_noise_ratios[i]], proportion, c=cur_colors[i], linestyle=:solid, label=string("Post-SASCA ", signal_to_noise_ratios[i], " SNR"), linewidth=2)
 end
@@ -110,7 +110,7 @@ for i in eachindex(signal_to_noise_ratios)
     prepend!(final_ranks[signal_to_noise_ratios[i]], [0, final_ranks[signal_to_noise_ratios[i]][begin]])
 end
 
-for i in eachindex(signal_to_noise_ratios)
+for i in reverse(eachindex(signal_to_noise_ratios))
     plot!(p, initial_ranks[signal_to_noise_ratios[i]], proportion, c=cur_colors[i], linestyle=:dash, label=string("Pre-SASCA ", signal_to_noise_ratios[i], " SNR"), linewidth=2)
     plot!(p, final_ranks[signal_to_noise_ratios[i]], proportion, c=cur_colors[i], linestyle=:solid, label=string("Post-SASCA ", signal_to_noise_ratios[i], " SNR"), linewidth=2)
 end
