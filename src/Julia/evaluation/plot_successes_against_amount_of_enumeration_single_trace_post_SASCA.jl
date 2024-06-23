@@ -13,9 +13,9 @@ legendfontsize=11
 base_paths_to_counts::Vector{String} = base_path_to_data .* [
     "evaluation/attack_8_on_32_known/",
     "evaluation/attack_8_on_32_unknown/",
-    "evaluation/random_counter_1_8/",
-    "evaluation/random_counter_1_16/",
     "evaluation/random_counter_32_volatile_1_8/",
+    "evaluation/random_counter_1_16/",
+    "evaluation/random_counter_1_8/",
 ]
 
 # "evaluation/random_counter_incremented_10_8/",
@@ -32,9 +32,9 @@ base_paths_to_counts::Vector{String} = base_path_to_data .* [
 paths_to_actual_keys::Vector{String} = base_path_to_data .* "captures/" .* [
     "ChaChaRecordings_8_on_32/recording_attack_counter_from_random_",
     "ChaChaRecordings_8_on_32/recording_attack_counter_from_random_",
-    "ChaChaRecordings_2/recording_attack_counter_from_random_",
-    "ChaChaRecordings_2/recording_attack_counter_from_random_",
     "ChaChaRecordings_3/recording_attack_counter_from_random_",
+    "ChaChaRecordings_2/recording_attack_counter_from_random_",
+    "ChaChaRecordings_2/recording_attack_counter_from_random_",
 ]
 
 # "ChaChaRecordings_2/recording_attack_counter_from_random_",
@@ -52,9 +52,10 @@ final_ranks::Vector{Vector{Number}} = []
 
 labels::Vector{String} = ["8-bit implementation",
     "8-bit implementation\nunknown counter, nonce, output",
-    "8-bit fragment",
+    "8-bit fragment volatile",
     "16-bit fragment\nmarginalised to 8-bits",
-    "8-bit fragment volatile",]
+    "8-bit fragment",
+    ]
 
 # "8-bit fragment 10 trace\nchanged counter mean",
 # "16-bit fragment 10 trace\nchanged counter mean",
@@ -123,9 +124,9 @@ for i in eachindex(base_paths_to_counts)
 end
 
 p = plot(size=(1500, 500),
-    title="Proportion of keys successfully found after differing amounts of key enumeration",
-    ylabel="Proportion",
-    xlabel="Estimated number of keys required to be enumerated (log scale)",
+    # title="Proportion of keys successfully found after differing amounts of key enumeration",
+    ylabel="n-SR",
+    xlabel="n (log scale)",
     leftmargin=8Plots.mm,
     bottom_margin=8Plots.mm,
     legend=:outerright, legendcolumns=1, xlim=(0, 256), ylim=(0, 1),
@@ -142,3 +143,4 @@ for i in eachindex(base_paths_to_counts)
 end
 p
 savefig(p, "./plots/evaluation/real_attack_single_trace_post_SASCA.svg")
+savefig(p, "./plots/evaluation/real_attack_single_trace_post_SASCA.pdf")

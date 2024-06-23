@@ -98,9 +98,9 @@ end
 cur_colors = get_color_palette(:auto, plot_color(:white))
 
 p = plot(size=(1500, 500),
-    title="Proportion of keys successfully found after differing amounts of key enumeration",
-    ylabel="Proportion",
-    xlabel="Estimated number of keys required to be enumerated (log scale)",
+    # title="Proportion of keys successfully found after differing amounts of key enumeration",
+    ylabel="n-SR",
+    xlabel="n (log scale)",
     leftmargin=8Plots.mm,
     bottom_margin=8Plots.mm,
     legend=:outerright, legendcolumns=1, xlim=(0, 256), ylim=(0, 1),
@@ -118,3 +118,4 @@ for i in 1:2:length(base_paths_to_counts)
 end
 p
 savefig(p, "./plots/evaluation/real_attack_multi_trace_set_counter_pre_SASCA.svg")
+savefig(p, "./plots/evaluation/real_attack_multi_trace_set_counter_pre_SASCA.pdf")

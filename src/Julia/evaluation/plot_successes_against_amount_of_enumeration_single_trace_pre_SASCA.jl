@@ -3,19 +3,18 @@ include("../encryption/key_enumeration.jl")
 gr()
 base_path_to_data = "C:/Users/henry/Documents/PartIIIProject/data/"
 
-tickfontsize=11
-guidefontsize=14
-titlefontsize=16
-legendfontsize=11
+tickfontsize = 11
+guidefontsize = 14
+titlefontsize = 16
+legendfontsize = 11
 
 # Traces which have NaNs in them 347, 384, 403 need to potentially look in more detail at why they do and 
 # if there is someway they can be improved
 base_paths_to_counts::Vector{String} = base_path_to_data .* [
     "evaluation/attack_8_on_32_known/",
-    "evaluation/attack_8_on_32_unknown/",
-    "evaluation/random_counter_1_8/",
-    "evaluation/random_counter_1_16/",
     "evaluation/16_bit_fragments_1/",
+    "evaluation/random_counter_1_16/",
+    "evaluation/random_counter_1_8/",
     "evaluation/random_counter_32_volatile_1_8/",
 ]
 
@@ -31,7 +30,6 @@ base_paths_to_counts::Vector{String} = base_path_to_data .* [
 # "evaluation/random_counter_32_volatile_set_prod_10_8/"
 
 paths_to_actual_keys::Vector{String} = base_path_to_data .* "captures/" .* [
-    "ChaChaRecordings_8_on_32/recording_attack_counter_from_random_",
     "ChaChaRecordings_8_on_32/recording_attack_counter_from_random_",
     "ChaChaRecordings_2/recording_attack_counter_from_random_",
     "ChaChaRecordings_2/recording_attack_counter_from_random_",
@@ -53,11 +51,11 @@ paths_to_actual_keys::Vector{String} = base_path_to_data .* "captures/" .* [
 initial_ranks::Vector{Vector{Number}} = []
 
 labels::Vector{String} = ["8-bit implementation",
-    "8-bit implementation\nunknown counter, nonce, output",
-    "8-bit fragment",
-    "16-bit fragment\nmarginalised to 8-bits",
     "16-bit fragment",
-    "8-bit fragment volatile",]
+    "16-bit fragment\nmarginalised to 8-bits",
+    "8-bit fragment",
+    "8-bit fragment volatile",
+]
 
 # "8-bit fragment 10 trace\nchanged counter mean",
 # "16-bit fragment 10 trace\nchanged counter mean",
@@ -126,16 +124,16 @@ for i in eachindex(base_paths_to_counts)
 end
 
 p = plot(size=(1500, 500),
-    title="Proportion of keys successfully found after differing amounts of key enumeration",
-    ylabel="Proportion",
-    xlabel="Estimated number of keys required to be enumerated (log scale)",
+    # title="Proportion of keys successfully found after differing amounts of key enumeration",
+    ylabel="n-SR",
+    xlabel="n (log scale)",
     leftmargin=8Plots.mm,
     bottom_margin=8Plots.mm,
     legend=:outerright, legendcolumns=1, xlim=(0, 256), ylim=(0, 1),
     xticks=([0:32:256;], latexstring.("2^{" .* string.(0:32:256) .* "}")),
     yticks=([0:0.2:1;], latexstring.(0:0.2:1)),
-    xtickfontsize=tickfontsize, 
-    ytickfontsize=tickfontsize, 
+    xtickfontsize=tickfontsize,
+    ytickfontsize=tickfontsize,
     legendfontsize=legendfontsize,
     guidefontsize=guidefontsize)
 
@@ -145,3 +143,4 @@ for i in eachindex(base_paths_to_counts)
 end
 p
 savefig(p, "./plots/evaluation/real_attack_single_trace_pre_SASCA.svg")
+savefig(p, "./plots/evaluation/real_attack_single_trace_pre_SASCA.pdf")

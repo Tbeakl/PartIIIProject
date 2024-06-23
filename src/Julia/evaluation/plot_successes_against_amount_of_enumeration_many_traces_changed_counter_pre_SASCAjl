@@ -11,12 +11,12 @@ legendfontsize=11
 # Traces which have NaNs in them 347, 384, 403 need to potentially look in more detail at why they do and 
 # if there is someway they can be improved
 base_paths_to_counts::Vector{String} = base_path_to_data .* [
-    "evaluation/random_counter_incremented_10_8/",
-    "evaluation/incremented_counter_prod_10_8/",
     "evaluation/random_counter_incremented_10_16/",
     "evaluation/incremented_counter_prod_10_16/",
+    "evaluation/random_counter_incremented_10_8/",
+    "evaluation/incremented_counter_prod_10_8/",
     "evaluation/incremented_random_counter_32_volatile_10_8/",
-    "evaluation/incremented_random_counter_32_volatile_10_8_prod/"
+    "evaluation/incremented_random_counter_32_volatile_10_8_prod/",
 ]
 
 paths_to_actual_keys::Vector{String} = base_path_to_data .* "captures/" .* [
@@ -31,12 +31,13 @@ paths_to_actual_keys::Vector{String} = base_path_to_data .* "captures/" .* [
 initial_ranks::Vector{Vector{Number}} = []
 
 labels::Vector{String} = [
-"8-bit fragment mean",
-"8-bit fragment product",
-"16-bit fragment mean",
-"16-bit fragment product",
-"8-bit fragment volatile mean",
-"8-bit fragment volatile product"]
+    "16-bit fragment mean",
+    "16-bit fragment product",
+    "8-bit fragment mean",
+    "8-bit fragment product",
+    "8-bit fragment volatile mean",
+    "8-bit fragment volatile product",
+]
 
 for (i, base_path_to_counts) in enumerate(base_paths_to_counts)
     current_initial_ranks::Vector{Number} = []
@@ -98,9 +99,9 @@ end
 cur_colors = get_color_palette(:auto, plot_color(:white))
 
 p = plot(size=(1500, 500),
-    title="Proportion of keys successfully found after differing amounts of key enumeration",
-    ylabel="Proportion",
-    xlabel="Estimated number of keys required to be enumerated (log scale)",
+    #title="Proportion of keys successfully found after differing amounts of key enumeration",
+    ylabel="n-SR",
+    xlabel="n (log scale)",
     leftmargin=8Plots.mm,
     bottom_margin=8Plots.mm,
     legend=:outerright, legendcolumns=1, xlim=(0, 256), ylim=(0, 1),
@@ -118,3 +119,4 @@ for i in 1:2:length(base_paths_to_counts)
 end
 p
 savefig(p, "./plots/evaluation/real_attack_multi_trace_changed_counter_pre_SASCA.svg")
+savefig(p, "./plots/evaluation/real_attack_multi_trace_changed_counter_pre_SASCA.pdf")

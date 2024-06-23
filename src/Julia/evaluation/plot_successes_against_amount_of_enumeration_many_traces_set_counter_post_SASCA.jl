@@ -3,40 +3,41 @@ include("../encryption/key_enumeration.jl")
 gr()
 base_path_to_data = "C:/Users/henry/Documents/PartIIIProject/data/"
 
-tickfontsize=11
-guidefontsize=14
-titlefontsize=16
-legendfontsize=11
+tickfontsize = 11
+guidefontsize = 14
+titlefontsize = 16
+legendfontsize = 11
 
 # Traces which have NaNs in them 347, 384, 403 need to potentially look in more detail at why they do and 
 # if there is someway they can be improved
 base_paths_to_counts::Vector{String} = base_path_to_data .* [
+    "evaluation/random_counter_32_volatile_set_mean_10_8/",
+    "evaluation/random_counter_32_volatile_set_prod_10_8/",
     "evaluation/set_counter_mean_10_8/",
     "evaluation/set_counter_prod_10_8/",
     "evaluation/set_counter_mean_10_16/",
     "evaluation/set_counter_prod_10_16/",
-    "evaluation/random_counter_32_volatile_set_mean_10_8/",
-    "evaluation/random_counter_32_volatile_set_prod_10_8/"
 ]
 
 paths_to_actual_keys::Vector{String} = base_path_to_data .* "captures/" .* [
-    "ChaChaRecordings_2/recording_attack_counter_constant_",
-    "ChaChaRecordings_2/recording_attack_counter_constant_",
-    "ChaChaRecordings_2/recording_attack_counter_constant_",
-    "ChaChaRecordings_2/recording_attack_counter_constant_",
     "ChaChaRecordings_3/recording_attack_counter_constant_",
     "ChaChaRecordings_3/recording_attack_counter_constant_",
+    "ChaChaRecordings_2/recording_attack_counter_constant_",
+    "ChaChaRecordings_2/recording_attack_counter_constant_",
+    "ChaChaRecordings_2/recording_attack_counter_constant_",
+    "ChaChaRecordings_2/recording_attack_counter_constant_",
 ]
 
 final_ranks::Vector{Vector{Number}} = []
 
 labels::Vector{String} = [
-"8-bit fragment mean",
-"8-bit fragment product",
-"16-bit fragment mean",
-"16-bit fragment product",
-"8-bit fragment volatile mean",
-"8-bit fragment volatile product"]
+    "8-bit fragment volatile mean",
+    "8-bit fragment volatile product",
+    "8-bit fragment mean",
+    "8-bit fragment product",
+    "16-bit fragment mean",
+    "16-bit fragment product",
+]
 
 for (i, base_path_to_counts) in enumerate(base_paths_to_counts)
     current_final_ranks::Vector{Number} = []
@@ -98,23 +99,24 @@ end
 cur_colors = get_color_palette(:auto, plot_color(:white))
 
 p = plot(size=(1500, 500),
-    title="Proportion of keys successfully found after differing amounts of key enumeration",
-    ylabel="Proportion",
-    xlabel="Estimated number of keys required to be enumerated (log scale)",
+    # title="Proportion of keys successfully found after differing amounts of key enumeration",
+    ylabel="n-SR",
+    xlabel="n (log scale)",
     leftmargin=8Plots.mm,
     bottom_margin=8Plots.mm,
     legend=:outerright, legendcolumns=1, xlim=(0, 256), ylim=(0, 1),
     xticks=([0:32:256;], latexstring.("2^{" .* string.(0:32:256) .* "}")),
     yticks=([0:0.2:1;], latexstring.(0:0.2:1)),
-    xtickfontsize=tickfontsize, 
-    ytickfontsize=tickfontsize, 
+    xtickfontsize=tickfontsize,
+    ytickfontsize=tickfontsize,
     legendfontsize=legendfontsize,
     guidefontsize=guidefontsize)
 
 for i in 1:2:length(base_paths_to_counts)
     cur_colors = get_color_palette(:auto, plot_color(:white))
-    plot!(p, final_ranks[i], proportion, label=labels[i], linewidth=2, c=cur_colors[(i ÷ 2) + 1], linestyle=:solid)
-    plot!(p, final_ranks[i + 1], proportion, label=labels[i + 1], linewidth=2, c=cur_colors[(i ÷ 2) + 1], linestyle=:dash)
+    plot!(p, final_ranks[i], proportion, label=labels[i], linewidth=2, c=cur_colors[(i÷2)+1], linestyle=:solid)
+    plot!(p, final_ranks[i+1], proportion, label=labels[i+1], linewidth=2, c=cur_colors[(i÷2)+1], linestyle=:dash)
 end
 p
 savefig(p, "./plots/evaluation/real_attack_multi_trace_set_counter_post_SASCA.svg")
+savefig(p, "./plots/evaluation/real_attack_multi_trace_set_counter_post_SASCA.pdf")
