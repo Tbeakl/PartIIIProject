@@ -117,4 +117,4 @@ for i in 1:2:length(base_paths_to_counts)
     plot!(p, initial_ranks[i + 1], proportion, label=labels[i + 1], linewidth=2, c=cur_colors[(i ÷ 2) + 1], linestyle=:dash)
 end
 p
-savefig(p, "./plots/evaluation/real_attack_multi_trace_set_counter_pre_SASCA.pdf")
+savefig(p, "./plots/evaluation/real_attack_multi_trace_set_counter_pre_SASCA.svg")

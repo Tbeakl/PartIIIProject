@@ -1,6 +1,8 @@
 .venv
 .vscode
-src/Python/__pycache__/*
 data/**
 *.csv
 *.hdf5
+presentation/*
+*.pyc
+**__pycache__**

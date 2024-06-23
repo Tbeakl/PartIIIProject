@@ -27,7 +27,7 @@ function make_heatmap(additional_path::String, fps::Int64, number_of_bits::Int64
             clim=(0, number_of_bits),
             xlabel=x_label_name,
             ylabel=y_label_name,
-            yticks=([0.5:(32 ÷ number_of_bits):((512 ÷ number_of_bits) + 1);], 0:16))
+            yticks=([0.5:(32 ÷ number_of_bits):((512 ÷ number_of_bits) + 1);], 0:16), dpi=300)
     end
     p = gif(anim, gif_path, fps=fps)
     return p

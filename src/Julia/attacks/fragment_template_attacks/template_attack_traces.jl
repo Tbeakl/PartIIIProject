@@ -10,7 +10,6 @@ function get_dist_of_vector(mean_vectors, noise, current_vector)
     return likelihood_of_values
 end
 
-
 function get_log_likelihoods_dist_of_vector(mean_vectors, noise, current_vector)
     likelihood_of_values = logpdf(noise, mean_vectors' .- current_vector)
     return likelihood_of_values

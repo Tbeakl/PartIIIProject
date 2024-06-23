@@ -141,4 +141,4 @@ for i in eachindex(base_paths_to_counts)
     plot!(p, final_ranks[i], proportion, label=labels[i], linewidth=2)
 end
 p
-savefig(p, "./plots/evaluation/real_attack_single_trace_post_SASCA.pdf")
+savefig(p, "./plots/evaluation/real_attack_single_trace_post_SASCA.svg")
