@@ -95,3 +95,7 @@ These contain various different tests for checking different parts of the progra
 ### Attacks
 
 This contains various different versions where SASCA is performed in different scenarios when given different types of leakage (whether simulated or real).  They all have a similar structure to each other where the `*_experimentation.jl` file performs SASCA in a specific instance with the variables such as `number_of_bits` controlling how the algorithm executes, the other files associated with each are either for providing functions for inputting the probability distributions into the factor graph or performing a set of attacks against lots of traces.
+
+![Animation of entropy](./plots/schedule_animations/real_8bit_2_clusters_all.gif)
+
+The above animation shows how the shannon entropy of the variables changes as belief propagation progresses for the 8-bit implementation with 2 bit clusters.  The y axis shows the state of ChaCha and the x axis represents the operation number so variables can take up several pixels due to each operation not affecting the entire state.
